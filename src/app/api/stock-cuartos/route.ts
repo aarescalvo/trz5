@@ -1,0 +1,177 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { PrismaClient } from '@prisma/client'
+
+const db = new PrismaClient()
+
+// GET - Obtener stock de cuartos con filtros
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const camaraId = searchParams.get('camaraId')
+    const estado = searchParams.get('estado')
+    const sigla = searchParams.get('sigla')
+    const tropa = searchParams.get('tropa')
+    const propietarioId = searchParams.get('propietarioId')
+
+    const where: any = {}
+    
+    if (camaraId) where.camaraId = camaraId
+    if (estado) where.estado = estado
+    if (sigla) where.sigla = sigla
+    if (propietarioId) where.propietarioId = propietarioId
+    if (tropa) {
+      where.mediaRes = {
+        romaneo: {
+          tropaCodigo: { contains: tropa }
+        }
+      }
+    }
+
+    const cuartos = await db.cuarto.findMany({
+      where,
+      include: {
+        mediaRes: {
+          include: {
+            romaneo: {
+              select: {
+                tropaCodigo: true,
+                garron: true,
+                fecha: true,
+                tipoAnimal: true,
+                denticion: true
+              }
+            },
+            usuarioFaena: {
+              select: { id: true, nombre: true }
+            }
+          }
+        },
+        camara: {
+          select: { id: true, nombre: true, tipo: true }
+        },
+        propietario: {
+          select: { id: true, nombre: true, cuit: true }
+        }
+      },
+      orderBy: { fechaCuarteo: 'desc' }
+    })
+
+    // Calcular estadísticas
+    const stats = {
+      totalCuartos: cuartos.length,
+      enCamara: cuartos.filter(c => c.estado === 'EN_CAMARA').length,
+      enDespostada: cuartos.filter(c => c.estado === 'EN_DESPOSTADA').length,
+      despostados: cuartos.filter(c => c.estado === 'DESPOSTADO').length,
+      pesoTotal: cuartos.reduce((acc, c) => acc + c.pesoCuarto, 0),
+      porSigla: {
+        A: cuartos.filter(c => c.sigla === 'A').length,
+        D: cuartos.filter(c => c.sigla === 'D').length,
+        T: cuartos.filter(c => c.sigla === 'T').length
+      },
+      pesoPorSigla: {
+        A: cuartos.filter(c => c.sigla === 'A').reduce((acc, c) => acc + c.pesoCuarto, 0),
+        D: cuartos.filter(c => c.sigla === 'D').reduce((acc, c) => acc + c.pesoCuarto, 0),
+        T: cuartos.filter(c => c.sigla === 'T').reduce((acc, c) => acc + c.pesoCuarto, 0)
+      },
+      alertasVencimiento: [] as any[]
+    }
+
+    // Agrupar por cámara
+    const porCamara = cuartos.reduce((acc: any, c) => {
+      const camaraNombre = c.camara?.nombre || 'Sin cámara'
+      if (!acc[camaraNombre]) {
+        acc[camaraNombre] = { cantidad: 0, peso: 0 }
+      }
+      acc[camaraNombre].cantidad++
+      acc[camaraNombre].peso += c.pesoCuarto
+      return acc
+    }, {})
+
+    // Agrupar por tropa
+    const porTropa = cuartos.reduce((acc: any, c) => {
+      const tropa = c.mediaRes.romaneo?.tropaCodigo || 'Sin tropa'
+      if (!acc[tropa]) {
+        acc[tropa] = { cantidad: 0, peso: 0, propietario: c.propietario?.nombre || c.mediaRes.usuarioFaena?.nombre }
+      }
+      acc[tropa].cantidad++
+      acc[tropa].peso += c.pesoCuarto
+      return acc
+    }, {})
+
+    return NextResponse.json({
+      success: true,
+      data: cuartos,
+      stats,
+      porCamara,
+      porTropa
+    })
+  } catch (error) {
+    console.error('Error obteniendo stock de cuartos:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al obtener stock de cuartos' },
+      { status: 500 }
+    )
+  } finally {
+    await db.$disconnect()
+  }
+}
+
+// PUT - Actualizar estado de cuarto o mover de cámara
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { id, estado, camaraId, propietarioId, pesoCuarto, operadorId } = body
+
+    const updateData: any = {}
+    
+    if (estado) {
+      updateData.estado = estado
+      if (estado === 'EN_DESPOSTADA') {
+        updateData.fechaIngresoDespostada = new Date()
+      }
+    }
+    if (camaraId !== undefined) updateData.camaraId = camaraId
+    if (propietarioId !== undefined) updateData.propietarioId = propietarioId
+    if (pesoCuarto !== undefined) {
+      const cuarto = await db.cuarto.findUnique({ where: { id } })
+      if (cuarto) {
+        updateData.pesoCuarto = pesoCuarto
+        updateData.merma = cuarto.pesoOriginal - pesoCuarto
+      }
+    }
+
+    const cuarto = await db.cuarto.update({
+      where: { id },
+      data: updateData,
+      include: {
+        mediaRes: { include: { romaneo: { select: { tropaCodigo: true } } } },
+        camara: true,
+        propietario: true
+      }
+    })
+
+    // Registrar auditoría
+    if (operadorId) {
+      await db.auditoria.create({
+        data: {
+          operadorId,
+          modulo: 'STOCK_CUARTOS',
+          accion: 'UPDATE',
+          entidad: 'Cuarto',
+          entidadId: id,
+          descripcion: `Actualización: ${JSON.stringify(updateData)}`
+        }
+      })
+    }
+
+    return NextResponse.json({ success: true, data: cuarto })
+  } catch (error) {
+    console.error('Error actualizando cuarto:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al actualizar cuarto' },
+      { status: 500 }
+    )
+  } finally {
+    await db.$disconnect()
+  }
+}

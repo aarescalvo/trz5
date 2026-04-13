@@ -1,0 +1,378 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+
+// GET - Fetch facturas
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const estado = searchParams.get('estado')
+    const clienteId = searchParams.get('clienteId')
+    const desde = searchParams.get('desde')
+    const hasta = searchParams.get('hasta')
+    const search = searchParams.get('search')
+    const tipoComprobante = searchParams.get('tipoComprobante')
+    
+    let where: any = {}
+    
+    if (estado && estado !== 'TODOS') {
+      where.estado = estado
+    }
+    
+    if (clienteId) {
+      where.clienteId = clienteId
+    }
+    
+    if (tipoComprobante) {
+      where.tipoComprobante = tipoComprobante
+    }
+    
+    if (desde || hasta) {
+      where.fecha = {}
+      if (desde) {
+        where.fecha.gte = new Date(desde)
+      }
+      if (hasta) {
+        where.fecha.lte = new Date(hasta + 'T23:59:59')
+      }
+    }
+    
+    if (search) {
+      where.OR = [
+        { numero: { contains: search } },
+        { cliente: { nombre: { contains: search } } },
+        { cliente: { razonSocial: { contains: search } } },
+        { remito: { contains: search } }
+      ]
+    }
+    
+    const facturas = await db.factura.findMany({
+      where,
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            cuit: true,
+            razonSocial: true,
+            condicionIva: true,
+            direccion: true
+          }
+        },
+        detalles: {
+          include: {
+            tipoServicio: true
+          },
+          orderBy: { createdAt: 'asc' }
+        },
+        pagos: {
+          orderBy: { fecha: 'desc' }
+        },
+        operador: {
+          select: {
+            id: true,
+            nombre: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    
+    return NextResponse.json({
+      success: true,
+      data: facturas
+    })
+  } catch (error) {
+    console.error('Error fetching facturas:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al obtener facturas' },
+      { status: 500 }
+    )
+  }
+}
+
+// Función auxiliar para determinar tipo de comprobante según condición IVA
+function getTipoComprobante(condicionIva: string | null): 'FACTURA_A' | 'FACTURA_B' | 'FACTURA_C' {
+  switch (condicionIva) {
+    case 'RI':
+      return 'FACTURA_A'  // Responsable Inscripto -> Factura A
+    case 'CF':
+    case 'MT':
+      return 'FACTURA_B'  // Consumidor Final o Monotributista -> Factura B
+    case 'EX':
+    case 'NC':
+    default:
+      return 'FACTURA_C'  // Exento o No Categorizado -> Factura C
+  }
+}
+
+// Función auxiliar para obtener precio vigente
+async function obtenerPrecioVigente(tipoServicioId: string, clienteId: string, fecha: Date) {
+  const precio = await db.precioServicio.findFirst({
+    where: {
+      tipoServicioId,
+      clienteId,
+      fechaDesde: { lte: fecha },
+      OR: [
+        { fechaHasta: null },
+        { fechaHasta: { gte: fecha } }
+      ]
+    },
+    orderBy: { fechaDesde: 'desc' }
+  })
+  
+  return precio
+}
+
+// POST - Create new factura
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { 
+      clienteId, 
+      fecha,
+      detalles,
+      observaciones,
+      condicionVenta,
+      remito,
+      despachoId,
+      operadorId 
+    } = body
+    
+    if (!clienteId) {
+      return NextResponse.json(
+        { success: false, error: 'El cliente es requerido' },
+        { status: 400 }
+      )
+    }
+    
+    if (!detalles || detalles.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Debe agregar al menos un detalle' },
+        { status: 400 }
+      )
+    }
+    
+    // Obtener datos del cliente
+    const cliente = await db.cliente.findUnique({
+      where: { id: clienteId }
+    })
+    
+    if (!cliente) {
+      return NextResponse.json(
+        { success: false, error: 'Cliente no encontrado' },
+        { status: 404 }
+      )
+    }
+    
+    // Determinar tipo de comprobante según condición IVA del cliente
+    const tipoComprobante = getTipoComprobante(cliente.condicionIva || null)
+    
+    // Obtener el último número de factura
+    const numerador = await db.numerador.upsert({
+      where: { nombre: 'FACTURA' },
+      update: { ultimoNumero: { increment: 1 } },
+      create: { nombre: 'FACTURA', ultimoNumero: 1 }
+    })
+    
+    const numeroInterno = numerador.ultimoNumero
+    const numero = String(numeroInterno).padStart(8, '0')
+    
+    const fechaFactura = fecha ? new Date(fecha) : new Date()
+    
+    // Calcular totales y obtener precios vigentes
+    let subtotal = 0
+    let totalIva = 0
+    
+    const detallesCalculados = await Promise.all(detalles.map(async (d: any) => {
+      let precioUnitario = d.precioUnitario
+      
+      // Si no se especificó precio, buscar precio vigente
+      if (!precioUnitario && d.tipoServicioId) {
+        const precioVigente = await obtenerPrecioVigente(d.tipoServicioId, clienteId, fechaFactura)
+        if (precioVigente) {
+          precioUnitario = precioVigente.precio
+        }
+      }
+      
+      const subtotalDetalle = Number(d.cantidad) * Number(precioUnitario || 0)
+      subtotal += subtotalDetalle
+      
+      // Calcular IVA del detalle
+      const tipoServicio = d.tipoServicioId 
+        ? await db.tipoServicio.findUnique({ where: { id: d.tipoServicioId } })
+        : null
+      // Usar ?? en lugar de || para respetar el valor 0
+      const porcentajeIva = d.porcentajeIva !== undefined 
+        ? Number(d.porcentajeIva) 
+        : (tipoServicio?.porcentajeIva ?? 21)
+      const ivaDetalle = subtotalDetalle * (porcentajeIva / 100)
+      totalIva += ivaDetalle
+      
+      return {
+        ...d,
+        precioUnitario: Number(precioUnitario || 0),
+        subtotal: subtotalDetalle,
+        porcentajeIva,
+        tipoServicioId: d.tipoServicioId || null
+      }
+    }))
+    
+    const total = subtotal + totalIva
+    
+    // Determinar si discriminar IVA según tipo de comprobante
+    const discriminadoIva = tipoComprobante === 'FACTURA_A'
+    const iva = discriminadoIva ? totalIva : 0
+    const totalFinal = discriminadoIva ? total : subtotal
+    
+    // Crear la factura con sus detalles
+    const factura = await db.factura.create({
+      data: {
+        numero,
+        numeroInterno,
+        tipoComprobante,
+        clienteId,
+        clienteNombre: cliente.razonSocial || cliente.nombre,
+        clienteCuit: cliente.cuit,
+        clienteCondicionIva: cliente.condicionIva as any,
+        clienteDireccion: cliente.direccion,
+        fecha: fechaFactura,
+        subtotal,
+        iva,
+        porcentajeIva: totalIva / subtotal * 100 || 0,
+        total: totalFinal,
+        saldo: totalFinal,  // Inicialmente el saldo es el total
+        estado: 'PENDIENTE',
+        observaciones: observaciones || null,
+        condicionVenta: condicionVenta || 'CUENTA_CORRIENTE',
+        remito: remito || null,
+        despachoId: despachoId || null,
+        operadorId: operadorId || null,
+        detalles: {
+          create: detallesCalculados.map((d: any) => ({
+            tipoServicioId: d.tipoServicioId,
+            tipoProducto: d.tipoProducto || 'OTRO',
+            descripcion: d.descripcion,
+            cantidad: Number(d.cantidad),
+            unidad: d.unidad || 'KG',
+            precioUnitario: d.precioUnitario,
+            subtotal: d.subtotal,
+            tropaCodigo: d.tropaCodigo || null,
+            garron: d.garron || null,
+            mediaResId: d.mediaResId || null,
+            despachoId: d.despachoId || null,
+            pesoKg: d.pesoKg ? Number(d.pesoKg) : null
+          }))
+        }
+      },
+      include: {
+        cliente: true,
+        detalles: {
+          include: {
+            tipoServicio: true
+          }
+        },
+        operador: true
+      }
+    })
+    
+    return NextResponse.json({
+      success: true,
+      data: factura
+    })
+  } catch (error) {
+    console.error('Error creating factura:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al crear factura' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT - Update factura
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { id, estado, observaciones, remito, fechaVencimiento } = body
+    
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'ID es requerido' },
+        { status: 400 }
+      )
+    }
+    
+    const factura = await db.factura.update({
+      where: { id },
+      data: {
+        estado,
+        observaciones,
+        remito,
+        fechaVencimiento: fechaVencimiento ? new Date(fechaVencimiento) : undefined
+      },
+      include: {
+        cliente: true,
+        detalles: true
+      }
+    })
+    
+    return NextResponse.json({
+      success: true,
+      data: factura
+    })
+  } catch (error) {
+    console.error('Error updating factura:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al actualizar factura' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE - Anular factura
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'ID es requerido' },
+        { status: 400 }
+      )
+    }
+    
+    // Verificar si tiene pagos
+    const pagos = await db.pagoFactura.findMany({
+      where: { facturaId: id }
+    })
+    
+    if (pagos.length > 0) {
+      // Si tiene pagos, no se puede anular directamente
+      return NextResponse.json(
+        { success: false, error: 'No se puede anular una factura con pagos registrados. Debe generar una nota de crédito.' },
+        { status: 400 }
+      )
+    }
+    
+    // Anular la factura
+    const factura = await db.factura.update({
+      where: { id },
+      data: {
+        estado: 'ANULADA',
+        saldo: 0
+      }
+    })
+    
+    return NextResponse.json({
+      success: true,
+      data: factura,
+      message: 'Factura anulada correctamente'
+    })
+  } catch (error) {
+    console.error('Error annulling factura:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al anular factura' },
+      { status: 500 }
+    )
+  }
+}

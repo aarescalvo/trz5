@@ -1,0 +1,61 @@
+========== REPORTE DE SIMULACIÓN INTEGRAL ==========
+TrazaSole v3.2.8 - Sistema de Trazabilidad Frigorífica
+Fecha: $(date)
+
+=== MÓDULOS PROBADOS ===
+--- 1. CONFIGURACIÓN ---
+❌ camaras: 
+❌ corrales: 
+❌ operadores: 
+❌ tipificadores: 
+❌ transportistas: 
+❌ clientes: 
+❌ proveedores: 
+❌ productos: 
+❌ insumos: 
+
+--- 2. HACIENDA ---
+❌ tropas: 
+❌ animales: 
+❌ corrales/stock: 
+
+--- 3. FAENA ---
+❌ lista-faena: 
+❌ garrones-asignados: 
+❌ romaneos: 
+❌ vb-romaneo: 
+❌ romaneo/medias-dia: 
+
+--- 4. STOCK ---
+❌ stock-camaras: 
+❌ despachos: 
+❌ stock: 
+❌ despachos/stock: 
+
+--- 5. SUBPRODUCTOS ---
+❌ menudencias: 
+❌ cueros: 
+❌ rendering: 
+❌ tipos-menudencia: 
+
+--- 6. REPORTES ---
+❌ reportes: 
+❌ rindes: 
+❌ reportes-senasa: 
+❌ reportes/faena: 
+❌ reportes/stock: 
+
+--- 7. ADMINISTRATIVO ---
+❌ facturacion: 
+❌ auditoria: 
+❌ dashboard: 
+
+--- 8. CALIDAD ---
+❌ calidad-reclamos: 
+❌ ccir: 
+❌ declaracion-jurada: 
+
+--- 9. SISTEMA ---
+❌ rotulos: 
+❌ sistema/status: 
+❌ sistema/backup: 

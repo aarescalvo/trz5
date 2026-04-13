@@ -1,0 +1,197 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+
+interface UsuarioExcel {
+  'TITULAR ': string
+  'CUIT': number
+  'MAIL': string
+  'NOMBRE Y APELLIGO': string
+  'CELULAR': string
+}
+
+interface ResultadoMigracion {
+  total: number
+  creados: number
+  duplicados: number
+  errores: string[]
+  usuariosCreados: Array<{
+    nombre: string
+    cuit: string
+  }>
+}
+
+// GET - Mostrar estado de la migración
+export async function GET() {
+  try {
+    // Contar usuarios de faena existentes
+    const usuariosFaena = await db.cliente.count({
+      where: { esUsuarioFaena: true }
+    })
+
+    // Obtener los últimos 5 usuarios creados
+    const ultimosUsuarios = await db.cliente.findMany({
+      where: { esUsuarioFaena: true },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        nombre: true,
+        cuit: true,
+        contactoNombre: true,
+        celular: true,
+        emails: true,
+        createdAt: true
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        usuariosFaenaExistentes: usuariosFaena,
+        ultimosCreados: ultimosUsuarios,
+        archivoDisponible: true
+      }
+    })
+  } catch (error) {
+    console.error('Error al obtener estado:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al obtener estado de migración' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST - Ejecutar migración
+export async function POST(request: NextRequest) {
+  try {
+    // Importar xlsx dinámicamente
+    const XLSX = await import('xlsx').then(m => m.default || m)
+    const path = await import('path')
+    const fs = await import('fs')
+    
+    const resultado: ResultadoMigracion = {
+      total: 0,
+      creados: 0,
+      duplicados: 0,
+      errores: [],
+      usuariosCreados: []
+    }
+
+    // Leer archivo Excel - usar rutas absolutas
+    const fileName = 'CUIT DE USUARIOS + DATOS.xlsx'
+    const possiblePaths = [
+      `/home/z/my-project/upload/${fileName}`,
+      path.join(process.cwd(), 'upload', fileName),
+      path.join(process.cwd(), '..', 'upload', fileName),
+    ]
+    
+    let filePath = ''
+    let fileBuffer: Buffer | null = null
+    
+    for (const p of possiblePaths) {
+      try {
+        if (fs.existsSync(p)) {
+          fileBuffer = fs.readFileSync(p)
+          filePath = p
+          break
+        }
+      } catch (e) {
+        // Continue to next path
+      }
+    }
+    
+    if (!fileBuffer) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'No se encontró el archivo de usuarios. Verifique que el archivo esté en /upload/'
+        },
+        { status: 404 }
+      )
+    }
+    
+    let workbook
+    try {
+      // Leer desde buffer en lugar de archivo directamente
+      workbook = XLSX.read(fileBuffer, { type: 'buffer' })
+    } catch (readError) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Error al leer el archivo Excel: ' + (readError instanceof Error ? readError.message : 'Error desconocido')
+        },
+        { status: 500 }
+      )
+    }
+
+    const sheet = workbook.Sheets['Hoja1']
+    const data = XLSX.utils.sheet_to_json<UsuarioExcel>(sheet)
+    
+    resultado.total = data.length
+
+    for (const row of data) {
+      try {
+        // Normalizar datos
+        const nombre = row['TITULAR ']?.trim() || ''
+        const cuit = String(row['CUIT'] || '').trim()
+        const mail = row['MAIL']?.trim() || ''
+        const contactoNombre = row['NOMBRE Y APELLIGO']?.trim() || ''
+        const celular = row['CELULAR']?.trim() || ''
+
+        // Omitir filas de encabezado o vacías
+        if (!nombre || !cuit || nombre === 'TITULAR' || cuit === 'CUIT') {
+          continue
+        }
+
+        // Verificar si ya existe por CUIT
+        const existente = await db.cliente.findUnique({
+          where: { cuit }
+        })
+
+        if (existente) {
+          resultado.duplicados++
+          continue
+        }
+
+        // Crear cliente - usar campo 'email' (singular) pero guardar múltiples emails
+        const cliente = await db.cliente.create({
+          data: {
+            nombre,
+            cuit,
+            email: mail || null,  // Campo email (singular) con múltiples emails separados por ;
+            contactoNombre: contactoNombre || null,
+            celular: celular || null,
+            esUsuarioFaena: true,
+            esProductor: false,
+            modalidadRetiro: true,
+          }
+        })
+
+        resultado.creados++
+        resultado.usuariosCreados.push({
+          nombre: cliente.nombre,
+          cuit: cliente.cuit || ''
+        })
+
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Error desconocido'
+        resultado.errores.push(`Error con ${row['TITULAR ']}: ${errorMsg}`)
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: resultado
+    })
+
+  } catch (error) {
+    console.error('Error en migración:', error)
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Error desconocido durante la migración' 
+      },
+      { status: 500 }
+    )
+  }
+}

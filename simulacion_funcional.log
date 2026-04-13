@@ -1,0 +1,85 @@
+=========================================
+   SIMULACIÓN FUNCIONAL COMPLETA
+   Thu Mar 19 00:58:13 UTC 2026
+=========================================
+
+=== 1. AUTENTICACIÓN ===
+Probando login con admin/admin123...
+✅ Login admin: true
+
+=== 2. CONFIGURACIÓN - CREAR DATOS BASE ===
+Creando corral de prueba...
+✅ Crear corral: true
+Creando cliente productor...
+❌ Crear cliente: Esperado true, Obtenido false
+   Detalle: {"success":false,"error":"Ya existe un cliente con el CUIT 20-12345678-9"}
+Creando transportista...
+✅ Crear transportista: true
+
+=== 3. CICLO I - PESAJE Y TROPA ===
+Creando pesaje de camión...
+✅ Crear pesaje camión: true
+Registrando peso bruto...
+✅ Registrar peso bruto: true
+
+=== 4. LISTA DE FAENA ===
+
+=== 5. ASIGNACIÓN DE GARRONES ===
+
+=== 6. ROMANEO ===
+Creando registro de romaneo...
+❌ Crear romaneo: Esperado true, Obtenido 
+
+=== 7. VB ROMANEO ===
+Consultando VB Romaneo...
+❌ Consultar VB Romaneo: Esperado true, Obtenido false
+   Detalle: {"success":false,"error":"Error del servidor"}
+
+=== 8. CÁMARAS Y STOCK ===
+Creando cámara...
+✅ Crear cámara: true
+Consultando stock de cámaras...
+❌ Consultar stock: Esperado true, Obtenido false
+
+=== 9. DESPACHOS ===
+Creando despacho...
+❌ Crear despacho: Esperado true, Obtenido false
+   Detalle: {"success":false,"error":"No hay medias válidas para despachar"}
+
+=== 10. SUBPRODUCTOS ===
+Creando menudencia...
+❌ Crear menudencia: Esperado true, Obtenido false
+   Detalle: {"success":false,"error":"Error al crear menudencia"}
+Creando registro de cuero...
+❌ Crear cuero: Esperado true, Obtenido false
+   Detalle: {"success":false,"error":"El peso es requerido y debe ser mayor a 0"}
+Creando registro de rendering...
+❌ Crear rendering: Esperado true, Obtenido false
+   Detalle: {"success":false,"error":"El peso es requerido y debe ser mayor a 0"}
+
+=== 11. CICLO II - DESPOSTADA ===
+Creando lote de despostada...
+✅ Crear lote despostada: true
+Creando movimiento de despostada...
+✅ Crear movimiento despostada: true
+
+=== 12. REPORTES ===
+Consultando reportes...
+✅ Consultar reportes: true
+Consultando auditoría...
+✅ Consultar auditoría: true
+
+=== 13. VALIDACIONES Y ERRORES ===
+Probando validación CUIT único...
+✅ Validación CUIT único: false
+Probando login con credenciales inválidas...
+✅ Login inválido rechazado: false
+
+=========================================
+           RESUMEN FINAL
+=========================================
+Pruebas exitosas: 14
+Pruebas fallidas: 8
+Total pruebas: 22
+⚠️ Hay 8 errores que requieren atención
+=========================================

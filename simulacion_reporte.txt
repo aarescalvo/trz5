@@ -1,0 +1,54 @@
+========== SIMULACIÓN INTEGRAL TrazaSole v3.2.8 ==========
+Fecha: Wed Mar 25 17:49:52 UTC 2026
+
+=== 1. MÓDULOS DE CONFIGURACIÓN ===
+❌ Cámaras: ERROR - 
+❌ Corrales: ERROR - 
+❌ Operadores: ERROR - 
+❌ Tipificadores: ERROR - 
+❌ Transportistas: ERROR - 
+❌ Clientes: ERROR - 
+❌ Proveedores: ERROR - 
+❌ Productos: ERROR - 
+❌ Insumos: ERROR - 
+
+=== 2. MÓDULOS DE HACIENDA ===
+❌ Tropas: ERROR - 
+❌ Stock Corrales: ERROR - 
+❌ Animales: ERROR - 
+
+=== 3. MÓDULOS DE FAENA ===
+❌ Lista Faena: ERROR - 
+❌ Garrones Asignados: ERROR - 
+❌ Romaneos: ERROR - 
+❌ VB Romaneo: ERROR - 
+
+=== 4. MÓDULOS DE STOCK ===
+❌ Stock Cámaras: ERROR - 
+❌ Despachos: ERROR - 
+❌ Stock: ERROR - 
+
+=== 5. MÓDULOS DE SUBPRODUCTOS ===
+❌ Menudencias: ERROR - 
+❌ Cueros: ERROR - 
+❌ Rendering: ERROR - 
+
+=== 6. MÓDULOS DE REPORTES ===
+❌ Reportes: ERROR - 
+❌ Rindes: ERROR - 
+❌ Reportes SENASA: ERROR - 
+
+=== 7. MÓDULOS ADMINISTRATIVOS ===
+❌ Facturación: ERROR - 
+❌ Auditoría: ERROR - 
+❌ Dashboard: ERROR - 
+
+=== 8. MÓDULOS DE CALIDAD ===
+❌ Calidad Reclamos: ERROR - 
+❌ CCIR: ERROR - 
+
+=== 9. MÓDULOS DE RÓTULOS ===
+❌ Rótulos: ERROR - 
+
+=== 10. SISTEMA ===
+❌ Estado Sistema: ERROR - 

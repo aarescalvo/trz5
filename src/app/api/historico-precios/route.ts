@@ -1,0 +1,72 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+
+// GET - Obtener historico de precios
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const clienteId = searchParams.get('clienteId')
+    const tipoProducto = searchParams.get('tipoProducto')
+
+    const where: {
+      clienteId?: string | null
+      tipoProducto?: string
+    } = {}
+
+    if (clienteId) where.clienteId = clienteId
+    if (tipoProducto) where.tipoProducto = tipoProducto as 'MEDIA_RES' | 'CUARTO_DELANTERO' | 'CUARTO_TRASERO' | 'MENUDENCIA' | 'OTRO'
+
+    const historico = await db.historicoPrecio.findMany({
+      where,
+      orderBy: { fechaVigencia: 'desc' },
+      take: 50
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: historico
+    })
+  } catch (error) {
+    console.error('Error fetching historico precios:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al obtener historico de precios' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST - Guardar precio
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { clienteId, tipoProducto, precio, observaciones, registradoPor } = body
+
+    if (!tipoProducto || !precio) {
+      return NextResponse.json(
+        { success: false, error: 'Tipo de producto y precio son requeridos' },
+        { status: 400 }
+      )
+    }
+
+    const historico = await db.historicoPrecio.create({
+      data: {
+        clienteId,
+        tipoProducto,
+        precio,
+        observaciones,
+        registradoPor
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: historico
+    })
+  } catch (error) {
+    console.error('Error saving historico precio:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al guardar precio' },
+      { status: 500 }
+    )
+  }
+}

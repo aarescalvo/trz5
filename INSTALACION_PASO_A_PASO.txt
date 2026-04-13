@@ -1,0 +1,284 @@
+================================================================================
+                    SISTEMA DE GESTIÓN FRIGORÍFICA - SOLEMAR ALIMENTARIA
+                         GUÍA DE INSTALACIÓN PASO A PASO
+================================================================================
+
+Este documento explica detalladamente cómo instalar el sistema desde cero.
+
+================================================================================
+                              REQUISITOS PREVIOS
+================================================================================
+
+Antes de comenzar, asegúrese de tener:
+
+1. UNA COMPUTADORA CON:
+   - Windows 10/11, macOS 10.15+, o Linux (Ubuntu 20.04+)
+   - Al menos 4 GB de RAM (8 GB recomendado)
+   - 10 GB de espacio libre en disco
+   - Conexión a internet
+
+================================================================================
+                          PASO 1: INSTALAR BUN
+================================================================================
+
+Bun es el motor que ejecuta el sistema. Sin él, nada funcionará.
+
+EN WINDOWS:
+----------
+1. Abra PowerShell como Administrador
+   - Haga clic derecho en el botón Inicio
+   - Seleccione "Windows PowerShell (Admin)" o "Terminal (Admin)"
+
+2. Ejecute este comando:
+   powershell -c "irm bun.sh/install.ps1 | iex"
+
+3. Espere a que termine la instalación (1-2 minutos)
+
+4. Cierre y vuelva a abrir PowerShell para que los cambios surtan efecto
+
+EN MACOS:
+---------
+1. Abra la aplicación "Terminal" (está en Aplicaciones > Utilidades)
+
+2. Ejecute este comando:
+   curl -fsSL https://bun.sh/install | bash
+
+3. Espere a que termine (1-2 minutos)
+
+4. Ejecute este comando para actualizar:
+   source ~/.bashrc
+   (O cierre y vuelva a abrir Terminal)
+
+EN LINUX (UBUNTU):
+------------------
+1. Abra una terminal (Ctrl+Alt+T)
+
+2. Ejecute este comando:
+   curl -fsSL https://bun.sh/install | bash
+
+3. Actualice con:
+   source ~/.bashrc
+
+================================================================================
+                       PASO 2: DESCARGAR EL PROYECTO
+================================================================================
+
+OPCIÓN A: CLONAR DESDE GITHUB (RECOMENDADO)
+-------------------------------------------
+1. Abra una terminal/PowerShell
+
+2. Vaya a la carpeta donde quiere instalar:
+   cd C:\    (Windows)
+   cd ~      (Mac/Linux)
+
+3. Clone el proyecto:
+   git clone https://github.com/aarescalvo/localzai.git solemar
+
+4. Entre a la carpeta:
+   cd solemar
+
+OPCIÓN B: DESCARGAR ZIP
+-----------------------
+1. Vaya a: https://github.com/aarescalvo/localzai
+
+2. Haga clic en el botón verde "Code"
+
+3. Seleccione "Download ZIP"
+
+4. Descomprima el archivo en una carpeta llamada "solemar"
+
+5. Abra terminal/PowerShell y vaya a esa carpeta:
+   cd ruta/a/la/carpeta/solemar
+
+================================================================================
+                       PASO 3: INSTALAR DEPENDENCIAS
+================================================================================
+
+Este paso descarga todos los componentes necesarios.
+
+1. Asegúrese de estar en la carpeta del proyecto (paso anterior)
+
+2. Ejecute:
+   bun install
+
+3. Espere a que termine (2-5 minutos dependiendo de su internet)
+
+NOTA: Si ve algún error, intente ejecutar nuevamente:
+   bun install --force
+
+================================================================================
+                       PASO 4: CONFIGURAR BASE DE DATOS
+================================================================================
+
+Este paso crea la estructura de datos y carga los usuarios iniciales.
+
+1. Cree las tablas ejecutando:
+   bun run db:push
+
+2. Cargue los datos iniciales:
+   bun run db:seed
+
+3. Si todo salió bien, verá un mensaje de confirmación
+
+================================================================================
+                       PASO 5: INICIAR EL SISTEMA
+================================================================================
+
+¡El sistema está listo para usarse!
+
+1. Ejecute:
+   bun run dev
+
+2. Espere a ver el mensaje:
+   ✓ Ready in XXXms
+
+3. Abra su navegador web y vaya a:
+   http://localhost:3000
+
+================================================================================
+                       CREDENCIALES DE ACCESO
+================================================================================
+
+Use estas credenciales para ingresar:
+
+┌─────────────┬────────────┬──────┬───────────────┐
+│  Usuario    │ Contraseña │ PIN  │     Rol       │
+├─────────────┼────────────┼──────┼───────────────┤
+│  admin      │ admin123   │ 1234 │ Administrador │
+│  supervisor │ super123   │ 2222 │ Supervisor    │
+│  balanza    │ balanza123 │ 1111 │ Operador      │
+└─────────────┴────────────┴──────┴───────────────┘
+
+⚠️ IMPORTANTE: Cambie estas contraseñas en Producción:
+   1. Ingrese como admin
+   2. Vaya a Configuración → Operadores
+   3. Cambie la contraseña de cada usuario
+
+================================================================================
+                       CAMBIAR IDIOMA
+================================================================================
+
+El sistema soporta 3 idiomas:
+
+┌────────────────────────┬─────────┬────────┐
+│       Idioma           │ Código  │ Bandera│
+├────────────────────────┼─────────┼────────┤
+│ Español (Latinoamérica)│ es-Latam│   🌎   │
+│ English                │   en    │   🇬🇧  │
+│ Italiano               │   it    │   🇮🇹  │
+└────────────────────────┴─────────┴────────┘
+
+Para cambiar el idioma:
+1. Haga clic en el botón de idioma en el menú lateral
+2. Seleccione el idioma deseado
+3. El sistema recordará su preferencia
+
+================================================================================
+                       SOLUCIÓN DE PROBLEMAS
+================================================================================
+
+PROBLEMA: "bun no se reconoce como comando"
+SOLUCIÓN: Cierre y vuelva a abrir la terminal/PowerShell
+
+PROBLEMA: "Cannot find module"
+SOLUCIÓN: Ejecute:
+   rm -rf node_modules
+   bun install
+
+PROBLEMA: "Database is locked"
+SOLUCIÓN: 
+   1. Detenga el servidor (Ctrl+C)
+   2. Elimine el archivo db/custom.db-journal
+   3. Reinicie con: bun run dev
+
+PROBLEMA: "Port 3000 already in use"
+SOLUCIÓN: Otro programa está usando el puerto.
+   - Windows: Abra el Administrador de Tareas y cierre otros programas
+   - Mac/Linux: Ejecute: lsof -i :3000 y luego kill -9 <PID>
+
+PROBLEMA: Pantalla en blanco
+SOLUCIÓN: 
+   rm -rf .next
+   bun run dev
+
+================================================================================
+                       RESPALDOS Y BACKUP
+================================================================================
+
+BACKUP MANUAL:
+--------------
+1. Detenga el servidor
+2. Copie el archivo: db/custom.db a una ubicación segura
+3. Puede renombrarlo con la fecha: backup_2026-03-08.db
+
+RESTAURAR BACKUP:
+-----------------
+1. Detenga el servidor
+2. Copie su archivo de backup a: db/custom.db
+3. Reinicie el servidor
+
+BACKUP AUTOMÁTICO (desde el sistema):
+------------------------------------
+1. Ingrese como admin
+2. Vaya a Configuración → Respaldo
+3. Configure backup diario y nube (Google Drive, Dropbox, etc.)
+
+================================================================================
+                       ACTUALIZACIONES
+================================================================================
+
+Para actualizar a la última versión:
+
+1. Detenga el servidor (Ctrl+C)
+
+2. Descargue los cambios:
+   git pull origin master
+
+3. Actualice dependencias:
+   bun install
+
+4. Actualice base de datos:
+   bun run db:push
+
+5. Reinicie el sistema:
+   bun run dev
+
+================================================================================
+                       SOPORTE TÉCNICO
+================================================================================
+
+Si tiene problemas:
+
+1. Repositorio: https://github.com/aarescalvo/localzai
+2. Issues: https://github.com/aarescalvo/localzai/issues
+3. Documentación adicional:
+   - INSTALL.md - Instalación detallada
+   - DEPLOY.md - Despliegue en producción
+   - MANUAL.md - Manual de usuario
+   - FLUJOS.md - Flujos de trabajo
+
+================================================================================
+                       INFORMACIÓN ADICIONAL
+================================================================================
+
+ESTRUCTURA DE CARPETAS:
+-----------------------
+solemar/
+├── db/              # Base de datos SQLite
+├── prisma/          # Esquema de la base de datos
+├── public/          # Archivos estáticos (logo, etc.)
+├── src/
+│   ├── app/         # Páginas y APIs
+│   ├── components/  # Componentes de interfaz
+│   └── lib/         # Utilidades
+└── messages/        # Traducciones (es-Latam, en, it)
+
+PUERTO DEL SERVIDOR:
+-------------------
+El sistema usa el puerto 3000 por defecto.
+Si necesita cambiarlo, edite package.json:
+   "dev": "next dev -p 3001 ..."
+
+================================================================================
+                           FIN DEL DOCUMENTO
+================================================================================
