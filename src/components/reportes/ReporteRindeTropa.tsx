@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { RefreshCw, TrendingUp } from 'lucide-react'
+import { RefreshCw, TrendingUp, Download, FileSpreadsheet } from 'lucide-react'
 import { toast } from 'sonner'
+import { ExcelExporter } from '@/lib/export-excel'
+import { PDFExporter } from '@/lib/export-pdf'
 
 interface RindeTropaItem {
   tropaCodigo: string
@@ -50,6 +52,51 @@ export function ReporteRindeTropa() {
 
   const rindePromedio = data.length > 0 ? Number((data.reduce((s, r) => s + r.rinde, 0) / data.length).toFixed(2)) : 0
   const totalAnimales = data.reduce((s, r) => s + r.cantidad, 0)
+
+  const exportarExcel = () => {
+    if (data.length === 0) {
+      toast.error('No hay datos para exportar')
+      return
+    }
+    const dateStr = new Date().toISOString().split('T')[0]
+    ExcelExporter.exportToExcel({
+      filename: `rinde_tropa_${dateStr}`,
+      sheets: [{
+        name: 'Rinde por Tropa',
+        headers: ['Tropa', 'Productor', 'Cabezas', 'Peso Vivo (kg)', 'Peso Canal (kg)', 'Rinde %'],
+        data: data.map(r => [
+          r.tropaCodigo,
+          r.productor,
+          r.cantidad.toString(),
+          r.pesoVivoTotal.toLocaleString('es-AR'),
+          r.pesoCanalTotal.toLocaleString('es-AR'),
+          r.rinde.toString(),
+        ])
+      }],
+      title: 'Rinde por Tropa - Solemar Alimentaria'
+    })
+    toast.success('Excel descargado')
+  }
+
+  const exportarPDF = () => {
+    if (data.length === 0) {
+      toast.error('No hay datos para exportar')
+      return
+    }
+    const dateStr = new Date().toISOString().split('T')[0]
+    const headers = ['Tropa', 'Productor', 'Cabezas', 'Peso Vivo (kg)', 'Peso Canal (kg)', 'Rinde %']
+    const rows = data.map(r => [
+      r.tropaCodigo,
+      r.productor,
+      r.cantidad.toString(),
+      r.pesoVivoTotal.toLocaleString('es-AR'),
+      r.pesoCanalTotal.toLocaleString('es-AR'),
+      r.rinde.toString() + '%',
+    ])
+    const doc = PDFExporter.generateReport({ title: 'Rinde por Tropa - Solemar Alimentaria', headers, data: rows, orientation: 'landscape' })
+    PDFExporter.downloadPDF(doc, `rinde_tropa_${dateStr}.pdf`)
+    toast.success('PDF descargado')
+  }
 
   if (loading) {
     return (
@@ -112,6 +159,18 @@ export function ReporteRindeTropa() {
             <p className="text-2xl font-bold text-green-800">{rindePromedio}%</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Export buttons */}
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={exportarExcel}>
+          <FileSpreadsheet className="w-4 h-4 mr-2" />
+          Exportar Excel
+        </Button>
+        <Button variant="outline" size="sm" onClick={exportarPDF}>
+          <Download className="w-4 h-4 mr-2" />
+          Exportar PDF
+        </Button>
       </div>
 
       {/* Tabla */}

@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { RefreshCw, TrendingUp, Package, Beef, Warehouse } from 'lucide-react'
+import { RefreshCw, TrendingUp, Package, Beef, Warehouse, Download, FileSpreadsheet } from 'lucide-react'
 import { toast } from 'sonner'
+import { ExcelExporter } from '@/lib/export-excel'
+import { PDFExporter } from '@/lib/export-pdf'
 
 interface BalanceData {
   totalAnimales: number
@@ -49,6 +51,74 @@ export function ReporteBalanceFaena() {
 
   useEffect(() => { fetchData() }, [])
 
+  const exportarExcel = () => {
+    if (!data) return
+    const dateStr = new Date().toISOString().split('T')[0]
+    ExcelExporter.exportToExcel({
+      filename: `balance_faena_${dateStr}`,
+      sheets: [
+        {
+          name: 'Resumen General',
+          headers: ['Indicador', 'Valor'],
+          data: [
+            ['Total Animales', data.totalAnimales.toString()],
+            ['Peso Vivo Total (kg)', data.totalPesoVivo.toLocaleString('es-AR')],
+            ['Peso Canal Total (kg)', data.totalPesoCanal.toLocaleString('es-AR')],
+            ['Rinde Promedio (%)', data.rindePromedio.toString()],
+            ['Tropas Procesadas', data.tropasProcesadas.toString()],
+          ]
+        },
+        {
+          name: 'Medias Reses',
+          headers: ['Estado', 'Cantidad'],
+          data: [
+            ['En Cámara', data.medias.enCamara.toString()],
+            ['En Cuarteo', data.medias.enCuarteo.toString()],
+            ['Despachadas', data.medias.despachadas.toString()],
+          ]
+        },
+        {
+          name: 'Subproductos',
+          headers: ['Categoría', 'Cantidad', 'Peso (kg)'],
+          data: [
+            ['Menudencias (ingreso)', data.menudencias.cantidad.toString(), data.menudencias.pesoIngreso.toLocaleString('es-AR')],
+            ['Menudencias (elaborado)', data.menudencias.cantidad.toString(), data.menudencias.pesoElaborado.toLocaleString('es-AR')],
+            ['Cueros', data.cueros.cantidad.toString(), data.cueros.pesoKg.toLocaleString('es-AR')],
+            ['Rendering', data.rendering.cantidad.toString(), data.rendering.pesoKg.toLocaleString('es-AR')],
+          ]
+        }
+      ],
+      title: 'Balance de Faena - Solemar Alimentaria'
+    })
+    toast.success('Excel descargado')
+  }
+
+  const exportarPDF = () => {
+    if (!data) return
+    const dateStr = new Date().toISOString().split('T')[0]
+    const headers = ['Indicador', 'Valor']
+    const rows = [
+      ['Total Animales', data.totalAnimales.toString()],
+      ['Peso Vivo Total (kg)', data.totalPesoVivo.toLocaleString('es-AR')],
+      ['Peso Canal Total (kg)', data.totalPesoCanal.toLocaleString('es-AR')],
+      ['Rinde Promedio (%)', data.rindePromedio.toString()],
+      ['Tropas Procesadas', data.tropasProcesadas.toString()],
+      ['Medias En Cámara', data.medias.enCamara.toString()],
+      ['Medias En Cuarteo', data.medias.enCuarteo.toString()],
+      ['Medias Despachadas', data.medias.despachadas.toString()],
+      ['Menudencias (cantidad)', data.menudencias.cantidad.toString()],
+      ['Menudencias Peso Ingreso (kg)', data.menudencias.pesoIngreso.toLocaleString('es-AR')],
+      ['Menudencias Peso Elaborado (kg)', data.menudencias.pesoElaborado.toLocaleString('es-AR')],
+      ['Cueros (cantidad)', data.cueros.cantidad.toString()],
+      ['Cueros Peso (kg)', data.cueros.pesoKg.toLocaleString('es-AR')],
+      ['Rendering (cantidad)', data.rendering.cantidad.toString()],
+      ['Rendering Peso (kg)', data.rendering.pesoKg.toLocaleString('es-AR')],
+    ]
+    const doc = PDFExporter.generateReport({ title: 'Balance de Faena - Solemar Alimentaria', headers, data: rows, orientation: 'portrait' })
+    PDFExporter.downloadPDF(doc, `balance_faena_${dateStr}.pdf`)
+    toast.success('PDF descargado')
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -85,6 +155,18 @@ export function ReporteBalanceFaena() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Export buttons */}
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={exportarExcel}>
+          <FileSpreadsheet className="w-4 h-4 mr-2" />
+          Exportar Excel
+        </Button>
+        <Button variant="outline" size="sm" onClick={exportarPDF}>
+          <Download className="w-4 h-4 mr-2" />
+          Exportar PDF
+        </Button>
+      </div>
 
       {/* KPIs principales */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

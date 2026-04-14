@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Label } from '@/components/ui/label'
-import { RefreshCw, Warehouse, Package } from 'lucide-react'
+import { RefreshCw, Warehouse, Package, Download, FileSpreadsheet } from 'lucide-react'
 import { toast } from 'sonner'
+import { ExcelExporter } from '@/lib/export-excel'
+import { PDFExporter } from '@/lib/export-pdf'
 
 interface StockCamaraItem {
   camara: string
@@ -65,6 +67,68 @@ export function ReporteStockProductos() {
 
   useEffect(() => { fetchData(); fetchCamaras() }, [])
 
+  const exportarExcel = () => {
+    if (!data) {
+      toast.error('No hay datos para exportar')
+      return
+    }
+    const dateStr = new Date().toISOString().split('T')[0]
+    ExcelExporter.exportToExcel({
+      filename: `stock_productos_${dateStr}`,
+      sheets: [
+        {
+          name: 'Stock por Cámara',
+          headers: ['Cámara', 'Tipo', 'Medias', 'Peso (kg)', 'Capacidad', 'Ocupación %'],
+          data: data.stockPorCamara.map(s => [
+            s.camara,
+            s.tipo,
+            s.totalMedias.toString(),
+            s.pesoTotal.toLocaleString('es-AR'),
+            s.capacidad.toString(),
+            s.ocupacion.toString(),
+          ])
+        },
+        {
+          name: 'Stock por Tropa',
+          headers: ['Tropa', 'Medias', 'Peso (kg)'],
+          data: data.stockPorTropa.map(s => [
+            s.tropaCodigo,
+            s.cantidad.toString(),
+            s.pesoTotal.toLocaleString('es-AR'),
+          ])
+        }
+      ],
+      title: 'Stock de Productos - Solemar Alimentaria'
+    })
+    toast.success('Excel descargado')
+  }
+
+  const exportarPDF = () => {
+    if (!data) {
+      toast.error('No hay datos para exportar')
+      return
+    }
+    const dateStr = new Date().toISOString().split('T')[0]
+    // Combine both tables into one PDF with stock por camara first
+    const headers = ['Cámara', 'Tipo', 'Medias', 'Peso (kg)', 'Capacidad', 'Ocupación %']
+    const rows = data.stockPorCamara.map(s => [
+      s.camara,
+      s.tipo,
+      s.totalMedias.toString(),
+      s.pesoTotal.toLocaleString('es-AR'),
+      s.capacidad.toString(),
+      s.ocupacion.toString() + '%',
+    ])
+    // Add separator and tropa data
+    rows.push(['--- STOCK POR TROPA ---', '', '', '', '', ''])
+    data.stockPorTropa.forEach(s => {
+      rows.push([s.tropaCodigo, '', s.cantidad.toString(), s.pesoTotal.toLocaleString('es-AR'), '', ''])
+    })
+    const doc = PDFExporter.generateReport({ title: 'Stock de Productos - Solemar Alimentaria', headers, data: rows, orientation: 'landscape' })
+    PDFExporter.downloadPDF(doc, `stock_productos_${dateStr}.pdf`)
+    toast.success('PDF descargado')
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -118,6 +182,18 @@ export function ReporteStockProductos() {
             <p className="text-2xl font-bold text-blue-800">{data.pesoTotal.toLocaleString('es-AR')} kg</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Export buttons */}
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={exportarExcel}>
+          <FileSpreadsheet className="w-4 h-4 mr-2" />
+          Exportar Excel
+        </Button>
+        <Button variant="outline" size="sm" onClick={exportarPDF}>
+          <Download className="w-4 h-4 mr-2" />
+          Exportar PDF
+        </Button>
       </div>
 
       {/* Stock por Cámara */}
