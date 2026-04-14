@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import PdfPrinter from 'pdfmake'
 import { db } from '@/lib/db'
 
 // Definir fuentes
@@ -12,19 +11,21 @@ const fonts = {
   }
 }
 
-const printer = new PdfPrinter(fonts)
-
 // POST - Exportar reporte PDF
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { tipo, filtros = {} } = body
-    
+
+    // Importar pdfmake dinámicamente para evitar problemas ESM/CJS en build
+    const PdfPrinter = (await import('pdfmake')).default || (await import('pdfmake'))
+    const printer = new PdfPrinter(fonts)
+
     const docDefinition = await generarDefinicionPDF(tipo, filtros)
     const pdfDoc = printer.createPdfKitDocument(docDefinition)
-    
+
     const chunks: Buffer[] = []
-    
+
     return new Promise((resolve, reject) => {
       pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk))
       pdfDoc.on('end', () => {
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
       pdfDoc.on('error', reject)
       pdfDoc.end()
     })
-    
+
   } catch (error) {
     console.error('Error al exportar PDF:', error)
     return NextResponse.json(
@@ -72,14 +73,14 @@ async function generarDefinicionPDF(tipo: string, filtros: Record<string, any>):
     ],
     margin: [40, 20, 40, 10] as [number, number, number, number]
   }
-  
+
   // Footer común
   const footer = (currentPage: number, pageCount: number) => ({
     text: `Página ${currentPage} de ${pageCount}`,
     alignment: 'center',
     style: 'footer'
   })
-  
+
   // Estilos
   const styles = {
     header: { fontSize: 18, bold: true, color: '#1a365d' },
@@ -89,16 +90,16 @@ async function generarDefinicionPDF(tipo: string, filtros: Record<string, any>):
     tableData: { fontSize: 9 },
     footer: { fontSize: 8, color: '#a0aec0' }
   }
-  
+
   // Obtener datos según tipo
   let titulo = ''
   let tableBody: any[][] = []
-  
+
   switch (tipo) {
     case 'tropas':
       titulo = 'Reporte de Tropas'
       const tropas = await db.tropa.findMany({
-        include: { 
+        include: {
           productor: true,
           _count: { select: { animales: true } }
         },
@@ -106,9 +107,9 @@ async function generarDefinicionPDF(tipo: string, filtros: Record<string, any>):
         take: filtros.limite || 50
       })
       tableBody = [
-        [{ text: 'Código', style: 'tableHeader' }, { text: 'Productor', style: 'tableHeader' }, 
-         { text: 'Cabezas', style: 'tableHeader' }, { text: 'Especie', style: 'tableHeader' },
-         { text: 'Estado', style: 'tableHeader' }, { text: 'Fecha', style: 'tableHeader' }],
+        [{ text: 'Código', style: 'tableHeader' }, { text: 'Productor', style: 'tableHeader' },
+        { text: 'Cabezas', style: 'tableHeader' }, { text: 'Especie', style: 'tableHeader' },
+        { text: 'Estado', style: 'tableHeader' }, { text: 'Fecha', style: 'tableHeader' }],
         ...tropas.map(t => [
           t.codigo,
           t.productor?.nombre || '-',
@@ -119,7 +120,7 @@ async function generarDefinicionPDF(tipo: string, filtros: Record<string, any>):
         ])
       ]
       break
-      
+
     case 'faena-diaria':
       titulo = 'Reporte de Faena Diaria'
       const fecha = filtros.fecha || new Date().toISOString().split('T')[0]
@@ -135,8 +136,8 @@ async function generarDefinicionPDF(tipo: string, filtros: Record<string, any>):
       })
       tableBody = [
         [{ text: 'Tropa', style: 'tableHeader' }, { text: 'Productor', style: 'tableHeader' },
-         { text: 'Media', style: 'tableHeader' }, { text: 'Peso', style: 'tableHeader' },
-         { text: 'Clasificación', style: 'tableHeader' }],
+        { text: 'Media', style: 'tableHeader' }, { text: 'Peso', style: 'tableHeader' },
+        { text: 'Clasificación', style: 'tableHeader' }],
         ...faenas.map(f => [
           f.tropa?.codigo || '-',
           f.tropa?.productor?.nombre || '-',
@@ -146,12 +147,12 @@ async function generarDefinicionPDF(tipo: string, filtros: Record<string, any>):
         ])
       ]
       break
-      
+
     default:
       titulo = 'Reporte'
       tableBody = [[{ text: 'No hay datos', colSpan: 6 }]]
   }
-  
+
   return {
     pageMargins: [40, 80, 40, 60],
     header: () => header,

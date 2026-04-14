@@ -26,7 +26,7 @@ export async function POST(
       )
     }
 
-    const key = sesionKey || \`\${modulo}-\${operadorId || 'anon'}\`
+    const key = sesionKey || `${modulo}-${operadorId || 'anon'}`
 
     const borrador = await prisma.borrador.upsert({
       where: {
@@ -75,7 +75,7 @@ export async function GET(
     const operadorId = request.nextUrl.searchParams.get('operadorId')
     const sesionKey = request.nextUrl.searchParams.get('sesionKey')
 
-    const key = sesionKey || \`\${modulo}-\${operadorId || 'anon'}\`
+    const key = sesionKey || `${modulo}-${operadorId || 'anon'}`
 
     const borrador = await prisma.borrador.findFirst({
       where: {
@@ -135,7 +135,7 @@ export async function DELETE(
         data: { estado: 'DESCARTADO' },
       })
     } else {
-      const key = sesionKey || \`\${modulo}-\${operadorId || 'anon'}\`
+      const key = sesionKey || `${modulo}-${operadorId || 'anon'}`
       await prisma.borrador.updateMany({
         where: {
           modulo,
