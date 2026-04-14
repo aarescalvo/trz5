@@ -385,6 +385,37 @@ model Tropa {
   // Pesaje individual (suma de animales pesados)
   pesoTotalIndividual Float?
   
+  // ==================== DATOS DE FACTURACIÓN SERVICIO FAENA ====================
+  // Fecha de faena real
+  fechaFaena      DateTime?               // Fecha en que se realizó la faena
+  
+  // Kg gancho (peso faena - de romaneo)
+  kgGancho        Float?                  // Total kg gancho de la tropa
+  
+  // Rinde (%)
+  rinde           Float?                  // Porcentaje de rendimiento (kgGancho / pesoTotalIndividual * 100)
+  
+  // Precio del servicio de faena
+  precioServicioKg          Float?        // Precio por kg sin recupero
+  precioServicioKgConRecupero Float?      // Precio por kg con recupero (si aplica)
+  
+  // Montos del servicio
+  montoServicioFaena        Float?        // Total servicio + 21% IVA
+  montoFactura              Float?        // Total factura con impuestos (tasa + arancel + servicio)
+  
+  // Datos de facturación
+  numeroFactura   String?                 // Número de factura emitida
+  fechaFactura    DateTime?               // Fecha de emisión de factura
+  
+  // Datos de pago
+  fechaPago       DateTime?               // Fecha en que se pagó
+  montoDepositado Float?                  // Monto depositado
+  estadoPago      String?                 // Estado: PENDIENTE, PAGADO, PARCIAL, etc.
+  
+  // Tributos adicionales (de la planilla servicio faena)
+  tasaInspVet     Float?                  // Tasa inspección veterinaria
+  arancelIpcva    Float?                  // Arancel IPCVA
+  
   observaciones   String?
   fechaRecepcion  DateTime    @default(now())
   

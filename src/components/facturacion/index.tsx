@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { 
   FileText, DollarSign, CheckCircle, XCircle, Eye, 
   Plus, Search, Loader2, Printer, RefreshCw, CreditCard,
-  Building2, Receipt, Calendar, User, Package
+  Building2, Receipt, Calendar, User, Package, Beef,
+  ArrowDownToLine, FileSpreadsheet
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -113,7 +114,20 @@ export function FacturacionModule({ operador }: Props) {
   const [facturaSeleccionada, setFacturaSeleccionada] = useState<Factura | null>(null)
   const [filtroEstado, setFiltroEstado] = useState<'TODOS' | 'PENDIENTE' | 'EMITIDA' | 'PAGADA' | 'ANULADA'>('TODOS')
   const [searchTerm, setSearchTerm] = useState('')
-  const [tabActivo, setTabActivo] = useState('facturas')
+  const [tabActivo, setTabActivo] = useState('servicioFaena')
+
+  // Servicio Faena state
+  const [tropasFaena, setTropasFaena] = useState<any[]>([])
+  const [resumenFaena, setResumenFaena] = useState<any>(null)
+  const [porClienteFaena, setPorClienteFaena] = useState<any[]>([])
+  const [loadingFaena, setLoadingFaena] = useState(false)
+  const [filtroFaenaDesde, setFiltroFaenaDesde] = useState('')
+  const [filtroFaenaHasta, setFiltroFaenaHasta] = useState('')
+  const [filtroFaenaCliente, setFiltroFaenaCliente] = useState('')
+  const [filtroFaenaEstado, setFiltroFaenaEstado] = useState('TODOS')
+  const [tropasSeleccionadas, setTropasSeleccionadas] = useState<Set<string>>(new Set())
+  const [editTropaId, setEditTropaId] = useState<string | null>(null)
+  const [editTropaData, setEditTropaData] = useState<any>({})
 
   const [formData, setFormData] = useState({
     clienteId: '',
@@ -135,6 +149,13 @@ export function FacturacionModule({ operador }: Props) {
   useEffect(() => {
     fetchAll()
   }, [])
+
+  // Cargar servicio faena cuando se cambia al tab
+  useEffect(() => {
+    if (tabActivo === 'servicioFaena') {
+      fetchServicioFaena()
+    }
+  }, [tabActivo, filtroFaenaDesde, filtroFaenaHasta, filtroFaenaCliente, filtroFaenaEstado])
 
   const fetchAll = async () => {
     setLoading(true)
@@ -160,6 +181,126 @@ export function FacturacionModule({ operador }: Props) {
     } finally {
       setLoading(false)
     }
+  }
+
+  const fetchServicioFaena = async () => {
+    setLoadingFaena(true)
+    try {
+      const params = new URLSearchParams()
+      if (filtroFaenaDesde) params.set('desde', filtroFaenaDesde)
+      if (filtroFaenaHasta) params.set('hasta', filtroFaenaHasta)
+      if (filtroFaenaCliente && filtroFaenaCliente !== 'TODOS') params.set('usuarioId', filtroFaenaCliente)
+      if (filtroFaenaEstado !== 'TODOS') params.set('estadoPago', filtroFaenaEstado)
+
+      const res = await fetch(`/api/facturacion/servicio-faena?${params.toString()}`)
+      const data = await res.json()
+      if (data.success) {
+        setTropasFaena(data.data.tropas)
+        setResumenFaena(data.data.resumen)
+        setPorClienteFaena(data.data.porCliente)
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Error al cargar servicio faena')
+    } finally {
+      setLoadingFaena(false)
+    }
+  }
+
+  const handleFacturarSeleccionadas = async () => {
+    if (tropasSeleccionadas.size === 0) {
+      toast.error('Seleccione al menos una tropa para facturar')
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/facturacion/servicio-faena/facturar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tropaIds: Array.from(tropasSeleccionadas),
+          operadorId: operador.id,
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success(data.message)
+        setTropasSeleccionadas(new Set())
+        fetchServicioFaena()
+        fetchAll()
+      } else {
+        toast.error(data.error || 'Error al facturar')
+      }
+    } catch {
+      toast.error('Error al generar facturas')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleToggleTropa = (tropaId: string) => {
+    setTropasSeleccionadas(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(tropaId)) newSet.delete(tropaId)
+      else newSet.add(tropaId)
+      return newSet
+    })
+  }
+
+  const handleToggleAllTropas = () => {
+    if (tropasSeleccionadas.size === tropasFaena.length) {
+      setTropasSeleccionadas(new Set())
+    } else {
+      setTropasSeleccionadas(new Set(tropasFaena.map(t => t.id)))
+    }
+  }
+
+  const handleUpdateTropaBilling = async (tropaId: string) => {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/facturacion/servicio-faena', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tropaId, ...editTropaData })
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success('Datos actualizados')
+        setEditTropaId(null)
+        setEditTropaData({})
+        fetchServicioFaena()
+      } else {
+        toast.error(data.error || 'Error al actualizar')
+      }
+    } catch {
+      toast.error('Error al actualizar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleExportExcelFaena = () => {
+    if (!tropasFaena.length) return
+    const headers = ['N° Tropa', 'Usuario', 'Cant. Animales', 'Kg Pie', 'Fecha Faena', 'Kg Gancho', 'Rinde %', '$/kg Servicio', 'Total Serv + IVA', 'Total Factura', 'N° Factura', 'Fecha Factura', 'Fecha Pago', 'Monto Depositado', 'Estado Pago']
+    const rows = tropasFaena.map(t => [
+      t.numero, t.usuarioFaena?.nombre || '', t.cantidadCabezas, t.pesoTotalIndividual || '',
+      t.fechaFaena ? new Date(t.fechaFaena).toLocaleDateString('es-AR') : '',
+      t.kgGancho || '', t.rinde ? t.rinde.toFixed(2) : '',
+      t.precioServicioKg || '', t.montoServicioFaena || '', t.montoFactura || '',
+      t.numeroFactura || '',
+      t.fechaFactura ? new Date(t.fechaFactura).toLocaleDateString('es-AR') : '',
+      t.fechaPago ? new Date(t.fechaPago).toLocaleDateString('es-AR') : '',
+      t.montoDepositado || '', t.estadoPago || ''
+    ])
+    const csvContent = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n')
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `servicio_faena_bovino_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success('Archivo descargado')
   }
 
   const handleNuevaFactura = () => {
@@ -415,10 +556,235 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
         {/* Tabs */}
         <Tabs value={tabActivo} onValueChange={setTabActivo} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg">
+            <TabsTrigger value="servicioFaena" className="gap-1">
+              <Beef className="w-4 h-4" />Servicio Faena
+            </TabsTrigger>
             <TabsTrigger value="facturas">Facturas</TabsTrigger>
-            <TabsTrigger value="cuentas">Cuenta Corriente</TabsTrigger>
+            <TabsTrigger value="cuentas">Cta. Cte.</TabsTrigger>
           </TabsList>
+
+          {/* TAB SERVICIO FAENA BOVINO */}
+          <TabsContent value="servicioFaena" className="space-y-4">
+            {/* Resumen KPIs */}
+            {resumenFaena && (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <Card className="border-0 shadow-sm bg-amber-50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2"><Beef className="w-5 h-5 text-amber-600" /><div><p className="text-xs text-stone-500">Tropas</p><p className="text-xl font-bold text-amber-700">{resumenFaena.totalTropas}</p></div></div>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm bg-blue-50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2"><Package className="w-5 h-5 text-blue-600" /><div><p className="text-xs text-stone-500">Kg Gancho</p><p className="text-lg font-bold text-blue-700">{resumenFaena.totalKgGancho?.toLocaleString('es-AR', {maximumFractionDigits:0})}</p></div></div>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm bg-emerald-50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2"><DollarSign className="w-5 h-5 text-emerald-600" /><div><p className="text-xs text-stone-500">Total Facturado</p><p className="text-lg font-bold text-emerald-700">{formatCurrency(resumenFaena.totalFacturado)}</p></div></div>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm bg-red-50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2"><FileText className="w-5 h-5 text-red-600" /><div><p className="text-xs text-stone-500">Pend. Facturar</p><p className="text-xl font-bold text-red-700">{resumenFaena.pendienteFacturar}</p></div></div>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm bg-orange-50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2"><CreditCard className="w-5 h-5 text-orange-600" /><div><p className="text-xs text-stone-500">Pend. Cobrar</p><p className="text-xl font-bold text-orange-700">{resumenFaena.pendienteCobrar}</p></div></div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Filtros */}
+            <Card className="border-0 shadow-md">
+              <CardContent className="p-3">
+                <div className="flex flex-wrap gap-2 items-end">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Desde</Label>
+                    <Input type="date" value={filtroFaenaDesde} onChange={e => setFiltroFaenaDesde(e.target.value)} className="h-9 w-36" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Hasta</Label>
+                    <Input type="date" value={filtroFaenaHasta} onChange={e => setFiltroFaenaHasta(e.target.value)} className="h-9 w-36" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Cliente</Label>
+                    <Select value={filtroFaenaCliente} onValueChange={setFiltroFaenaCliente}>
+                      <SelectTrigger className="h-9 w-48"><SelectValue placeholder="Todos" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TODOS">Todos</SelectItem>
+                        {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Estado Pago</Label>
+                    <Select value={filtroFaenaEstado} onValueChange={setFiltroFaenaEstado}>
+                      <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TODOS">Todos</SelectItem>
+                        <SelectItem value="PENDIENTE">Pendiente</SelectItem>
+                        <SelectItem value="PAGADO">Pagado</SelectItem>
+                        <SelectItem value="PAGO PARCIAL">Pago Parcial</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button variant="outline" size="sm" className="h-9" onClick={() => { setFiltroFaenaDesde(''); setFiltroFaenaHasta(''); setFiltroFaenaCliente(''); setFiltroFaenaEstado('TODOS') }}>Limpiar</Button>
+                  <Button size="sm" className="h-9 bg-amber-500 hover:bg-amber-600" onClick={fetchServicioFaena}><RefreshCw className="w-4 h-4" /></Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Acciones masivas */}
+            {tropasSeleccionadas.size > 0 && (
+              <Card className="border-0 shadow-md bg-amber-50">
+                <CardContent className="p-3 flex items-center justify-between">
+                  <p className="text-sm font-medium text-amber-800">{tropasSeleccionadas.size} tropa(s) seleccionada(s)</p>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="bg-amber-500 hover:bg-amber-600" onClick={handleFacturarSeleccionadas} disabled={saving}>
+                      {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <FileText className="w-4 h-4 mr-1" />}
+                      Facturar Seleccionadas
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setTropasSeleccionadas(new Set())}>Cancelar</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Grilla tipo Planilla Servicio Faena */}
+            <Card className="border-0 shadow-md">
+              <CardHeader className="bg-stone-50 rounded-t-lg py-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <Beef className="w-5 h-5 text-amber-500" />
+                    Planilla Servicio Faena Bovino
+                  </CardTitle>
+                  <Button size="sm" variant="outline" onClick={handleExportExcelFaena}>
+                    <FileSpreadsheet className="w-4 h-4 mr-1" /> Exportar
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {loadingFaena ? (
+                  <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
+                ) : tropasFaena.length === 0 ? (
+                  <div className="py-12 text-center text-stone-400">
+                    <Beef className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p>No hay tropas faenadas</p>
+                    <p className="text-sm mt-1">Las tropas aparecerán aquí cuando se complete el proceso de faena</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-stone-50">
+                          <TableHead className="w-10">
+                            <input type="checkbox" checked={tropasSeleccionadas.size === tropasFaena.length && tropasFaena.length > 0} onChange={handleToggleAllTropas} className="rounded" />
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs">N° Tropa</TableHead>
+                          <TableHead className="font-semibold text-xs">Usuario</TableHead>
+                          <TableHead className="font-semibold text-xs text-right">Cant.</TableHead>
+                          <TableHead className="font-semibold text-xs text-right">Kg Pie</TableHead>
+                          <TableHead className="font-semibold text-xs">Fecha Faena</TableHead>
+                          <TableHead className="font-semibold text-xs text-right">Kg Gancho</TableHead>
+                          <TableHead className="font-semibold text-xs text-right">Rinde %</TableHead>
+                          <TableHead className="font-semibold text-xs text-right">$/kg Serv.</TableHead>
+                          <TableHead className="font-semibold text-xs text-right">Total Serv+IVA</TableHead>
+                          <TableHead className="font-semibold text-xs text-right">Total Factura</TableHead>
+                          <TableHead className="font-semibold text-xs">N° Factura</TableHead>
+                          <TableHead className="font-semibold text-xs">Fecha Fact.</TableHead>
+                          <TableHead className="font-semibold text-xs">Fecha Pago</TableHead>
+                          <TableHead className="font-semibold text-xs text-right">Monto Dep.</TableHead>
+                          <TableHead className="font-semibold text-xs">Estado</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {tropasFaena.map((tropa) => {
+                          const isEditing = editTropaId === tropa.id
+                          return (
+                            <TableRow key={tropa.id} className={`text-xs ${!tropa.numeroFactura ? 'bg-red-50/50' : ''} ${isEditing ? 'bg-amber-50' : ''}`}>
+                              <TableCell>
+                                <input type="checkbox" checked={tropasSeleccionadas.has(tropa.id)} onChange={() => handleToggleTropa(tropa.id)} className="rounded" />
+                              </TableCell>
+                              <TableCell className="font-mono font-medium">{tropa.codigo}</TableCell>
+                              <TableCell>
+                                <p className="font-medium truncate max-w-[120px]">{tropa.usuarioFaena?.nombre || '-'}</p>
+                              </TableCell>
+                              <TableCell className="text-right">{tropa.cantidadCabezas}</TableCell>
+                              <TableCell className="text-right">{tropa.pesoTotalIndividual?.toLocaleString('es-AR', {maximumFractionDigits:0}) || '-'}</TableCell>
+                              <TableCell>{tropa.fechaFaena ? new Date(tropa.fechaFaena).toLocaleDateString('es-AR') : '-'}</TableCell>
+                              <TableCell className="text-right font-medium">{tropa.kgGancho?.toLocaleString('es-AR', {maximumFractionDigits:1}) || '-'}</TableCell>
+                              <TableCell className="text-right">{tropa.rinde ? tropa.rinde.toFixed(2) : '-'}</TableCell>
+                              <TableCell className="text-right">{tropa.precioServicioKg ? formatCurrency(tropa.precioServicioKg) : '-'}</TableCell>
+                              <TableCell className="text-right font-medium">{tropa.montoServicioFaena ? formatCurrency(tropa.montoServicioFaena) : '-'}</TableCell>
+                              <TableCell className="text-right font-medium">{tropa.montoFactura ? formatCurrency(tropa.montoFactura) : '-'}</TableCell>
+                              <TableCell className="font-mono">{tropa.numeroFactura || <span className="text-red-400">Sin facturar</span>}</TableCell>
+                              <TableCell>{tropa.fechaFactura ? new Date(tropa.fechaFactura).toLocaleDateString('es-AR') : '-'}</TableCell>
+                              <TableCell>{tropa.fechaPago ? new Date(tropa.fechaPago).toLocaleDateString('es-AR') : '-'}</TableCell>
+                              <TableCell className="text-right">{tropa.montoDepositado ? formatCurrency(tropa.montoDepositado) : '-'}</TableCell>
+                              <TableCell>
+                                {tropa.estadoPago === 'PAGADO' ? (
+                                  <Badge className="bg-emerald-100 text-emerald-700 text-xs">Pagado</Badge>
+                                ) : tropa.estadoPago === 'PAGO PARCIAL' ? (
+                                  <Badge className="bg-orange-100 text-orange-700 text-xs">Parcial</Badge>
+                                ) : tropa.numeroFactura ? (
+                                  <Badge className="bg-amber-100 text-amber-700 text-xs">Pendiente</Badge>
+                                ) : (
+                                  <Badge className="bg-stone-100 text-stone-500 text-xs">-</Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Resumen por Cliente */}
+            {porClienteFaena.length > 0 && (
+              <Card className="border-0 shadow-md">
+                <CardHeader className="bg-stone-50 rounded-t-lg py-3">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-amber-500" />
+                    Resumen por Cliente
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead className="text-right">Tropas</TableHead>
+                        <TableHead className="text-right">Cabezas</TableHead>
+                        <TableHead className="text-right">Kg Gancho</TableHead>
+                        <TableHead className="text-right">Total Factura</TableHead>
+                        <TableHead className="text-right">Pagado</TableHead>
+                        <TableHead className="text-right">Pendiente</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {porClienteFaena.map((c: any) => (
+                        <TableRow key={c.clienteId}>
+                          <TableCell className="font-medium">{c.cliente}</TableCell>
+                          <TableCell className="text-right">{c.tropas}</TableCell>
+                          <TableCell className="text-right">{c.cabezas}</TableCell>
+                          <TableCell className="text-right">{c.kgGancho?.toLocaleString('es-AR', {maximumFractionDigits:0})}</TableCell>
+                          <TableCell className="text-right font-medium">{formatCurrency(c.totalFactura)}</TableCell>
+                          <TableCell className="text-right text-emerald-600">{formatCurrency(c.totalPagado)}</TableCell>
+                          <TableCell className="text-right text-amber-600">{formatCurrency(c.pendiente)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
           {/* TAB FACTURAS */}
           <TabsContent value="facturas" className="space-y-6">

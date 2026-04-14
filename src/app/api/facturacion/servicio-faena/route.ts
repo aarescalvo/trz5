@@ -1,0 +1,194 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+
+// GET - Obtener tropas con datos de servicio faena para facturación
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const desde = searchParams.get('desde')
+    const hasta = searchParams.get('hasta')
+    const usuarioId = searchParams.get('usuarioId')
+    const estadoPago = searchParams.get('estadoPago')
+    const search = searchParams.get('search')
+    const soloSinFacturar = searchParams.get('sinFacturar') === 'true'
+
+    // Construir filtros
+    const where: any = {
+      especie: 'BOVINO',
+      estado: { in: ['FAENADO', 'DESPACHADO'] }
+    }
+
+    if (desde || hasta) {
+      where.fechaFaena = {}
+      if (desde) where.fechaFaena.gte = new Date(desde)
+      if (hasta) where.fechaFaena.lte = new Date(hasta + 'T23:59:59')
+    }
+
+    if (usuarioId) {
+      where.usuarioFaenaId = usuarioId
+    }
+
+    if (estadoPago) {
+      where.estadoPago = estadoPago
+    }
+
+    if (soloSinFacturar) {
+      where.numeroFactura = null
+    }
+
+    if (search) {
+      where.OR = [
+        { codigo: { contains: search, mode: 'insensitive' } },
+        { usuarioFaena: { nombre: { contains: search, mode: 'insensitive' } } },
+        { numeroFactura: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+
+    const tropas = await db.tropa.findMany({
+      where,
+      include: {
+        usuarioFaena: {
+          select: {
+            id: true,
+            nombre: true,
+            cuit: true,
+            condicionIva: true,
+          }
+        },
+        tiposAnimales: true,
+      },
+      orderBy: { fechaFaena: 'desc' }
+    })
+
+    // Calcular resumen
+    const totalCabezas = tropas.reduce((sum, t) => sum + t.cantidadCabezas, 0)
+    const totalKgPie = tropas.reduce((sum, t) => sum + (t.pesoTotalIndividual || 0), 0)
+    const totalKgGancho = tropas.reduce((sum, t) => sum + (t.kgGancho || 0), 0)
+    const totalServicioFaena = tropas.reduce((sum, t) => sum + (t.montoServicioFaena || 0), 0)
+    const totalFacturado = tropas.reduce((sum, t) => sum + (t.montoFactura || 0), 0)
+    const totalPagado = tropas
+      .filter(t => t.estadoPago === 'PAGADO' || t.estadoPago === 'PAGO PARCIAL')
+      .reduce((sum, t) => sum + (t.montoDepositado || 0), 0)
+    const pendienteFacturar = tropas.filter(t => !t.numeroFactura).length
+    const pendienteCobrar = tropas.filter(t => t.numeroFactura && t.estadoPago !== 'PAGADO').length
+
+    // Resumen por cliente
+    const porCliente: Record<string, {
+      clienteId: string
+      cliente: string
+      cuit: string | null
+      tropas: number
+      cabezas: number
+      kgGancho: number
+      totalServicio: number
+      totalFactura: number
+      totalPagado: number
+      pendiente: number
+    }> = {}
+
+    for (const tropa of tropas) {
+      const cid = tropa.usuarioFaenaId
+      if (!porCliente[cid]) {
+        porCliente[cid] = {
+          clienteId: cid,
+          cliente: tropa.usuarioFaena?.nombre || 'Sin cliente',
+          cuit: tropa.usuarioFaena?.cuit || null,
+          tropas: 0,
+          cabezas: 0,
+          kgGancho: 0,
+          totalServicio: 0,
+          totalFactura: 0,
+          totalPagado: 0,
+          pendiente: 0,
+        }
+      }
+      porCliente[cid].tropas += 1
+      porCliente[cid].cabezas += tropa.cantidadCabezas
+      porCliente[cid].kgGancho += tropa.kgGancho || 0
+      porCliente[cid].totalServicio += tropa.montoServicioFaena || 0
+      porCliente[cid].totalFactura += tropa.montoFactura || 0
+      porCliente[cid].totalPagado += tropa.estadoPago === 'PAGADO' ? (tropa.montoDepositado || 0) : 0
+      porCliente[cid].pendiente += tropa.estadoPago !== 'PAGADO' && tropa.numeroFactura ? (tropa.montoFactura || 0) - (tropa.montoDepositado || 0) : 0
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        tropas,
+        resumen: {
+          totalTropas: tropas.length,
+          totalCabezas,
+          totalKgPie,
+          totalKgGancho,
+          rindePromedio: totalKgPie > 0 ? (totalKgGancho / totalKgPie * 100) : 0,
+          totalServicioFaena,
+          totalFacturado,
+          totalPagado,
+          pendienteFacturar,
+          pendienteCobrar,
+        },
+        porCliente: Object.values(porCliente),
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching servicio faena:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al obtener datos de servicio faena' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT - Actualizar datos de facturación de una tropa
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { tropaId, ...data } = body
+
+    if (!tropaId) {
+      return NextResponse.json(
+        { success: false, error: 'ID de tropa es requerido' },
+        { status: 400 }
+      )
+    }
+
+    // Campos actualizables
+    const updateData: any = {}
+    const allowedFields = [
+      'kgGancho', 'rinde', 'precioServicioKg', 'precioServicioKgConRecupero',
+      'montoServicioFaena', 'montoFactura', 'numeroFactura', 'fechaFactura',
+      'fechaPago', 'montoDepositado', 'estadoPago', 'tasaInspVet', 'arancelIpcva', 'fechaFaena'
+    ]
+
+    for (const field of allowedFields) {
+      if (data[field] !== undefined) {
+        if (field.includes('fecha') && data[field]) {
+          updateData[field] = new Date(data[field])
+        } else {
+          updateData[field] = data[field]
+        }
+      }
+    }
+
+    const tropa = await db.tropa.update({
+      where: { id: tropaId },
+      data: updateData,
+      include: {
+        usuarioFaena: {
+          select: { id: true, nombre: true, cuit: true }
+        }
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: tropa
+    })
+  } catch (error) {
+    console.error('Error updating tropa billing:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al actualizar datos de facturación' },
+      { status: 500 }
+    )
+  }
+}
