@@ -226,6 +226,9 @@ model Operador {
   liquidacionesOperador LiquidacionFaena[] @relation("LiquidacionOperador")
   liquidacionesSupervisor LiquidacionFaena[] @relation("LiquidacionSupervisor")
   historicoTarifas     HistoricoTarifa[]
+  c2MovimientosDegradacion C2MovimientoDegradacion[]
+  c2Subproductos      C2SubproductoPesaje[]
+  c2Expediciones      C2ExpedicionOrden[]
 }
 
 enum RolOperador {
@@ -280,6 +283,7 @@ model Cliente {
   cajas                  CajaEmpaque[]        @relation("CajaPropietario")
   liquidaciones          LiquidacionFaena[]
   historicoTarifas       HistoricoTarifa[]
+  c2Expediciones        C2ExpedicionOrden[]
 }
 
 // ==================== TRANSPORTISTAS ====================
@@ -1271,6 +1275,9 @@ model Insumo {
   // Control
   activo          Boolean       @default(true)
   observaciones   String?
+  
+  // Relación con BOM (Ciclo II)
+  bomItems        C2BOM[]
   
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -2631,6 +2638,8 @@ model Cuarto {
   mediaResId      String        // Origin media res
   mediaRes        MediaRes      @relation(fields: [mediaResId], references: [id])
   tipo            TipoCuarto    // DELANTERO, TRASERO
+  tipoCuartoId    String?
+  tipoCuarto      C2TipoCuarto? @relation(fields: [tipoCuartoId], references: [id])
   peso            Float
   codigo          String        @unique  // Barcode
   
@@ -2652,6 +2661,7 @@ model Cuarto {
   
   // Registro cuarteo
   registroCuarteoId String?
+  ingresoDespostadaId String?
   
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -2661,11 +2671,13 @@ model Cuarto {
   @@index([estado])
   @@index([camaraId])
   @@index([propietarioId])
+  @@index([tipoCuartoId])
 }
 
 enum TipoCuarto {
   DELANTERO
   TRASERO
+  ASADO
 }
 
 enum EstadoCuarto {
@@ -2756,6 +2768,7 @@ enum TipoGrasa {
 model Pallet {
   id              String        @id @default(cuid())
   numero          String        @unique
+  ssccCode        String?       @unique
   
   // Expedición
   expedicionId    String?
@@ -2765,6 +2778,7 @@ model Pallet {
   
   // Estado
   estado          EstadoPallet  @default(ARMADO)
+  esMixto         Boolean       @default(false)
   
   // Peso total
   pesoTotal       Float         @default(0)
@@ -2775,6 +2789,7 @@ model Pallet {
   camara          Camara?       @relation(fields: [camaraId], references: [id])
   
   observaciones   String?
+  expedicionOrdenId String?
   
   operadorId      String?
   operador        Operador?     @relation(fields: [operadorId], references: [id])
@@ -2784,6 +2799,7 @@ model Pallet {
   
   @@index([estado])
   @@index([expedicionId])
+  @@index([esMixto])
 }
 
 model CajaEmpaque {
@@ -2794,13 +2810,17 @@ model CajaEmpaque {
   palletId        String?
   pallet          Pallet?       @relation(fields: [palletId], references: [id])
   
-  // Producto
+  // Producto (Ciclo I - legado)
   productoId      String?
   producto        Producto?     @relation(fields: [productoId], references: [id])
   
+  // Producto de Desposte (Ciclo II)
+  productoDesposteId  String?
+  productoDesposte    C2ProductoDesposte? @relation(fields: [productoDesposteId], references: [id])
+  
   // Cuarto de origen
   cuartoId        String?
-  cuarto          Cuarto?         @relation(fields: [cuartoId], references: [id])
+  cuarto          Cuarto?       @relation(fields: [cuartoId], references: [id])
 
   // Lote
   loteId          String?
@@ -2814,22 +2834,38 @@ model CajaEmpaque {
   pesoBruto       Float         @default(0)
   pesoNeto        Float         @default(0)
   tara            Float         @default(0)
+  piezas          Int           @default(1)    // Cantidad de piezas en la caja
   
   // Trazabilidad
   tropaCodigo     String?
+  
+  // Fechas de trazabilidad (Ciclo II)
+  fechaFaena      DateTime?                    // Fecha de faena (heredada)
+  fechaDesposte   DateTime?                    // Fecha de desposte
+  fechaVencimiento DateTime?                   // Fecha de vencimiento
   
   // Estado
   estado          EstadoCaja    @default(ARMADA)
   
   // Código de barras
-  codigoBarras    String?
+  codigoBarras    String?                      // Código legado
+  barcodeGs1_128  String?                      // GS1-128 completo (generado)
+  
+  // Degradaciones (C2) - excepcional
+  degradaciones   C2MovimientoDegradacion[] @relation("CajaDegradada")
+  
+  // Expediciones (C2)
+  expedicionItems C2ExpedicionItem[]
   
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   
   @@index([palletId])
   @@index([productoId])
+  @@index([productoDesposteId])
   @@index([estado])
+  @@index([tropaCodigo])
+  @@index([fechaFaena])
 }
 
 enum EstadoPallet {
@@ -2854,6 +2890,10 @@ model StockProducto {
   productoNombre  String
   productoId      String?
   producto        Producto?     @relation(fields: [productoId], references: [id])
+  
+  // Relación con producto de desposte (C2)
+  productoDesposteId  String?
+  productoDesposte    C2ProductoDesposte? @relation(fields: [productoDesposteId], references: [id])
   
   // Lote/Tropa
   lote            String?
@@ -3113,4 +3153,281 @@ model LiquidacionItem {
   
   @@index([liquidacionId])
   @@index([tipoTarifaId])
+}
+
+// ====================================================================================
+// CICLO II - DESPOSTE Y LOGÍSTICA
+// Módulo de transformación de Medias Res → Cortes/Cajas con trazabilidad completa
+// ====================================================================================
+
+// ==================== C2 - RUBROS (Agrupadores de productos de desposte) ====================
+
+model C2Rubro {
+  id              String   @id @default(cuid())
+  nombre          String   @unique   // Ej: Cortes Traseros, Cortes Delanteros, Menudencias, Elaborados
+  descripcion     String?
+  orden           Int      @default(0)  // Orden de aparición en UI
+  activo          Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  productos       C2ProductoDesposte[]
+  
+  @@index([activo])
+  @@index([orden])
+}
+
+// ==================== C2 - TIPOS DE CUARTO (Configurable, normalmente 3: Delantero, Trasero, Asado) ====================
+
+model C2TipoCuarto {
+  id              String   @id @default(cuid())
+  nombre          String   @unique   // Ej: Delantero, Trasero, Asado
+  codigo          String   @unique   // Ej: DEL, TRA, ASA (para rótulos/códigos)
+  descripcion     String?
+  orden           Int      @default(0)  // Orden de aparición en pantalla de cuarteo
+  activo          Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  cuartos         Cuarto[]
+  
+  @@index([activo])
+  @@index([orden])
+}
+
+// ==================== C2 - PRODUCTOS DE DESPOSTE (Cortes, con código individual y GTIN) ====================
+
+model C2ProductoDesposte {
+  id                String          @id @default(cuid())
+  rubroId           String          // FK a C2Rubro
+  rubro             C2Rubro         @relation(fields: [rubroId], references: [id])
+  
+  nombre            String                           // Ej: Lomo, Bife de Chorizo, Nalga
+  codigo            String          @unique          // Código interno individual del producto
+  
+  // Código GS1 / GTIN para etiquetas GS1-128
+  gtin              String?                          // GTIN del producto (14 dígitos)
+  
+  // Especie
+  especie           Especie          @default(BOVINO)
+  
+  // Clasificación del cuarto de origen (de qué cuarto sale este corte)
+  tipoCuartoOrigen  String?         // DELANTERO, TRASERO, ASADO - de qué cuarto proviene normalmente
+  
+  // Datos de conservación
+  diasVencimiento   Int?            // Días de vida útil
+  tempMin           Float?          // Temperatura mínima de conservación
+  tempMax           Float?          // Temperatura máxima de conservación
+  
+  // Tara del envase
+  pesoTaraCaja      Float?          // Peso de la caja/bolsa (tara)
+  
+  // Precios (para facturación de cortes)
+  precioKg          Float?          // Precio por KG
+  
+  // Reportes
+  apareceRendimiento  Boolean       @default(true)   // Aparece en reporte de rinde
+  apareceStock        Boolean       @default(true)   // Aparece en stock
+  
+  activo            Boolean         @default(true)
+  observaciones     String?
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  bomItems          C2BOM[]
+  cajas             CajaEmpaque[]
+  stockProductos    StockProducto[]
+  degradacionesHacia C2MovimientoDegradacion[] @relation("ProductoDegradadoHacia")
+  
+  @@index([rubroId])
+  @@index([especie])
+  @@index([activo])
+  @@index([tipoCuartoOrigen])
+}
+
+// ==================== C2 - BOM (Bill of Materials - Insumos por producto) ====================
+// Define qué insumos se consumen al producir una caja de cada producto
+// Ej: Caja de Lomo → 1 bolsa x lomo + 1 caja + 2 fajas + 1 lámina
+
+model C2BOM {
+  id                  String    @id @default(cuid())
+  productoDesposteId  String    // FK al producto de desposte
+  productoDesposte    C2ProductoDesposte @relation(fields: [productoDesposteId], references: [id], onDelete: Cascade)
+  
+  insumoId            String    // FK al insumo
+  insumo              Insumo    @relation(fields: [insumoId], references: [id])
+  
+  cantidadPorCaja     Float     @default(1)  // Cantidad de este insumo por cada caja producida
+  
+  observaciones       String?
+  
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  @@unique([productoDesposteId, insumoId])
+  @@index([productoDesposteId])
+  @@index([insumoId])
+}
+
+// ==================== C2 - MOVIMIENTOS DE DEGRADACIÓN (Excepcional) ====================
+// Registro de cuando un corte se degrada (golpeado, trimming, decomiso parcial)
+
+model C2MovimientoDegradacion {
+  id                  String              @id @default(cuid())
+  
+  // Caja original
+  cajaIdOriginal      String              // ID de la caja degradada
+  cajaOriginal        CajaEmpaque         @relation("CajaDegradada", fields: [cajaIdOriginal], references: [id])
+  
+  // Tipo de degradación
+  tipo                TipoDegradacion     @default(TRIMMING)
+  
+  // Pesos
+  pesoDegradado       Float               // Peso del corte degradado
+  pesoAprovechamiento Float?              // Peso que se puede reutilizar (si aplica)
+  pesoDescarte        Float?              // Peso que se descarta
+  
+  // Nuevo producto (si el aprovechamiento se reasigna)
+  nuevoProductoId     String?             // FK a C2ProductoDesposte (ej: Lomo degradado → Carne para milanesa)
+  nuevoProducto       C2ProductoDesposte? @relation("ProductoDegradadoHacia", fields: [nuevoProductoId], references: [id])
+  
+  // Motivo
+  motivo              String              // Ej: "Golpeado", "Contaminación superficial", "Vencimiento próximo"
+  
+  // Operador
+  operadorId          String?
+  operador            Operador?           @relation(fields: [operadorId], references: [id])
+  
+  observaciones       String?
+  fecha               DateTime            @default(now())
+  
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  
+  @@index([cajaIdOriginal])
+  @@index([tipo])
+  @@index([fecha])
+}
+
+enum TipoDegradacion {
+  TRIMMING          // Recorte de grasa/limpieza
+  GOLPEADO          // Corte golpeado
+  DECOMISO_PARCIAL  // Decomiso parcial
+  APROVECHAMIENTO   // Reasignación a producto de menor valor
+}
+
+// ==================== C2 - SUBPRODUCTOS PESAJE (Hueso, Grasa, Incomestible) ====================
+
+model C2SubproductoPesaje {
+  id                String              @id @default(cuid())
+  
+  // Tipo de subproducto
+  tipo              TipoSubproducto     @default(HUESO)
+  
+  // Tropa de origen
+  tropaCodigo       String?
+  
+  // Peso
+  pesoKg            Float               @default(0)
+  
+  // Destino
+  destino           String?             // Ej: "Rendering", "Venta directa"
+  
+  // Operador
+  operadorId        String?
+  operador          Operador?           @relation(fields: [operadorId], references: [id])
+  
+  observaciones     String?
+  fecha             DateTime            @default(now())
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@index([tipo])
+  @@index([tropaCodigo])
+  @@index([fecha])
+}
+
+enum TipoSubproducto {
+  HUESO
+  GRASA
+  INCOMESTIBLE
+  RECORTES
+  OTRO
+}
+
+// ==================== C2 - EXPEDICIÓN (Órdenes de despacho de cajas) ====================
+
+model C2ExpedicionOrden {
+  id                String              @id @default(cuid())
+  numero            Int                 @unique  // Número correlativo
+  
+  // Cliente
+  clienteId         String
+  cliente           Cliente             @relation(fields: [clienteId], references: [id])
+  
+  // Datos de transporte
+  transporteNombre  String?
+  patenteCamion     String?
+  choferNombre      String?
+  choferDni         String?
+  
+  // Documentos
+  nroRemito         String?
+  
+  // Fechas
+  fechaDespacho     DateTime?
+  fecha             DateTime            @default(now())
+  
+  // Estado
+  estado            EstadoExpedicion    @default(PENDIENTE)
+  
+  // Totales
+  cantidadCajas     Int                 @default(0)
+  pesoTotal         Float               @default(0)
+  
+  // Operador
+  operadorId        String?
+  operador          Operador?           @relation(fields: [operadorId], references: [id])
+  
+  observaciones     String?
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  items             C2ExpedicionItem[]
+  
+  @@index([clienteId])
+  @@index([estado])
+  @@index([fecha])
+}
+
+model C2ExpedicionItem {
+  id                String              @id @default(cuid())
+  ordenId           String
+  orden             C2ExpedicionOrden   @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  
+  // Caja despachada
+  cajaId            String
+  caja              CajaEmpaque         @relation(fields: [cajaId], references: [id])
+  
+  // Pallet (si despacha por pallet)
+  palletId          String?
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@index([ordenId])
+  @@index([cajaId])
+  @@index([palletId])
+}
+
+enum EstadoExpedicion {
+  PENDIENTE
+  EN_PREPARACION
+  DESPACHADO
+  ANULADO
 }
