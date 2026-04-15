@@ -238,6 +238,13 @@ export function FacturacionModule({ operador }: Props) {
   // Tarifas vigentes for auto-fill
   const [tarifasVigentes, setTarifasVigentes] = useState<any[]>([])
 
+  // Informes state
+  const [informeData, setInformeData] = useState<any>(null)
+  const [loadingInforme, setLoadingInforme] = useState(false)
+  const [filtroInformeTipo, setFiltroInformeTipo] = useState<'general' | 'semanal' | 'mensual' | 'porCliente' | 'porTipo'>('general')
+  const [filtroInformeDesde, setFiltroInformeDesde] = useState('')
+  const [filtroInformeHasta, setFiltroInformeHasta] = useState('')
+
   // Tipo comprobante auto-determined
   const [autoTipoComprobante, setAutoTipoComprobante] = useState<string>('')
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -285,8 +292,10 @@ export function FacturacionModule({ operador }: Props) {
       fetchServicioFaena()
     } else if (tabActivo === 'notas') {
       fetchNotas()
+    } else if (tabActivo === 'informes') {
+      fetchInforme()
     }
-  }, [tabActivo, filtroFaenaDesde, filtroFaenaHasta, filtroFaenaCliente, filtroFaenaEstado, filtroNotasTipo, filtroNotasEstado, filtroNotasDesde, filtroNotasHasta])
+  }, [tabActivo, filtroFaenaDesde, filtroFaenaHasta, filtroFaenaCliente, filtroFaenaEstado, filtroNotasTipo, filtroNotasEstado, filtroNotasDesde, filtroNotasHasta, filtroInformeTipo, filtroInformeDesde, filtroInformeHasta])
 
   const fetchAll = async () => {
     setLoading(true)
@@ -406,6 +415,55 @@ export function FacturacionModule({ operador }: Props) {
     } catch {
       toast.error('Error al descargar PDF')
     }
+  }
+
+  const fetchInforme = async () => {
+    setLoadingInforme(true)
+    try {
+      const params = new URLSearchParams()
+      params.set('tipo', filtroInformeTipo)
+      if (filtroInformeDesde) params.set('fechaDesde', filtroInformeDesde)
+      if (filtroInformeHasta) params.set('fechaHasta', filtroInformeHasta)
+      const res = await fetch(`/api/facturacion/informes?${params.toString()}`)
+      const data = await res.json()
+      if (data.success) setInformeData(data.data)
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Error al cargar informe')
+    } finally {
+      setLoadingInforme(false)
+    }
+  }
+
+  const handleExportInformeCSV = () => {
+    if (!facturas.length) return
+    const headers = ['Número', 'Tipo', 'Fecha', 'Cliente', 'CUIT', 'Cond. IVA', 'Subtotal', 'IVA', 'Total', 'Pagado', 'Saldo', 'Estado']
+    const rows = facturas.filter(f => f.estado !== 'ANULADA').map(f => {
+      const totalPagado = f.pagos?.reduce((s: number, p: PagoFactura) => s + p.monto, 0) || 0
+      return [
+        f.numero,
+        TIPOS_COMPROBANTE.find(t => t.value === f.tipoComprobante)?.label || f.tipoComprobante,
+        new Date(f.fecha).toLocaleDateString('es-AR'),
+        f.clienteNombre || f.cliente?.nombre || '',
+        f.clienteCuit || '',
+        f.clienteCondicionIva || '',
+        f.subtotal?.toFixed(2),
+        f.iva?.toFixed(2),
+        f.total?.toFixed(2),
+        totalPagado.toFixed(2),
+        f.saldo?.toFixed(2),
+        f.estado,
+      ]
+    })
+    const csvContent = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n')
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `informe_facturacion_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success('Informe descargado')
   }
 
   const fetchLiquidaciones = async () => {
@@ -959,7 +1017,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
         {/* Tabs */}
         <Tabs value={tabActivo} onValueChange={setTabActivo} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 max-w-2xl">
+          <TabsList className="grid w-full grid-cols-6 max-w-3xl">
             <TabsTrigger value="servicioFaena" className="gap-1">
               <Beef className="w-4 h-4" />Servicio Faena
             </TabsTrigger>
@@ -968,8 +1026,11 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
             <TabsTrigger value="notas" className="gap-1">
               <ArrowLeftRight className="w-4 h-4" />Notas C/D
             </TabsTrigger>
+            <TabsTrigger value="informes" className="gap-1">
+              <FileSpreadsheet className="w-4 h-4" />Informes
+            </TabsTrigger>
             <TabsTrigger value="historialPrecios" className="gap-1">
-              <History className="w-4 h-4" />Hist. Precios
+              <History className="w-4 h-4" />Precios
             </TabsTrigger>
           </TabsList>
 
@@ -1696,6 +1757,254 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* TAB INFORMES FISCALES */}
+          <TabsContent value="informes" className="space-y-4">
+            {/* Filtros Informe */}
+            <Card className="border-0 shadow-md">
+              <CardContent className="p-3">
+                <div className="flex flex-wrap gap-2 items-end">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Tipo Informe</Label>
+                    <Select value={filtroInformeTipo} onValueChange={(v) => setFiltroInformeTipo(v as typeof filtroInformeTipo)}>
+                      <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">General</SelectItem>
+                        <SelectItem value="semanal">Semanal</SelectItem>
+                        <SelectItem value="mensual">Mensual</SelectItem>
+                        <SelectItem value="porCliente">Por Cliente</SelectItem>
+                        <SelectItem value="porTipo">Por Tipo Comprobante</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Desde</Label>
+                    <Input type="date" value={filtroInformeDesde} onChange={e => setFiltroInformeDesde(e.target.value)} className="h-9 w-36" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Hasta</Label>
+                    <Input type="date" value={filtroInformeHasta} onChange={e => setFiltroInformeHasta(e.target.value)} className="h-9 w-36" />
+                  </div>
+                  <Button variant="outline" size="sm" className="h-9" onClick={() => { setFiltroInformeDesde(''); setFiltroInformeHasta(''); setFiltroInformeTipo('general') }}>Limpiar</Button>
+                  <Button size="sm" className="h-9 bg-amber-500 hover:bg-amber-600" onClick={fetchInforme}><RefreshCw className="w-4 h-4" /></Button>
+                  <Button variant="outline" size="sm" className="h-9" onClick={handleExportInformeCSV}>
+                    <FileSpreadsheet className="w-4 h-4 mr-1" />CSV
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {loadingInforme ? (
+              <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
+            ) : !informeData ? (
+              <Card className="border-0 shadow-md">
+                <CardContent className="py-12 text-center text-stone-400">
+                  <FileSpreadsheet className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p>Seleccione filtros y consulte informes</p>
+                </CardContent>
+              </Card>
+            ) : filtroInformeTipo === 'general' ? (
+              /* INFORME GENERAL */
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Card className="border-0 shadow-sm bg-emerald-50">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2"><DollarSign className="w-5 h-5 text-emerald-600" /><div><p className="text-xs text-stone-500">Total Facturado</p><p className="text-lg font-bold text-emerald-700">{formatCurrency(informeData.montoTotal)}</p></div></div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-0 shadow-sm bg-blue-50">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2"><CreditCard className="w-5 h-5 text-blue-600" /><div><p className="text-xs text-stone-500">Cobrado</p><p className="text-lg font-bold text-blue-700">{formatCurrency(informeData.montoPagado)}</p></div></div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-0 shadow-sm bg-orange-50">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2"><AlertCircle className="w-5 h-5 text-orange-600" /><div><p className="text-xs text-stone-500">Saldo Pendiente</p><p className="text-lg font-bold text-orange-700">{formatCurrency(informeData.saldoPendiente)}</p></div></div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-0 shadow-sm bg-red-50">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-red-600" /><div><p className="text-xs text-stone-500">Vencidas ({informeData.facturasVencidas})</p><p className="text-lg font-bold text-red-700">{formatCurrency(informeData.montoVencido)}</p></div></div>
+                    </CardContent>
+                  </Card>
+                </div>
+                {/* % Cobro y Estado */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card className="border-0 shadow-md">
+                    <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Porcentaje de Cobro</CardTitle></CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl font-bold text-emerald-700">{informeData.porcentajeCobro}%</span>
+                          <span className="text-sm text-stone-500">{informeData.totalFacturas} facturas</span>
+                        </div>
+                        <div className="w-full bg-stone-200 rounded-full h-3">
+                          <div className="bg-emerald-500 h-3 rounded-full transition-all" style={{ width: `${Math.min(100, parseFloat(informeData.porcentajeCobro || '0'))}%` }} />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-0 shadow-md">
+                    <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Distribución por Estado</CardTitle></CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-400" />Pendientes</div>
+                          <span>{informeData.porEstado?.pendientes || 0} — {formatCurrency(informeData.porEstado?.montoPendientes || 0)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-400" />Emitidas</div>
+                          <span>{informeData.porEstado?.emitidas || 0} — {formatCurrency(informeData.porEstado?.montoEmitidas || 0)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-400" />Pagadas</div>
+                          <span>{informeData.porEstado?.pagadas || 0} — {formatCurrency(informeData.porEstado?.montoPagadas || 0)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                {/* Por tipo comprobante */}
+                {informeData.porTipo && informeData.porTipo.length > 0 && (
+                  <Card className="border-0 shadow-md">
+                    <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Por Tipo de Comprobante</CardTitle></CardHeader>
+                    <CardContent className="p-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs">Tipo</TableHead>
+                            <TableHead className="text-xs text-right">Cantidad</TableHead>
+                            <TableHead className="text-xs text-right">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {informeData.porTipo.map((t: any) => (
+                            <TableRow key={t.tipo}>
+                              <TableCell className="text-sm">{t.label}</TableCell>
+                              <TableCell className="text-sm text-right">{t.cantidad}</TableCell>
+                              <TableCell className="text-sm text-right font-mono font-bold">{formatCurrency(t.total)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                )}
+                {/* Top clientes con deuda */}
+                {informeData.topClientesDeuda && informeData.topClientesDeuda.length > 0 && (
+                  <Card className="border-0 shadow-md">
+                    <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Top Clientes con Saldo Pendiente</CardTitle></CardHeader>
+                    <CardContent className="p-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs">Cliente</TableHead>
+                            <TableHead className="text-xs text-right">Facturas</TableHead>
+                            <TableHead className="text-xs text-right">Total Facturado</TableHead>
+                            <TableHead className="text-xs text-right">Saldo Pendiente</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {informeData.topClientesDeuda.map((c: any) => (
+                            <TableRow key={c.clienteId}>
+                              <TableCell className="text-sm font-medium">{c.clienteNombre}</TableCell>
+                              <TableCell className="text-sm text-right">{c.cantidad}</TableCell>
+                              <TableCell className="text-sm text-right font-mono">{formatCurrency(c.total)}</TableCell>
+                              <TableCell className="text-sm text-right font-mono font-bold text-orange-700">{formatCurrency(c.saldoPendiente)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            ) : filtroInformeTipo === 'porCliente' ? (
+              /* INFORME POR CLIENTE */
+              <Card className="border-0 shadow-md">
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Facturación por Cliente</CardTitle></CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Cliente</TableHead>
+                        <TableHead className="text-xs text-right">Facturas</TableHead>
+                        <TableHead className="text-xs text-right">Total</TableHead>
+                        <TableHead className="text-xs text-right">Saldo Pendiente</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(informeData || []).map((c: any) => (
+                        <TableRow key={c.clienteId}>
+                          <TableCell className="text-sm font-medium">{c.clienteNombre}</TableCell>
+                          <TableCell className="text-sm text-right">{c.cantidad}</TableCell>
+                          <TableCell className="text-sm text-right font-mono">{formatCurrency(c.total)}</TableCell>
+                          <TableCell className={`text-sm text-right font-mono ${c.saldoPendiente > 0 ? 'text-orange-700 font-bold' : ''}`}>{formatCurrency(c.saldoPendiente)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            ) : (filtroInformeTipo === 'semanal' || filtroInformeTipo === 'mensual') ? (
+              /* INFORME SEMANAL / MENSUAL */
+              <Card className="border-0 shadow-md">
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">{filtroInformeTipo === 'semanal' ? 'Facturación Semanal' : 'Facturación Mensual'}</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {(informeData || []).map((item: any, i: number) => {
+                      const maxTotal = Math.max(...(informeData || []).map((d: any) => d.total), 1)
+                      const barWidth = (item.total / maxTotal) * 100
+                      return (
+                        <div key={i} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-stone-700">{item.label}</span>
+                            <div className="flex gap-4 text-xs text-stone-500">
+                              <span>{item.cantidad} fact.</span>
+                              <span className="text-emerald-700 font-medium">{formatCurrency(item.pagado)} cobrado</span>
+                              <span className="font-bold text-stone-800">{formatCurrency(item.total)}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-1 h-4">
+                            <div className="bg-emerald-400 rounded-l h-full transition-all" style={{ width: `${(item.pagado / item.total) * 100}%` }} />
+                            <div className="bg-amber-300 h-full transition-all" style={{ width: `${Math.max(0, ((item.total - item.pagado) / item.total) * 100)}%`, minWidth: item.total > item.pagado ? '2px' : '0' }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {(!informeData || informeData.length === 0) && (
+                      <p className="text-center text-stone-400 py-8">No hay datos para el período seleccionado</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              /* POR TIPO */
+              <Card className="border-0 shadow-md">
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Por Tipo de Comprobante</CardTitle></CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Tipo</TableHead>
+                        <TableHead className="text-xs text-right">Cantidad</TableHead>
+                        <TableHead className="text-xs text-right">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(informeData || []).map((t: any) => (
+                        <TableRow key={t.tipo}>
+                          <TableCell className="text-sm font-medium">{t.label}</TableCell>
+                          <TableCell className="text-sm text-right">{t.cantidad}</TableCell>
+                          <TableCell className="text-sm text-right font-mono font-bold">{formatCurrency(t.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* TAB HISTORIAL PRECIOS */}
