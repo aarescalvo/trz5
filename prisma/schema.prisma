@@ -2932,6 +2932,9 @@ model NotaCreditoDebito {
   iva             Float    @default(0)
   total           Float    @default(0)
   
+  // Estado
+  estado          String   @default("EMITIDA")  // EMITIDA, ANULADA
+  
   // Operador
   operadorId      String?
   operador        Operador? @relation(fields: [operadorId], references: [id])
@@ -2942,6 +2945,7 @@ model NotaCreditoDebito {
   @@index([facturaId])
   @@index([tipo])
   @@index([fecha])
+  @@index([estado])
 }
 
 // ==================== CONFIGURACIÓN AFIP ====================

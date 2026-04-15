@@ -6,7 +6,7 @@ import {
   Plus, Search, Loader2, Printer, RefreshCw, CreditCard,
   Building2, Receipt, Calendar, User, Package, Beef,
   ArrowDownToLine, FileSpreadsheet, History, Pencil,
-  ArrowLeftRight, Trash2,
+  ArrowLeftRight, Trash2, FileDown, Ban,
   TrendingUp, Clock, AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -83,7 +83,7 @@ interface NotaCreditoDebito {
   tipo: 'CREDITO' | 'DEBITO'
   tipoComprobante: number
   facturaId: string
-  factura?: { id: string; numero: string; clienteNombre?: string }
+  factura?: { id: string; numero: string; clienteNombre?: string; clienteId?: string; tipoComprobante?: string }
   numero: number
   puntoVenta: number
   fecha: string
@@ -94,7 +94,9 @@ interface NotaCreditoDebito {
   subtotal: number
   iva: number
   total: number
+  estado: 'EMITIDA' | 'ANULADA'
   operadorId?: string
+  operador?: { id: string; nombre: string }
   createdAt: string
 }
 
@@ -202,9 +204,15 @@ export function FacturacionModule({ operador }: Props) {
 
   // Notas C/D state
   const [notas, setNotas] = useState<NotaCreditoDebito[]>([])
+  const [notasResumen, setNotasResumen] = useState<any>(null)
   const [loadingNotas, setLoadingNotas] = useState(false)
   const [filtroNotasTipo, setFiltroNotasTipo] = useState<'TODOS' | 'CREDITO' | 'DEBITO'>('TODOS')
+  const [filtroNotasEstado, setFiltroNotasEstado] = useState<'TODOS' | 'EMITIDA' | 'ANULADA'>('TODOS')
+  const [filtroNotasDesde, setFiltroNotasDesde] = useState('')
+  const [filtroNotasHasta, setFiltroNotasHasta] = useState('')
   const [notaDialogOpen, setNotaDialogOpen] = useState(false)
+  const [notaAnularOpen, setNotaAnularOpen] = useState(false)
+  const [notaAnularId, setNotaAnularId] = useState<string | null>(null)
   const [notaFormData, setNotaFormData] = useState({
     facturaId: '',
     tipo: 'CREDITO' as 'CREDITO' | 'DEBITO',
@@ -278,7 +286,7 @@ export function FacturacionModule({ operador }: Props) {
     } else if (tabActivo === 'notas') {
       fetchNotas()
     }
-  }, [tabActivo, filtroFaenaDesde, filtroFaenaHasta, filtroFaenaCliente, filtroFaenaEstado])
+  }, [tabActivo, filtroFaenaDesde, filtroFaenaHasta, filtroFaenaCliente, filtroFaenaEstado, filtroNotasTipo, filtroNotasEstado, filtroNotasDesde, filtroNotasHasta])
 
   const fetchAll = async () => {
     setLoading(true)
@@ -335,14 +343,68 @@ export function FacturacionModule({ operador }: Props) {
     try {
       const params = new URLSearchParams()
       if (filtroNotasTipo !== 'TODOS') params.set('tipo', filtroNotasTipo)
+      if (filtroNotasEstado !== 'TODOS') params.set('estado', filtroNotasEstado)
+      if (filtroNotasDesde) params.set('desde', filtroNotasDesde)
+      if (filtroNotasHasta) params.set('hasta', filtroNotasHasta)
       const res = await fetch(`/api/facturacion/notas?${params.toString()}`)
       const data = await res.json()
-      if (data.success) setNotas(data.data)
+      if (data.success) {
+        setNotas(data.data)
+        setNotasResumen(data.resumen)
+      }
     } catch (error) {
       console.error('Error:', error)
       toast.error('Error al cargar notas')
     } finally {
       setLoadingNotas(false)
+    }
+  }
+
+  const handleAnularNota = async () => {
+    if (!notaAnularId) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/facturacion/notas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: notaAnularId, estado: 'ANULADA', operadorId: operador.id })
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success('Nota anulada exitosamente')
+        setNotaAnularOpen(false)
+        setNotaAnularId(null)
+        fetchNotas()
+      } else {
+        toast.error(data.error || 'Error al anular nota')
+      }
+    } catch {
+      toast.error('Error al anular nota')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDescargarPDFNota = async (notaId: string) => {
+    try {
+      const res = await fetch('/api/facturacion/notas/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notaId })
+      })
+      if (!res.ok) throw new Error('Error al generar PDF')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const contentDisposition = res.headers.get('Content-Disposition')
+      const filename = contentDisposition?.split('filename=')[1]?.replace(/"/g, '') || 'nota.pdf'
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('PDF descargado')
+    } catch {
+      toast.error('Error al descargar PDF')
     }
   }
 
@@ -1400,73 +1462,104 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
           {/* TAB NOTAS CRÉDITO/DÉBITO */}
           <TabsContent value="notas" className="space-y-4">
             {/* KPIs Notas */}
-            {notas.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Card className="border-0 shadow-sm bg-blue-50">
-                  <CardContent className="p-3">
-                    <div className="flex items-center gap-2">
-                      <ArrowLeftRight className="w-5 h-5 text-blue-600" />
-                      <div>
-                        <p className="text-xs text-stone-500">Total Notas</p>
-                        <p className="text-xl font-bold text-blue-700">{notas.length}</p>
-                      </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <Card className="border-0 shadow-sm bg-blue-50">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <ArrowLeftRight className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="text-xs text-stone-500">Total Notas</p>
+                      <p className="text-xl font-bold text-blue-700">{notasResumen?.total || notas.length}</p>
                     </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-sm bg-sky-50">
-                  <CardContent className="p-3">
-                    <div className="flex items-center gap-2">
-                      <ArrowLeftRight className="w-5 h-5 text-sky-600" />
-                      <div>
-                        <p className="text-xs text-stone-500">Notas Crédito</p>
-                        <p className="text-lg font-bold text-sky-700">{formatCurrency(notas.filter(n => n.tipo === 'CREDITO').reduce((s, n) => s + n.total, 0))}</p>
-                      </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-0 shadow-sm bg-sky-50">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <ArrowLeftRight className="w-5 h-5 text-sky-600" />
+                    <div>
+                      <p className="text-xs text-stone-500">NC Monto</p>
+                      <p className="text-lg font-bold text-sky-700">{formatCurrency(notasResumen?.creditoMonto || notas.filter(n => n.tipo === 'CREDITO' && n.estado === 'EMITIDA').reduce((s, n) => s + n.total, 0))}</p>
                     </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-sm bg-red-50">
-                  <CardContent className="p-3">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-red-600" />
-                      <div>
-                        <p className="text-xs text-stone-500">Notas Débito</p>
-                        <p className="text-lg font-bold text-red-700">{formatCurrency(notas.filter(n => n.tipo === 'DEBITO').reduce((s, n) => s + n.total, 0))}</p>
-                      </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-0 shadow-sm bg-red-50">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-red-600" />
+                    <div>
+                      <p className="text-xs text-stone-500">ND Monto</p>
+                      <p className="text-lg font-bold text-red-700">{formatCurrency(notasResumen?.debitoMonto || notas.filter(n => n.tipo === 'DEBITO' && n.estado === 'EMITIDA').reduce((s, n) => s + n.total, 0))}</p>
                     </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-sm bg-stone-50">
-                  <CardContent className="p-3">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-5 h-5 text-stone-600" />
-                      <div>
-                        <p className="text-xs text-stone-500">Saldo Neto</p>
-                        <p className={`text-lg font-bold ${notas.filter(n => n.tipo === 'DEBITO').reduce((s, n) => s + n.total, 0) - notas.filter(n => n.tipo === 'CREDITO').reduce((s, n) => s + n.total, 0) >= 0 ? 'text-red-700' : 'text-sky-700'}`}>
-                          {formatCurrency(notas.filter(n => n.tipo === 'DEBITO').reduce((s, n) => s + n.total, 0) - notas.filter(n => n.tipo === 'CREDITO').reduce((s, n) => s + n.total, 0))}
-                        </p>
-                      </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-0 shadow-sm bg-stone-50">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-stone-600" />
+                    <div>
+                      <p className="text-xs text-stone-500">Saldo Neto</p>
+                      <p className={`text-lg font-bold ${(notasResumen?.saldoNeto || 0) >= 0 ? 'text-red-700' : 'text-sky-700'}`}>
+                        {formatCurrency(notasResumen?.saldoNeto ?? (notas.filter(n => n.tipo === 'DEBITO' && n.estado === 'EMITIDA').reduce((s, n) => s + n.total, 0) - notas.filter(n => n.tipo === 'CREDITO' && n.estado === 'EMITIDA').reduce((s, n) => s + n.total, 0)))}
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-0 shadow-sm bg-amber-50">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-amber-600" />
+                    <div>
+                      <p className="text-xs text-stone-500">Anuladas</p>
+                      <p className="text-xl font-bold text-amber-700">{notas.filter(n => n.estado === 'ANULADA').length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Filtros y acciones */}
             <Card className="border-0 shadow-md">
-              <CardContent className="p-4">
-                <div className="flex flex-col md:flex-row gap-3 items-end">
-                  <div className="space-y-1 flex-1">
-                    <Label className="text-xs">Filtrar por tipo</Label>
+              <CardContent className="p-3">
+                <div className="flex flex-wrap gap-2 items-end">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Tipo</Label>
                     <Select value={filtroNotasTipo} onValueChange={(v) => setFiltroNotasTipo(v as typeof filtroNotasTipo)}>
-                      <SelectTrigger className="w-full md:w-48"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="TODOS">Todos</SelectItem>
-                        <SelectItem value="CREDITO">Notas de Crédito</SelectItem>
-                        <SelectItem value="DEBITO">Notas de Débito</SelectItem>
+                        <SelectItem value="CREDITO">Notas Crédito</SelectItem>
+                        <SelectItem value="DEBITO">Notas Débito</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={() => setNotaDialogOpen(true)} className="bg-amber-500 hover:bg-amber-600">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Estado</Label>
+                    <Select value={filtroNotasEstado} onValueChange={(v) => setFiltroNotasEstado(v as typeof filtroNotasEstado)}>
+                      <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TODOS">Todos</SelectItem>
+                        <SelectItem value="EMITIDA">Emitidas</SelectItem>
+                        <SelectItem value="ANULADA">Anuladas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Desde</Label>
+                    <Input type="date" value={filtroNotasDesde} onChange={e => setFiltroNotasDesde(e.target.value)} className="h-9 w-36" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Hasta</Label>
+                    <Input type="date" value={filtroNotasHasta} onChange={e => setFiltroNotasHasta(e.target.value)} className="h-9 w-36" />
+                  </div>
+                  <Button variant="outline" size="sm" className="h-9" onClick={() => { setFiltroNotasTipo('TODOS'); setFiltroNotasEstado('TODOS'); setFiltroNotasDesde(''); setFiltroNotasHasta('') }}>Limpiar</Button>
+                  <Button size="sm" className="h-9 bg-amber-500 hover:bg-amber-600" onClick={fetchNotas}><RefreshCw className="w-4 h-4" /></Button>
+                  <div className="flex-1" />
+                  <Button onClick={() => setNotaDialogOpen(true)} className="bg-amber-500 hover:bg-amber-600 h-9">
                     <Plus className="w-4 h-4 mr-2" />Nueva Nota
                   </Button>
                 </div>
@@ -1475,7 +1568,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
             {/* Tabla de Notas */}
             <Card className="border-0 shadow-md">
-              <CardHeader className="bg-stone-50 rounded-t-lg">
+              <CardHeader className="bg-stone-50 rounded-t-lg py-3">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
                   <ArrowLeftRight className="w-5 h-5 text-amber-500" />Notas de Crédito / Débito
                 </CardTitle>
@@ -1499,15 +1592,16 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
                           <TableHead className="font-semibold text-xs">Factura Ref.</TableHead>
                           <TableHead className="font-semibold text-xs">Motivo</TableHead>
                           <TableHead className="font-semibold text-xs">Fecha</TableHead>
+                          <TableHead className="font-semibold text-xs">Estado</TableHead>
                           <TableHead className="font-semibold text-xs text-right">Subtotal</TableHead>
                           <TableHead className="font-semibold text-xs text-right">IVA</TableHead>
                           <TableHead className="font-semibold text-xs text-right">Total</TableHead>
-                          <TableHead className="font-semibold text-xs text-center">Detalle</TableHead>
+                          <TableHead className="font-semibold text-xs text-center">Acciones</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {notas.filter(n => filtroNotasTipo === 'TODOS' || n.tipo === filtroNotasTipo).map((nota) => (
-                          <TableRow key={nota.id} className={`text-xs ${nota.tipo === 'CREDITO' ? 'hover:bg-blue-50/50' : 'hover:bg-red-50/50'}`}>
+                          <TableRow key={nota.id} className={`text-xs ${nota.estado === 'ANULADA' ? 'opacity-50 bg-stone-50' : nota.tipo === 'CREDITO' ? 'hover:bg-blue-50/50' : 'hover:bg-red-50/50'}`}>
                             <TableCell className="font-mono font-medium">
                               {String(nota.puntoVenta).padStart(4, '0')}-{String(nota.numero).padStart(8, '0')}
                             </TableCell>
@@ -1527,50 +1621,72 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
                               {nota.descripcion && <p className="text-[10px] text-stone-400 mt-0.5 max-w-[120px] truncate">{nota.descripcion}</p>}
                             </TableCell>
                             <TableCell>{new Date(nota.fecha).toLocaleDateString('es-AR')}</TableCell>
+                            <TableCell>
+                              {nota.estado === 'ANULADA' ? (
+                                <Badge className="bg-red-100 text-red-700 text-xs">Anulada</Badge>
+                              ) : (
+                                <Badge className="bg-emerald-100 text-emerald-700 text-xs">Emitida</Badge>
+                              )}
+                            </TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(nota.subtotal)}</TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(nota.iva)}</TableCell>
-                            <TableCell className={`text-right font-mono font-bold ${nota.tipo === 'CREDITO' ? 'text-blue-700' : 'text-red-700'}`}>{formatCurrency(nota.total)}</TableCell>
+                            <TableCell className={`text-right font-mono font-bold ${nota.estado === 'ANULADA' ? 'text-stone-400 line-through' : nota.tipo === 'CREDITO' ? 'text-blue-700' : 'text-red-700'}`}>{formatCurrency(nota.total)}</TableCell>
                             <TableCell className="text-center">
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Ver detalle">
-                                    <Eye className="w-3.5 h-3.5" />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-md">
-                                  <DialogHeader>
-                                    <DialogTitle className="flex items-center gap-2">
-                                      <ArrowLeftRight className={`w-5 h-5 ${nota.tipo === 'CREDITO' ? 'text-blue-500' : 'text-red-500'}`} />
-                                      {nota.tipo === 'CREDITO' ? 'Nota de Crédito' : 'Nota de Débito'} {String(nota.puntoVenta).padStart(4, '0')}-{String(nota.numero).padStart(8, '0')}
-                                    </DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-3">
-                                    <div className="grid grid-cols-2 gap-3 text-sm">
-                                      <div><p className="text-xs text-stone-400">Tipo</p><Badge className={nota.tipo === 'CREDITO' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}>{nota.tipo === 'CREDITO' ? 'Crédito' : 'Débito'}</Badge></div>
-                                      <div><p className="text-xs text-stone-400">Fecha</p><p>{new Date(nota.fecha).toLocaleDateString('es-AR')}</p></div>
-                                      <div><p className="text-xs text-stone-400">Factura Ref.</p><p className="font-mono">{nota.factura?.numero || '-'}</p></div>
-                                      <div><p className="text-xs text-stone-400">Cliente</p><p>{nota.factura?.clienteNombre || '-'}</p></div>
-                                    </div>
-                                    <Separator />
-                                    <div>
-                                      <p className="text-xs text-stone-400 mb-1">Motivo</p>
-                                      <Badge variant="outline">{nota.motivo}</Badge>
-                                    </div>
-                                    {nota.descripcion && (
-                                      <div>
-                                        <p className="text-xs text-stone-400 mb-1">Descripción</p>
-                                        <p className="text-sm bg-stone-50 rounded p-2">{nota.descripcion}</p>
+                              <div className="flex items-center justify-center gap-1">
+                                {/* Ver detalle */}
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Ver detalle">
+                                      <Eye className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-md">
+                                    <DialogHeader>
+                                      <DialogTitle className="flex items-center gap-2">
+                                        <ArrowLeftRight className={`w-5 h-5 ${nota.tipo === 'CREDITO' ? 'text-blue-500' : 'text-red-500'}`} />
+                                        {nota.tipo === 'CREDITO' ? 'Nota de Crédito' : 'Nota de Débito'} {String(nota.puntoVenta).padStart(4, '0')}-{String(nota.numero).padStart(8, '0')}
+                                      </DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-3">
+                                      <div className="grid grid-cols-2 gap-3 text-sm">
+                                        <div><p className="text-xs text-stone-400">Tipo</p><Badge className={nota.tipo === 'CREDITO' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}>{nota.tipo === 'CREDITO' ? 'Crédito' : 'Débito'}</Badge></div>
+                                        <div><p className="text-xs text-stone-400">Estado</p><Badge className={nota.estado === 'ANULADA' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}>{nota.estado === 'ANULADA' ? 'Anulada' : 'Emitida'}</Badge></div>
+                                        <div><p className="text-xs text-stone-400">Fecha</p><p>{new Date(nota.fecha).toLocaleDateString('es-AR')}</p></div>
+                                        <div><p className="text-xs text-stone-400">Factura Ref.</p><p className="font-mono">{nota.factura?.numero || '-'}</p></div>
+                                        <div><p className="text-xs text-stone-400">Cliente</p><p>{nota.factura?.clienteNombre || '-'}</p></div>
+                                        {nota.operador && <div><p className="text-xs text-stone-400">Operador</p><p>{nota.operador.nombre}</p></div>}
                                       </div>
-                                    )}
-                                    <Separator />
-                                    <div className="space-y-1">
-                                      <div className="flex justify-between text-sm"><span className="text-stone-500">Subtotal:</span><span className="font-mono">{formatCurrency(nota.subtotal)}</span></div>
-                                      <div className="flex justify-between text-sm"><span className="text-stone-500">IVA:</span><span className="font-mono">{formatCurrency(nota.iva)}</span></div>
-                                      <div className="flex justify-between text-lg font-bold"><span>Total:</span><span className={`font-mono ${nota.tipo === 'CREDITO' ? 'text-blue-700' : 'text-red-700'}`}>{formatCurrency(nota.total)}</span></div>
+                                      <Separator />
+                                      <div>
+                                        <p className="text-xs text-stone-400 mb-1">Motivo</p>
+                                        <Badge variant="outline">{nota.motivo === 'DEVOLUCION' ? 'Devolución' : nota.motivo === 'DESCUENTO' ? 'Descuento' : nota.motivo === 'ERROR' ? 'Error' : nota.motivo === 'ANULACION' ? 'Anulación' : nota.motivo === 'AJUSTE' ? 'Ajuste' : nota.motivo}</Badge>
+                                      </div>
+                                      {nota.descripcion && (
+                                        <div>
+                                          <p className="text-xs text-stone-400 mb-1">Descripción</p>
+                                          <p className="text-sm bg-stone-50 rounded p-2">{nota.descripcion}</p>
+                                        </div>
+                                      )}
+                                      <Separator />
+                                      <div className="space-y-1">
+                                        <div className="flex justify-between text-sm"><span className="text-stone-500">Subtotal:</span><span className="font-mono">{formatCurrency(nota.subtotal)}</span></div>
+                                        <div className="flex justify-between text-sm"><span className="text-stone-500">IVA:</span><span className="font-mono">{formatCurrency(nota.iva)}</span></div>
+                                        <div className="flex justify-between text-lg font-bold"><span>Total:</span><span className={`font-mono ${nota.estado === 'ANULADA' ? 'text-stone-400 line-through' : nota.tipo === 'CREDITO' ? 'text-blue-700' : 'text-red-700'}`}>{formatCurrency(nota.total)}</span></div>
+                                      </div>
                                     </div>
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
+                                  </DialogContent>
+                                </Dialog>
+                                {/* PDF */}
+                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Descargar PDF" onClick={() => handleDescargarPDFNota(nota.id)}>
+                                  <FileDown className="w-3.5 h-3.5" />
+                                </Button>
+                                {/* Anular */}
+                                {nota.estado !== 'ANULADA' && (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700" title="Anular nota" onClick={() => { setNotaAnularId(nota.id); setNotaAnularOpen(true) }}>
+                                    <Ban className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -2096,6 +2212,39 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
               <Button onClick={handleGuardarNota} disabled={saving} className={notaFormData.tipo === 'CREDITO' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-red-500 hover:bg-red-600'}>
                 {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ArrowLeftRight className="w-4 h-4 mr-2" />}
                 {saving ? 'Creando...' : `Crear Nota de ${notaFormData.tipo === 'CREDITO' ? 'Crédito' : 'Débito'}`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Anular Nota */}
+        <Dialog open={notaAnularOpen} onOpenChange={setNotaAnularOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Ban className="w-5 h-5 text-red-500" />Anular Nota
+              </DialogTitle>
+              <DialogDescription>¿Está seguro de que desea anular esta nota? Esta acción no se puede deshacer.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              {notaAnularId && (() => {
+                const nota = notas.find(n => n.id === notaAnularId)
+                if (!nota) return null
+                return (
+                  <div className="bg-stone-50 rounded-lg p-3 text-sm space-y-1">
+                    <p><span className="text-stone-500">Número:</span> <span className="font-mono font-bold">{String(nota.puntoVenta).padStart(4, '0')}-{String(nota.numero).padStart(8, '0')}</span></p>
+                    <p><span className="text-stone-500">Tipo:</span> {nota.tipo === 'CREDITO' ? 'Nota de Crédito' : 'Nota de Débito'}</p>
+                    <p><span className="text-stone-500">Factura:</span> <span className="font-mono">{nota.factura?.numero || '-'}</span></p>
+                    <p><span className="text-stone-500">Total:</span> <span className="font-bold">{formatCurrency(nota.total)}</span></p>
+                  </div>
+                )
+              })()}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setNotaAnularOpen(false); setNotaAnularId(null) }}>Cancelar</Button>
+              <Button onClick={handleAnularNota} disabled={saving} className="bg-red-500 hover:bg-red-600">
+                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Ban className="w-4 h-4 mr-2" />}
+                Anular Nota
               </Button>
             </DialogFooter>
           </DialogContent>
