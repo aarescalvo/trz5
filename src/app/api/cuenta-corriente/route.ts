@@ -1,155 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
-// GET - Obtener cuenta corriente de un cliente o resumen general
+// GET - Obtener estado de cuenta corriente de un cliente
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const clienteId = searchParams.get('clienteId')
-    const tipo = searchParams.get('tipo') || 'resumen' // resumen | detalle
 
     if (!clienteId) {
-      // Si no hay cliente, devolver resumen de todos los clientes con saldo
-      const clientesConSaldo = await db.cliente.findMany({
-        where: {
-          esUsuarioFaena: true,
-          facturas: {
-            some: {
-              saldo: { gt: 0 }
-            }
-          }
-        },
-        include: {
-          facturas: {
-            where: {
-              estado: { in: ['PENDIENTE', 'EMITIDA'] }
-            },
-            orderBy: { fecha: 'asc' }
-          }
-        }
-      })
-
-      const resumen = clientesConSaldo.map(cliente => {
-        const totalSaldo = cliente.facturas.reduce((sum, f) => sum + f.saldo, 0)
-        const facturasVencidas = cliente.facturas.filter(f => 
-          f.fechaVencimiento && new Date(f.fechaVencimiento) < new Date()
-        )
-        
-        return {
-          cliente: {
-            id: cliente.id,
-            nombre: cliente.nombre,
-            razonSocial: cliente.razonSocial,
-            cuit: cliente.cuit
-          },
-          totalSaldo,
-          cantidadFacturas: cliente.facturas.length,
-          facturasVencidas: facturasVencidas.length,
-          montoVencido: facturasVencidas.reduce((sum, f) => sum + f.saldo, 0),
-          facturaMasAntigua: cliente.facturas[0]?.fecha || null
-        }
-      })
-
-      return NextResponse.json({
-        success: true,
-        data: resumen
-      })
-    }
-
-    // Obtener detalle de un cliente específico
-    const cliente = await db.cliente.findUnique({
-      where: { id: clienteId },
-      include: {
-        facturas: {
-          where: {
-            estado: { in: ['PENDIENTE', 'EMITIDA', 'PAGADA'] }
-          },
-          include: {
-            detalles: true,
-            pagos: {
-              orderBy: { fecha: 'desc' }
-            }
-          },
-          orderBy: { fecha: 'desc' }
-        }
-      }
-    })
-
-    if (!cliente) {
       return NextResponse.json(
-        { success: false, error: 'Cliente no encontrado' },
-        { status: 404 }
+        { success: false, error: 'clienteId es requerido' },
+        { status: 400 }
       )
     }
 
-    // Calcular totales
-    const totalFacturado = cliente.facturas.reduce((sum, f) => sum + f.total, 0)
-    const totalPagado = cliente.facturas.reduce((sum, f) => {
-      return sum + f.pagos.reduce((s, p) => s + p.monto, 0)
-    }, 0)
-    const saldoActual = cliente.facturas.reduce((sum, f) => sum + f.saldo, 0)
+    // Obtener todas las facturas del cliente (no anuladas)
+    const facturas = await db.factura.findMany({
+      where: {
+        clienteId,
+        estado: { not: 'ANULADA' },
+      },
+      include: {
+        pagos: {
+          orderBy: { fecha: 'desc' },
+        },
+        detalles: {
+          include: {
+            tipoServicio: true,
+          },
+        },
+      },
+      orderBy: { fecha: 'desc' },
+    })
 
-    // Construir estado de cuenta
-    const movimientos: any[] = []
-    
-    for (const factura of cliente.facturas) {
-      movimientos.push({
-        tipo: 'FACTURA',
-        id: factura.id,
-        fecha: factura.fecha,
-        numero: factura.numero,
-        concepto: `Factura ${factura.tipoComprobante?.replace('_', ' ') || ''} - ${factura.numero}`,
-        debe: factura.total,
-        haber: 0,
-        saldo: null // Se calcula después
-      })
-      
-      for (const pago of factura.pagos) {
-        movimientos.push({
-          tipo: 'PAGO',
-          id: pago.id,
-          fecha: pago.fecha,
-          numero: pago.referencia || pago.id.slice(0, 8),
-          concepto: `Pago ${pago.metodoPago} ${pago.referencia ? '- Ref: ' + pago.referencia : ''}`,
-          debe: 0,
-          haber: pago.monto,
-          saldo: null
-        })
-      }
-    }
+    // Obtener notas de crédito/débito del cliente
+    const notas = await db.notaCreditoDebito.findMany({
+      where: {
+        factura: { clienteId },
+      },
+      orderBy: { fecha: 'desc' },
+    })
 
-    // Ordenar por fecha
-    movimientos.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
-
-    // Calcular saldo acumulado
-    let saldoAcumulado = 0
-    for (const mov of movimientos) {
-      saldoAcumulado += mov.debe - mov.haber
-      mov.saldo = saldoAcumulado
-    }
+    // Calcular resumen
+    const totalFacturado = facturas.reduce((sum, f) => sum + f.total, 0)
+    const totalPagado = facturas.reduce(
+      (sum, f) => sum + f.pagos.reduce((s, p) => s + p.monto, 0),
+      0
+    )
+    const saldoPendiente = facturas.reduce((sum, f) => sum + f.saldo, 0)
+    const facturasVencidas = facturas.filter(f => {
+      if (f.estado === 'PAGADA') return false
+      const dias = Math.floor(
+        (Date.now() - new Date(f.fecha).getTime()) / (1000 * 60 * 60 * 24)
+      )
+      return dias > 30
+    })
 
     return NextResponse.json({
       success: true,
       data: {
-        cliente: {
-          id: cliente.id,
-          nombre: cliente.nombre,
-          razonSocial: cliente.razonSocial,
-          cuit: cliente.cuit,
-          condicionIva: cliente.condicionIva
-        },
+        facturas,
+        notas,
         resumen: {
           totalFacturado,
           totalPagado,
-          saldoActual,
-          cantidadFacturas: cliente.facturas.length,
-          facturasPendientes: cliente.facturas.filter(f => f.estado === 'PENDIENTE').length
+          saldoPendiente,
+          cantidadFacturas: facturas.length,
+          cantidadVencidas: facturasVencidas.length,
+          ultimaActividad: facturas[0]?.fecha || null,
         },
-        movimientos
-      }
+      },
     })
   } catch (error) {
-    console.error('Error fetching cuenta corriente:', error)
+    console.error('Error cuenta corriente GET:', error)
     return NextResponse.json(
       { success: false, error: 'Error al obtener cuenta corriente' },
       { status: 500 }
@@ -157,103 +80,114 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Registrar pago
+// POST - Registrar pago / imputar pago a facturas
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { 
-      facturaId, 
-      clienteId, 
-      monto, 
-      metodoPago, 
-      referencia, 
-      banco, 
-      numeroCheque, 
-      fechaCheque, 
+    const {
+      facturaId,
+      clienteId,
+      monto,
+      metodoPago,
+      referencia,
+      banco,
       observaciones,
-      operadorId 
+      operadorId,
+      // Para imputación múltiple
+      imputaciones,
     } = body
 
-    if (!facturaId && !clienteId) {
-      return NextResponse.json(
-        { success: false, error: 'Debe especificar una factura o un cliente' },
-        { status: 400 }
-      )
-    }
+    // Caso 1: Imputación múltiple (varias facturas con un solo pago)
+    if (imputaciones && Array.isArray(imputaciones) && imputaciones.length > 0) {
+      const resultados = []
 
-    if (!monto || monto <= 0) {
-      return NextResponse.json(
-        { success: false, error: 'El monto debe ser mayor a cero' },
-        { status: 400 }
-      )
-    }
+      for (const imp of imputaciones) {
+        const factura = await db.factura.findUnique({
+          where: { id: imp.facturaId },
+          include: { pagos: true },
+        })
 
-    // Si es un pago a cuenta (sin factura específica), distribuir automáticamente
-    if (!facturaId && clienteId) {
-      // Buscar facturas pendientes del cliente ordenadas por fecha (más antiguas primero)
-      const facturasPendientes = await db.factura.findMany({
-        where: {
-          clienteId,
-          estado: { in: ['PENDIENTE', 'EMITIDA'] },
-          saldo: { gt: 0 }
-        },
-        orderBy: { fecha: 'asc' }
-      })
+        if (!factura) {
+          resultados.push({ facturaId: imp.facturaId, error: 'Factura no encontrada' })
+          continue
+        }
 
-      if (facturasPendientes.length === 0) {
-        return NextResponse.json(
-          { success: false, error: 'El cliente no tiene facturas pendientes' },
-          { status: 400 }
-        )
-      }
+        if (factura.estado === 'ANULADA') {
+          resultados.push({ facturaId: imp.facturaId, error: 'Factura anulada' })
+          continue
+        }
 
-      let montoRestante = monto
-      const pagosCreados = []
+        const montoImputar = Math.min(Number(imp.monto), factura.saldo)
+        if (montoImputar <= 0) {
+          resultados.push({ facturaId: imp.facturaId, error: 'Monto inválido' })
+          continue
+        }
 
-      for (const factura of facturasPendientes) {
-        if (montoRestante <= 0) break
-
-        const montoPago = Math.min(montoRestante, factura.saldo)
-        
+        // Crear el pago
         const pago = await db.pagoFactura.create({
           data: {
             facturaId: factura.id,
+            monto: montoImputar,
+            metodoPago: metodoPago || 'EFECTIVO',
+            referencia: referencia || null,
+            banco: banco || null,
+            observaciones: observaciones || null,
+            operadorId: operadorId || null,
             fecha: new Date(),
-            monto: montoPago,
-            metodoPago,
-            referencia,
-            banco,
-            numeroCheque,
-            fechaCheque: fechaCheque ? new Date(fechaCheque) : null,
-            observaciones,
-            operadorId
-          }
+          },
         })
 
-        // Actualizar saldo de la factura
-        const nuevoSaldo = factura.saldo - montoPago
+        // Actualizar saldo y estado de la factura
+        const nuevoSaldo = factura.saldo - montoImputar
+        const nuevoEstado = nuevoSaldo <= 0 ? 'PAGADA' : 'EMITIDA'
+
         await db.factura.update({
           where: { id: factura.id },
           data: {
-            saldo: nuevoSaldo,
-            estado: nuevoSaldo <= 0 ? 'PAGADA' : 'PENDIENTE'
-          }
+            saldo: Math.max(0, nuevoSaldo),
+            estado: nuevoEstado,
+          },
         })
 
-        pagosCreados.push(pago)
-        montoRestante -= montoPago
+        // Registrar en auditoría
+        await db.auditoria.create({
+          data: {
+            accion: 'PAGO_REGISTRADO',
+            entidad: 'Factura',
+            entidadId: factura.id,
+            operadorId: operadorId || 'sistema',
+            detalle: `Pago $${montoImputar.toLocaleString('es-AR')} - ${metodoPago} - Saldo restante: $${nuevoSaldo.toLocaleString('es-AR')}`,
+          },
+        })
+
+        resultados.push({
+          facturaId: factura.id,
+          numero: factura.numero,
+          montoImputado: montoImputar,
+          saldoRestante: Math.max(0, nuevoSaldo),
+          estado: nuevoEstado,
+          pagoId: pago.id,
+        })
       }
 
       return NextResponse.json({
         success: true,
-        data: pagosCreados,
-        message: `Pago distribuido en ${pagosCreados.length} factura(s)`
+        data: resultados,
+        message: `${resultados.filter(r => !r.error).length} pago(s) registrado(s) exitosamente`,
       })
     }
 
-    // Pago a factura específica
+    // Caso 2: Pago simple a una factura
+    if (!facturaId || !monto || monto <= 0) {
+      return NextResponse.json(
+        { success: false, error: 'facturaId y monto son requeridos' },
+        { status: 400 }
+      )
+    }
+
     const factura = await db.factura.findUnique({
-      where: { id: facturaId }
+      where: { id: facturaId },
+      include: { pagos: true },
     })
 
     if (!factura) {
@@ -263,97 +197,69 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (monto > factura.saldo) {
+    if (factura.estado === 'ANULADA') {
       return NextResponse.json(
-        { success: false, error: `El monto excede el saldo pendiente ($${factura.saldo.toLocaleString()})` },
+        { success: false, error: 'No se puede registrar pago en factura anulada' },
         { status: 400 }
       )
     }
+
+    // No permitir pagar más del saldo
+    const montoPago = Math.min(Number(monto), factura.saldo)
 
     // Crear el pago
     const pago = await db.pagoFactura.create({
       data: {
         facturaId,
+        monto: montoPago,
+        metodoPago: metodoPago || 'EFECTIVO',
+        referencia: referencia || null,
+        banco: banco || null,
+        observaciones: observaciones || null,
+        operadorId: operadorId || null,
         fecha: new Date(),
-        monto,
-        metodoPago,
-        referencia,
-        banco,
-        numeroCheque,
-        fechaCheque: fechaCheque ? new Date(fechaCheque) : null,
-        observaciones,
-        operadorId
-      }
+      },
     })
 
-    // Actualizar saldo de la factura
-    const nuevoSaldo = factura.saldo - monto
+    // Actualizar saldo y estado
+    const nuevoSaldo = factura.saldo - montoPago
+    const nuevoEstado = nuevoSaldo <= 0 ? 'PAGADA' : 'EMITIDA'
+
     await db.factura.update({
       where: { id: facturaId },
       data: {
-        saldo: nuevoSaldo,
-        estado: nuevoSaldo <= 0 ? 'PAGADA' : factura.estado
-      }
+        saldo: Math.max(0, nuevoSaldo),
+        estado: nuevoEstado,
+      },
+    })
+
+    // Registrar en auditoría
+    await db.auditoria.create({
+      data: {
+        accion: 'PAGO_REGISTRADO',
+        entidad: 'Factura',
+        entidadId: facturaId,
+        operadorId: operadorId || 'sistema',
+        detalle: `Pago $${montoPago.toLocaleString('es-AR')} - ${metodoPago} - Saldo restante: $${Math.max(0, nuevoSaldo).toLocaleString('es-AR')}`,
+      },
     })
 
     return NextResponse.json({
       success: true,
-      data: pago
+      data: {
+        pago,
+        facturaActualizada: {
+          id: facturaId,
+          saldo: Math.max(0, nuevoSaldo),
+          estado: nuevoEstado,
+        },
+      },
+      message: 'Pago registrado exitosamente',
     })
   } catch (error) {
-    console.error('Error creating pago:', error)
+    console.error('Error cuenta corriente POST:', error)
     return NextResponse.json(
       { success: false, error: 'Error al registrar pago' },
-      { status: 500 }
-    )
-  }
-}
-
-// DELETE - Anular un pago
-export async function DELETE(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
-
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: 'ID es requerido' },
-        { status: 400 }
-      )
-    }
-
-    const pago = await db.pagoFactura.findUnique({
-      where: { id },
-      include: { factura: true }
-    })
-
-    if (!pago) {
-      return NextResponse.json(
-        { success: false, error: 'Pago no encontrado' },
-        { status: 404 }
-      )
-    }
-
-    // Revertir el saldo de la factura
-    await db.factura.update({
-      where: { id: pago.facturaId },
-      data: {
-        saldo: { increment: pago.monto },
-        estado: 'PENDIENTE'
-      }
-    })
-
-    // Eliminar el pago
-    await db.pagoFactura.delete({ where: { id } })
-
-    return NextResponse.json({
-      success: true,
-      message: 'Pago anulado correctamente'
-    })
-  } catch (error) {
-    console.error('Error annulling pago:', error)
-    return NextResponse.json(
-      { success: false, error: 'Error al anular pago' },
       { status: 500 }
     )
   }

@@ -6,7 +6,7 @@ import {
   Plus, Search, Loader2, Printer, RefreshCw, CreditCard,
   Building2, Receipt, Calendar, User, Package, Beef,
   ArrowDownToLine, FileSpreadsheet, History, Pencil,
-  ArrowLeftRight, Shield, AlertTriangle, Settings, Save, Trash2,
+  ArrowLeftRight, Trash2,
   TrendingUp, Clock, AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -96,25 +96,6 @@ interface NotaCreditoDebito {
   total: number
   operadorId?: string
   createdAt: string
-}
-
-interface ConfiguracionAFIP {
-  id: string
-  certificadoPath?: string
-  clavePrivadaPath?: string
-  entorno: string
-  cuit?: string
-  razonSocial?: string
-  inicioActividades?: string
-  puntosVenta?: string
-  wsaaUrl?: string
-  wsfeUrl?: string
-  tokenWsfe?: string
-  signWsfe?: string
-  tokenExpiracion?: string
-  activo: boolean
-  createdAt: string
-  updatedAt: string
 }
 
 interface Factura {
@@ -234,23 +215,6 @@ export function FacturacionModule({ operador }: Props) {
     total: 0,
   })
 
-  // AFIP state
-  const [afipConfig, setAfipConfig] = useState<ConfiguracionAFIP | null>(null)
-  const [loadingAfip, setLoadingAfip] = useState(false)
-  const [afipSaving, setAfipSaving] = useState(false)
-  const [afipFormData, setAfipFormData] = useState({
-    id: '',
-    entorno: 'testing',
-    cuit: '',
-    razonSocial: '',
-    inicioActividades: '',
-    certificadoPath: '',
-    clavePrivadaPath: '',
-    wsaaUrl: '',
-    wsfeUrl: '',
-    puntosVenta: '',
-  })
-
   // Tributo state
   const [tributoDialogOpen, setTributoDialogOpen] = useState(false)
   const [tributoFormData, setTributoFormData] = useState({
@@ -313,8 +277,6 @@ export function FacturacionModule({ operador }: Props) {
       fetchServicioFaena()
     } else if (tabActivo === 'notas') {
       fetchNotas()
-    } else if (tabActivo === 'afip') {
-      fetchAfipConfig()
     }
   }, [tabActivo, filtroFaenaDesde, filtroFaenaHasta, filtroFaenaCliente, filtroFaenaEstado])
 
@@ -381,34 +343,6 @@ export function FacturacionModule({ operador }: Props) {
       toast.error('Error al cargar notas')
     } finally {
       setLoadingNotas(false)
-    }
-  }
-
-  const fetchAfipConfig = async () => {
-    setLoadingAfip(true)
-    try {
-      const res = await fetch('/api/facturacion/afip')
-      const data = await res.json()
-      if (data.success && data.data) {
-        setAfipConfig(data.data)
-        setAfipFormData({
-          id: data.data.id,
-          entorno: data.data.entorno || 'testing',
-          cuit: data.data.cuit || '',
-          razonSocial: data.data.razonSocial || '',
-          inicioActividades: data.data.inicioActividades ? new Date(data.data.inicioActividades).toISOString().split('T')[0] : '',
-          certificadoPath: data.data.certificadoPath || '',
-          clavePrivadaPath: data.data.clavePrivadaPath || '',
-          wsaaUrl: data.data.wsaaUrl || '',
-          wsfeUrl: data.data.wsfeUrl || '',
-          puntosVenta: data.data.puntosVenta || '',
-        })
-      }
-    } catch (error) {
-      console.error('Error:', error)
-      toast.error('Error al cargar configuración AFIP')
-    } finally {
-      setLoadingAfip(false)
     }
   }
 
@@ -733,39 +667,6 @@ export function FacturacionModule({ operador }: Props) {
     }
   }
 
-  const handleGuardarAfip = async () => {
-    if (!afipFormData.id) {
-      toast.error('No hay configuración AFIP para actualizar')
-      return
-    }
-    setAfipSaving(true)
-    try {
-      const res = await fetch('/api/facturacion/afip', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...afipFormData,
-          inicioActividades: afipFormData.inicioActividades ? new Date(afipFormData.inicioActividades).toISOString() : null,
-        })
-      })
-      const data = await res.json()
-      if (data.success) {
-        toast.success('Configuración AFIP guardada')
-        fetchAfipConfig()
-      } else {
-        toast.error(data.error || 'Error al guardar configuración')
-      }
-    } catch {
-      toast.error('Error al guardar configuración AFIP')
-    } finally {
-      setAfipSaving(false)
-    }
-  }
-
-  const handleSolicitarCAE = () => {
-    toast.info('Función de solicitud CAE será implementada con certificados AFIP')
-  }
-
   const handleAddTributo = async () => {
     if (!tributoFormData.facturaId || !tributoFormData.descripcion) {
       toast.error('Seleccione una factura e ingrese descripción')
@@ -996,7 +897,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
         {/* Tabs */}
         <Tabs value={tabActivo} onValueChange={setTabActivo} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 max-w-2xl">
+          <TabsList className="grid w-full grid-cols-5 max-w-2xl">
             <TabsTrigger value="servicioFaena" className="gap-1">
               <Beef className="w-4 h-4" />Servicio Faena
             </TabsTrigger>
@@ -1004,9 +905,6 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
             <TabsTrigger value="cuentas">Cta. Cte.</TabsTrigger>
             <TabsTrigger value="notas" className="gap-1">
               <ArrowLeftRight className="w-4 h-4" />Notas C/D
-            </TabsTrigger>
-            <TabsTrigger value="afip" className="gap-1">
-              <Shield className="w-4 h-4" />AFIP
             </TabsTrigger>
             <TabsTrigger value="historialPrecios" className="gap-1">
               <History className="w-4 h-4" />Hist. Precios
@@ -1501,6 +1399,58 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
           {/* TAB NOTAS CRÉDITO/DÉBITO */}
           <TabsContent value="notas" className="space-y-4">
+            {/* KPIs Notas */}
+            {notas.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Card className="border-0 shadow-sm bg-blue-50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <ArrowLeftRight className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <p className="text-xs text-stone-500">Total Notas</p>
+                        <p className="text-xl font-bold text-blue-700">{notas.length}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm bg-sky-50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <ArrowLeftRight className="w-5 h-5 text-sky-600" />
+                      <div>
+                        <p className="text-xs text-stone-500">Notas Crédito</p>
+                        <p className="text-lg font-bold text-sky-700">{formatCurrency(notas.filter(n => n.tipo === 'CREDITO').reduce((s, n) => s + n.total, 0))}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm bg-red-50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-red-600" />
+                      <div>
+                        <p className="text-xs text-stone-500">Notas Débito</p>
+                        <p className="text-lg font-bold text-red-700">{formatCurrency(notas.filter(n => n.tipo === 'DEBITO').reduce((s, n) => s + n.total, 0))}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm bg-stone-50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-stone-600" />
+                      <div>
+                        <p className="text-xs text-stone-500">Saldo Neto</p>
+                        <p className={`text-lg font-bold ${notas.filter(n => n.tipo === 'DEBITO').reduce((s, n) => s + n.total, 0) - notas.filter(n => n.tipo === 'CREDITO').reduce((s, n) => s + n.total, 0) >= 0 ? 'text-red-700' : 'text-sky-700'}`}>
+                          {formatCurrency(notas.filter(n => n.tipo === 'DEBITO').reduce((s, n) => s + n.total, 0) - notas.filter(n => n.tipo === 'CREDITO').reduce((s, n) => s + n.total, 0))}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
             {/* Filtros y acciones */}
             <Card className="border-0 shadow-md">
               <CardContent className="p-4">
@@ -1552,186 +1502,80 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
                           <TableHead className="font-semibold text-xs text-right">Subtotal</TableHead>
                           <TableHead className="font-semibold text-xs text-right">IVA</TableHead>
                           <TableHead className="font-semibold text-xs text-right">Total</TableHead>
-                          <TableHead className="font-semibold text-xs">CAE</TableHead>
+                          <TableHead className="font-semibold text-xs text-center">Detalle</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {notas.map((nota) => (
-                          <TableRow key={nota.id} className="text-xs">
+                        {notas.filter(n => filtroNotasTipo === 'TODOS' || n.tipo === filtroNotasTipo).map((nota) => (
+                          <TableRow key={nota.id} className={`text-xs ${nota.tipo === 'CREDITO' ? 'hover:bg-blue-50/50' : 'hover:bg-red-50/50'}`}>
                             <TableCell className="font-mono font-medium">
                               {String(nota.puntoVenta).padStart(4, '0')}-{String(nota.numero).padStart(8, '0')}
                             </TableCell>
                             <TableCell>
                               {nota.tipo === 'CREDITO' ? (
-                                <Badge className="bg-blue-100 text-blue-700 text-xs">Crédito</Badge>
+                                <Badge className="bg-blue-100 text-blue-700 text-xs">NC</Badge>
                               ) : (
-                                <Badge className="bg-red-100 text-red-700 text-xs">Débito</Badge>
+                                <Badge className="bg-red-100 text-red-700 text-xs">ND</Badge>
                               )}
                             </TableCell>
                             <TableCell className="font-mono">
                               {nota.factura?.numero || '-'}
-                              {nota.factura?.clienteNombre && <p className="text-xs text-stone-400">{nota.factura.clienteNombre}</p>}
+                              {nota.factura?.clienteNombre && <p className="text-[10px] text-stone-400">{nota.factura.clienteNombre}</p>}
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline" className="text-xs">{nota.motivo}</Badge>
+                              <Badge variant="outline" className="text-xs">{nota.motivo === 'DEVOLUCION' ? 'Devolución' : nota.motivo === 'DESCUENTO' ? 'Descuento' : nota.motivo === 'ERROR' ? 'Error' : nota.motivo === 'ANULACION' ? 'Anulación' : nota.motivo === 'AJUSTE' ? 'Ajuste' : nota.motivo}</Badge>
+                              {nota.descripcion && <p className="text-[10px] text-stone-400 mt-0.5 max-w-[120px] truncate">{nota.descripcion}</p>}
                             </TableCell>
                             <TableCell>{new Date(nota.fecha).toLocaleDateString('es-AR')}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(nota.subtotal)}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(nota.iva)}</TableCell>
-                            <TableCell className="text-right font-medium">{formatCurrency(nota.total)}</TableCell>
-                            <TableCell>
-                              {nota.cae ? (
-                                <Badge className="bg-emerald-100 text-emerald-700 text-xs">{nota.cae}</Badge>
-                              ) : (
-                                <Badge className="bg-stone-100 text-stone-400 text-xs">Sin CAE</Badge>
-                              )}
+                            <TableCell className="text-right font-mono">{formatCurrency(nota.subtotal)}</TableCell>
+                            <TableCell className="text-right font-mono">{formatCurrency(nota.iva)}</TableCell>
+                            <TableCell className={`text-right font-mono font-bold ${nota.tipo === 'CREDITO' ? 'text-blue-700' : 'text-red-700'}`}>{formatCurrency(nota.total)}</TableCell>
+                            <TableCell className="text-center">
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Ver detalle">
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle className="flex items-center gap-2">
+                                      <ArrowLeftRight className={`w-5 h-5 ${nota.tipo === 'CREDITO' ? 'text-blue-500' : 'text-red-500'}`} />
+                                      {nota.tipo === 'CREDITO' ? 'Nota de Crédito' : 'Nota de Débito'} {String(nota.puntoVenta).padStart(4, '0')}-{String(nota.numero).padStart(8, '0')}
+                                    </DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-3">
+                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                      <div><p className="text-xs text-stone-400">Tipo</p><Badge className={nota.tipo === 'CREDITO' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}>{nota.tipo === 'CREDITO' ? 'Crédito' : 'Débito'}</Badge></div>
+                                      <div><p className="text-xs text-stone-400">Fecha</p><p>{new Date(nota.fecha).toLocaleDateString('es-AR')}</p></div>
+                                      <div><p className="text-xs text-stone-400">Factura Ref.</p><p className="font-mono">{nota.factura?.numero || '-'}</p></div>
+                                      <div><p className="text-xs text-stone-400">Cliente</p><p>{nota.factura?.clienteNombre || '-'}</p></div>
+                                    </div>
+                                    <Separator />
+                                    <div>
+                                      <p className="text-xs text-stone-400 mb-1">Motivo</p>
+                                      <Badge variant="outline">{nota.motivo}</Badge>
+                                    </div>
+                                    {nota.descripcion && (
+                                      <div>
+                                        <p className="text-xs text-stone-400 mb-1">Descripción</p>
+                                        <p className="text-sm bg-stone-50 rounded p-2">{nota.descripcion}</p>
+                                      </div>
+                                    )}
+                                    <Separator />
+                                    <div className="space-y-1">
+                                      <div className="flex justify-between text-sm"><span className="text-stone-500">Subtotal:</span><span className="font-mono">{formatCurrency(nota.subtotal)}</span></div>
+                                      <div className="flex justify-between text-sm"><span className="text-stone-500">IVA:</span><span className="font-mono">{formatCurrency(nota.iva)}</span></div>
+                                      <div className="flex justify-between text-lg font-bold"><span>Total:</span><span className={`font-mono ${nota.tipo === 'CREDITO' ? 'text-blue-700' : 'text-red-700'}`}>{formatCurrency(nota.total)}</span></div>
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* TAB AFIP */}
-          <TabsContent value="afip" className="space-y-4">
-            <Card className="border-0 shadow-md">
-              <CardHeader className="bg-stone-50 rounded-t-lg">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-amber-500" />Configuración AFIP
-                  </CardTitle>
-                  {afipConfig && (
-                    <div className="flex items-center gap-2">
-                      {afipConfig.cuit && afipConfig.certificadoPath ? (
-                        <Badge className="bg-emerald-100 text-emerald-700"><CheckCircle className="w-3 h-3 mr-1" />Configurado</Badge>
-                      ) : (
-                        <Badge className="bg-amber-100 text-amber-700"><AlertTriangle className="w-3 h-3 mr-1" />Incompleto</Badge>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="p-4">
-                {loadingAfip ? (
-                  <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
-                ) : (
-                  <div className="space-y-6">
-                    {/* Entorno */}
-                    <div className="flex items-center justify-between p-4 bg-stone-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Settings className="w-5 h-5 text-stone-500" />
-                        <div>
-                          <p className="font-medium text-sm">Entorno</p>
-                          <p className="text-xs text-stone-500">Testing para pruebas, Production para facturación real</p>
-                        </div>
-                      </div>
-                      <Select value={afipFormData.entorno} onValueChange={(v) => setAfipFormData({ ...afipFormData, entorno: v })}>
-                        <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="testing">
-                            <span className="flex items-center gap-2"><span className="w-2 h-2 bg-amber-400 rounded-full" />Testing</span>
-                          </SelectItem>
-                          <SelectItem value="production">
-                            <span className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-400 rounded-full" />Production</span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Datos del emisor */}
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-semibold text-stone-700 uppercase tracking-wide">Datos del Emisor</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs">CUIT</Label>
-                          <Input placeholder="30-12345678-9" value={afipFormData.cuit} onChange={(e) => setAfipFormData({ ...afipFormData, cuit: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">Razón Social</Label>
-                          <Input placeholder="Solemar Alimentaria S.A." value={afipFormData.razonSocial} onChange={(e) => setAfipFormData({ ...afipFormData, razonSocial: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">Inicio Actividades</Label>
-                          <Input type="date" value={afipFormData.inicioActividades} onChange={(e) => setAfipFormData({ ...afipFormData, inicioActividades: e.target.value })} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Certificados */}
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-semibold text-stone-700 uppercase tracking-wide">Certificados Digitales</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs">Certificado (.crt)</Label>
-                          <Input placeholder="/ruta/al/certificado.crt" value={afipFormData.certificadoPath} onChange={(e) => setAfipFormData({ ...afipFormData, certificadoPath: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">Clave Privada (.key)</Label>
-                          <Input placeholder="/ruta/a/clave.key" value={afipFormData.clavePrivadaPath} onChange={(e) => setAfipFormData({ ...afipFormData, clavePrivadaPath: e.target.value })} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Web Services */}
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-semibold text-stone-700 uppercase tracking-wide">Web Services AFIP</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs">WSAA URL</Label>
-                          <Input placeholder="https://wsaahomo.afip.gov.ar/ws/services/LoginCms" value={afipFormData.wsaaUrl} onChange={(e) => setAfipFormData({ ...afipFormData, wsaaUrl: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">WSFE URL</Label>
-                          <Input placeholder="https://wsfehomo.afip.gov.ar/wsfev1/service.asmx" value={afipFormData.wsfeUrl} onChange={(e) => setAfipFormData({ ...afipFormData, wsfeUrl: e.target.value })} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Puntos de venta */}
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-semibold text-stone-700 uppercase tracking-wide">Puntos de Venta</h3>
-                      <div className="space-y-2">
-                        <Label className="text-xs">Puntos de venta habilitados (JSON array)</Label>
-                        <Input placeholder='[1, 2, 3]' value={afipFormData.puntosVenta} onChange={(e) => setAfipFormData({ ...afipFormData, puntosVenta: e.target.value })} />
-                        <p className="text-xs text-stone-400">Formato: [1, 2, 3] — Puntos de venta habilitados por AFIP</p>
-                      </div>
-                      {afipFormData.puntosVenta && (() => {
-                        try {
-                          const pv = JSON.parse(afipFormData.puntosVenta)
-                          if (Array.isArray(pv)) {
-                            return (
-                              <div className="flex flex-wrap gap-2">
-                                {pv.map((p: number) => (
-                                  <Badge key={p} variant="outline" className="text-xs">PV {String(p).padStart(4, '0')}</Badge>
-                                ))}
-                              </div>
-                            )
-                          }
-                        } catch {}
-                        return null
-                      })()}
-                    </div>
-
-                    {/* Estado del token */}
-                    {afipConfig?.tokenExpiracion && (
-                      <div className="p-3 bg-stone-50 rounded-lg text-sm">
-                        <p className="text-stone-500">Último token WSFE: {new Date(afipConfig.tokenExpiracion).toLocaleString('es-AR')}</p>
-                        <p className="text-xs text-stone-400 mt-1">
-                          {new Date(afipConfig.tokenExpiracion) > new Date() ? '✓ Token vigente' : '⚠ Token expirado'}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="flex justify-end">
-                      <Button onClick={handleGuardarAfip} disabled={afipSaving} className="bg-amber-500 hover:bg-amber-600">
-                        {afipSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                        Guardar Configuración
-                      </Button>
-                    </div>
                   </div>
                 )}
               </CardContent>
@@ -1848,11 +1692,6 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setPreviewOpen(false)}>Cerrar</Button>
-              {!facturaSeleccionada?.cae && facturaSeleccionada?.estado !== 'ANULADA' && (
-                <Button variant="outline" onClick={handleSolicitarCAE}>
-                  <Shield className="w-4 h-4 mr-2" />Solicitar CAE
-                </Button>
-              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1878,12 +1717,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
                         {facturaSeleccionada.caeVencimiento && <p className="text-xs text-stone-400">Vto: {new Date(facturaSeleccionada.caeVencimiento).toLocaleDateString('es-AR')}</p>}
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-stone-100 text-stone-400">Sin CAE</Badge>
-                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleSolicitarCAE}>
-                          <Shield className="w-3 h-3 mr-1" />Solicitar CAE
-                        </Button>
-                      </div>
+                      <Badge className="bg-stone-100 text-stone-400">Sin CAE</Badge>
                     )}
                   </div>
                 </div>
@@ -1965,11 +1799,6 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setViewOpen(false)}>Cerrar</Button>
-              {!facturaSeleccionada?.cae && facturaSeleccionada?.estado !== 'ANULADA' && (
-                <Button variant="outline" onClick={handleSolicitarCAE}>
-                  <Shield className="w-4 h-4 mr-2" />Solicitar CAE
-                </Button>
-              )}
               <Button onClick={() => { handleImprimir(facturaSeleccionada!); setViewOpen(false); }}><Printer className="w-4 h-4 mr-2" />Imprimir</Button>
             </DialogFooter>
           </DialogContent>
