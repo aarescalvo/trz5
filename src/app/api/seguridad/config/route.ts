@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { checkPermission } from '@/lib/auth-helpers'
 
 // GET - Obtener configuración de seguridad
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     let config = await db.configuracionSeguridad.findFirst()
     
@@ -28,6 +32,9 @@ export async function GET() {
 
 // POST - Actualizar configuración de seguridad
 export async function POST(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const body = await request.json()
     

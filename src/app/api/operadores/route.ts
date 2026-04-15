@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // GET - Listar operadores
 export async function GET(request: NextRequest) {
   try {
+    const operadorId = getOperadorId(request)
+    const puedeVer = await validarPermiso(operadorId, 'puedeConfiguracion')
+    if (!puedeVer) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de configuración' }, { status: 403 })
+    }
+
     const operadores = await db.operador.findMany({
       select: {
         id: true,
@@ -47,6 +58,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const operadorIdAuth = body.operadorIdAuth || getOperadorId(request)
+    const puedeCrear = await validarPermiso(operadorIdAuth, 'puedeConfiguracion')
+    if (!puedeCrear) {
+      return NextResponse.json({ success: false, error: 'Solo administradores pueden crear operadores' }, { status: 403 })
+    }
+
     const {
       nombre,
       usuario,
@@ -149,6 +166,12 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
+    const operadorIdAuth = body.operadorIdAuth || getOperadorId(request)
+    const puedeEditar = await validarPermiso(operadorIdAuth, 'puedeConfiguracion')
+    if (!puedeEditar) {
+      return NextResponse.json({ success: false, error: 'Solo administradores pueden editar operadores' }, { status: 403 })
+    }
+
     const {
       id,
       nombre,
@@ -224,7 +247,12 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    
+    const operadorIdAuth = searchParams.get('operadorId') || request.headers.get('x-operador-id')
+    const puedeEliminar = await validarPermiso(operadorIdAuth, 'puedeConfiguracion')
+    if (!puedeEliminar) {
+      return NextResponse.json({ success: false, error: 'Solo administradores pueden eliminar operadores' }, { status: 403 })
+    }
+
     if (!id) {
       return NextResponse.json(
         { success: false, error: 'ID es requerido' },

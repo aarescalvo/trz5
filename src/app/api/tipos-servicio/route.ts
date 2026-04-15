@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // GET - Listar tipos de servicio
 export async function GET(request: NextRequest) {
@@ -45,7 +50,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { 
+    const operadorId = body.operadorId || getOperadorId(request)
+    const puedeCrear = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeCrear) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
+    const {
       codigo, 
       nombre, 
       descripcion, 
@@ -102,7 +112,12 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, ...data } = body
+    const { id, operadorId: bodyOpId, ...data } = body
+    const operadorId = bodyOpId || getOperadorId(request)
+    const puedeEditar = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeEditar) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
 
     if (!id) {
       return NextResponse.json(
@@ -134,6 +149,11 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+    const operadorId = searchParams.get('operadorId') || request.headers.get('x-operador-id')
+    const puedeEliminar = await validarPermiso(operadorId, 'puedeConfiguracion')
+    if (!puedeEliminar) {
+      return NextResponse.json({ success: false, error: 'Solo un administrador puede eliminar tipos de servicio' }, { status: 403 })
+    }
 
     if (!id) {
       return NextResponse.json(

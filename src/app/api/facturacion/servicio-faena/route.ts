@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // GET - Obtener tropas con datos de servicio faena para facturación
 export async function GET(request: NextRequest) {
   try {
+    const operadorId = getOperadorId(request)
+    const puedeVer = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeVer) {
+      return NextResponse.json(
+        { success: false, error: 'Sin permisos de facturación' },
+        { status: 403 }
+      )
+    }
     const { searchParams } = new URL(request.url)
     const desde = searchParams.get('desde')
     const hasta = searchParams.get('hasta')
@@ -167,7 +180,16 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { tropaId, ...data } = body
+    const { tropaId, operadorId, ...data } = body
+
+    // Validate permissions
+    const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeFacturar) {
+      return NextResponse.json(
+        { success: false, error: 'Sin permisos de facturación' },
+        { status: 403 }
+      )
+    }
 
     if (!tropaId) {
       return NextResponse.json(

@@ -3976,3 +3976,84 @@ Stage Summary:
 - **3 APIs REST nuevas** para reportes
 - **3 componentes React nuevos** con UI completa
 - **Pending: Commit + Push a GitHub**
+
+---
+Task ID: 1700
+Agent: main
+Task: Auditoría completa de APIs, permisos y seguridad - Sesiones múltiples
+
+Work Log:
+
+#### 1. Middleware de Rutas (CRÍTICO - creado desde cero)
+**Archivo:** `src/middleware.ts`
+- **Problema**: No existía middleware. Todas las rutas API eran completamente accesibles sin autenticación.
+- **Solución**: Creado middleware con:
+  - Rutas públicas: `/api/auth/*`, `/api/seed*`, `/api/migrar-usuarios`, `/api/sistema/status`, `/api/balanza/*`
+  - Rutas de solo lectura sin permiso especial: `/api/configuracion`, `/api/indicadores`, `/api/dashboard*`
+  - Mapeo de permisos por ruta para escritura (ROUTE_PERMISSIONS): facturación, configuración, stock, pesaje, etc.
+  - Propagación de `x-operador-id` desde query params a headers
+
+#### 2. Helper de Permisos Mejorado
+**Archivo:** `src/lib/auth-helpers.ts`
+- Agregada función `checkPermission(request, permiso)` que:
+  - Extrae `operadorId` de header `x-operador-id` o query param
+  - Valida permiso usando `validarPermiso()`
+  - Retorna `NextResponse` de error (401/403) o `null` si autorizado
+  - Uso: `const authError = await checkPermission(request, 'puedeConfiguracion'); if (authError) return authError;`
+
+#### 3. Rutas API con Permisos Agregados (Sesiones Anteriores)
+- `productos/route.ts` - puedeStock
+- `clientes/route.ts` - puedeFacturacion
+- `precios/route.ts` - puedeFacturacion
+- `liquidaciones/route.ts` - puedeFacturacion
+- `operadores/route.ts` - puedeConfiguracion (CRÍTICO: antes cualquiera podía CRUD operadores)
+- `configuracion/route.ts` - puedeConfiguracion
+- `usuarios/route.ts` - puedeConfiguracion
+- `facturacion/pdf/route.ts` - puedeFacturacion
+- `facturacion/notas/route.ts` - puedeFacturacion
+- `facturacion/notas/pdf/route.ts` - puedeFacturacion
+- `facturacion/ctacte/route.ts` - puedeFacturacion
+- `facturacion/informes/route.ts` - puedeFacturacion
+- `facturacion/servicio-faena/route.ts` - puedeFacturacion
+- `facturacion/servicio-faena/facturar/route.ts` - puedeFacturacion
+- `facturacion/tributos/route.ts` - puedeFacturacion
+- `tarifas/route.ts` - puedeFacturacion
+- `tipos-servicio/route.ts` - puedeFacturacion
+- `cuenta-corriente/route.ts` - puedeFacturacion
+
+#### 4. Rutas API con Permisos Agregados (Esta Sesión)
+- `admin/backups/route.ts` - puedeConfiguracion (GET/POST/DELETE)
+- `admin/restaurar/route.ts` - puedeConfiguracion (POST/GET)
+- `admin/exportar/route.ts` - puedeConfiguracion (GET)
+- `admin/migrar-estados/route.ts` - puedeConfiguracion (GET/POST)
+- `admin/actualizaciones/route.ts` - puedeConfiguracion (GET/POST)
+- `admin/backups-config/route.ts` - puedeConfiguracion (GET/POST/PATCH)
+- `seguridad/config/route.ts` - puedeConfiguracion (GET/POST)
+- `seguridad/sesiones/route.ts` - puedeConfiguracion (GET)
+- `seguridad/intentos-login/route.ts` - puedeConfiguracion (GET)
+- `seguridad/ips-bloqueadas/route.ts` - puedeConfiguracion (GET/POST)
+- `seguridad/ips-bloqueadas/[id]/route.ts` - puedeConfiguracion (DELETE)
+- `seguridad/sesiones/[id]/cerrar/route.ts` - puedeConfiguracion (POST)
+- `backup/ejecutar/route.ts` - puedeConfiguracion (POST)
+- `backup/descargar/route.ts` - puedeConfiguracion (GET)
+- `backup/historial/route.ts` - puedeConfiguracion (GET/DELETE)
+- `backup/configuracion/route.ts` - puedeConfiguracion (GET/PUT)
+
+#### 5. Bug IVA Frontend Corregido (Sesión Anterior)
+- **Problema**: Frontend usaba `.includes('RESPONSABLE')` pero la DB guarda códigos cortos ('RI', 'CF', 'MT', 'EX')
+- **Solución**: Cambiado para comparar con códigos cortos
+- **Agregado**: Manejo de Factura C (consumidor final, sin IVA)
+- **Archivos**: Componente facturación y LiquidacionForm.tsx
+
+#### 6. Build Verificado
+- `npx next build` exitoso sin errores
+- Todas las rutas API compiladas correctamente
+
+Stage Summary:
+- **Middleware de seguridad creado** (antes no existía) - CRÍTICO
+- **35+ rutas API protegidas** con permisos granulares
+- **Helper checkPermission()** creado para uso uniforme en route handlers
+- **Rutas admin/seguridad/backup** ahora requieren puedeConfiguracion
+- **Bug IVA corregido** en frontend
+- **Build exitoso** sin errores
+- **Sistema mucho más seguro** contra acceso no autorizado

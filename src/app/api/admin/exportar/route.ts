@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import * as fs from 'fs'
 import * as path from 'path'
+import { checkPermission } from '@/lib/auth-helpers'
 
 // GET - Exportar datos
 export async function GET(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const { searchParams } = new URL(request.url)
     const tipo = searchParams.get('tipo') || 'tropas'

@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // GET - List notas de crédito/débito con filtros avanzados
 export async function GET(request: NextRequest) {
   try {
+    const operadorId = getOperadorId(request)
+    const puedeVer = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeVer) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
     const { searchParams } = new URL(request.url)
     const facturaId = searchParams.get('facturaId')
     const tipo = searchParams.get('tipo')
@@ -82,6 +92,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { facturaId, tipo, motivo, descripcion, subtotal, iva, total, operadorId } = body
+    
+    // Validate permissions
+    const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeFacturar) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
     
     if (!facturaId || !tipo || !motivo) {
       return NextResponse.json(
@@ -172,6 +188,12 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
     const { id, estado, operadorId } = body
+    
+    // Validate permissions
+    const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeFacturar) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
     
     if (!id) {
       return NextResponse.json(

@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // GET /api/precios — Listar precios vigentes o todos
 export async function GET(request: NextRequest) {
@@ -74,6 +79,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { tipoServicioId, clienteId, precio, fechaDesde, observaciones, operadorId, motivo } = body
+
+    const opId = operadorId || getOperadorId(request)
+    const puedeCrear = await validarPermiso(opId, 'puedeFacturacion')
+    if (!puedeCrear) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
 
     if (!tipoServicioId || !clienteId || precio === undefined || precio === null) {
       return NextResponse.json({ success: false, error: 'tipoServicioId, clienteId y precio son requeridos' }, { status: 400 })
@@ -171,6 +182,12 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { id, precio, observaciones, motivo, operadorId } = body
 
+    const opId = operadorId || getOperadorId(request)
+    const puedeEditar = await validarPermiso(opId, 'puedeFacturacion')
+    if (!puedeEditar) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
+
     if (!id) {
       return NextResponse.json({ success: false, error: 'ID es requerido' }, { status: 400 })
     }
@@ -255,7 +272,12 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    const operadorId = searchParams.get('operadorId')
+    const operadorId = searchParams.get('operadorId') || request.headers.get('x-operador-id')
+
+    const puedeEliminar = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeEliminar) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'ID es requerido' }, { status: 400 })

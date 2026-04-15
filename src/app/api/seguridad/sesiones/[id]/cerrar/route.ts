@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { checkPermission } from '@/lib/auth-helpers'
 
 // POST - Cerrar sesión forzadamente
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const { id: sesionId } = await params
     

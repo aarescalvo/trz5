@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { Especie } from '@prisma/client'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // GET - Listar productos
 export async function GET(request: NextRequest) {
@@ -48,6 +53,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const operadorId = body.operadorId || getOperadorId(request)
+    const puedeCrear = await validarPermiso(operadorId, 'puedeStock')
+    if (!puedeCrear) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de stock' }, { status: 403 })
+    }
     const {
       codigo,
       nombre,
@@ -126,7 +136,12 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, ...updateData } = body
+    const { id, operadorId: bodyOpId, ...updateData } = body
+    const operadorId = bodyOpId || getOperadorId(request)
+    const puedeEditar = await validarPermiso(operadorId, 'puedeStock')
+    if (!puedeEditar) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de stock' }, { status: 403 })
+    }
 
     if (!id) {
       return NextResponse.json(
@@ -176,6 +191,11 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+    const operadorId = searchParams.get('operadorId') || request.headers.get('x-operador-id')
+    const puedeEliminar = await validarPermiso(operadorId, 'puedeConfiguracion')
+    if (!puedeEliminar) {
+      return NextResponse.json({ success: false, error: 'Solo un administrador puede eliminar productos' }, { status: 403 })
+    }
 
     if (!id) {
       return NextResponse.json(

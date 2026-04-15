@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // GET - Obtener estado de cuenta corriente de un cliente
 export async function GET(request: NextRequest) {
   try {
+    const operadorId = getOperadorId(request)
+    const puedeVer = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeVer) {
+      return NextResponse.json(
+        { success: false, error: 'Sin permisos de facturación' },
+        { status: 403 }
+      )
+    }
     const { searchParams } = new URL(request.url)
     const clienteId = searchParams.get('clienteId')
 
@@ -97,6 +110,15 @@ export async function POST(request: NextRequest) {
       imputaciones,
     } = body
 
+    // Validate permissions
+    const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeFacturar) {
+      return NextResponse.json(
+        { success: false, error: 'Sin permisos de facturación' },
+        { status: 403 }
+      )
+    }
+
     // Caso 1: Imputación múltiple (varias facturas con un solo pago)
     if (imputaciones && Array.isArray(imputaciones) && imputaciones.length > 0) {
       const resultados = []
@@ -152,11 +174,12 @@ export async function POST(request: NextRequest) {
         // Registrar en auditoría
         await db.auditoria.create({
           data: {
+            modulo: 'facturacion',
             accion: 'PAGO_REGISTRADO',
             entidad: 'Factura',
             entidadId: factura.id,
-            operadorId: operadorId || 'sistema',
-            detalle: `Pago $${montoImputar.toLocaleString('es-AR')} - ${metodoPago} - Saldo restante: $${nuevoSaldo.toLocaleString('es-AR')}`,
+            operadorId: operadorId || null,
+            descripcion: `Pago $${montoImputar.toLocaleString('es-AR')} - ${metodoPago} - Saldo restante: $${nuevoSaldo.toLocaleString('es-AR')}`,
           },
         })
 
@@ -236,11 +259,12 @@ export async function POST(request: NextRequest) {
     // Registrar en auditoría
     await db.auditoria.create({
       data: {
+        modulo: 'facturacion',
         accion: 'PAGO_REGISTRADO',
         entidad: 'Factura',
         entidadId: facturaId,
-        operadorId: operadorId || 'sistema',
-        detalle: `Pago $${montoPago.toLocaleString('es-AR')} - ${metodoPago} - Saldo restante: $${Math.max(0, nuevoSaldo).toLocaleString('es-AR')}`,
+        operadorId: operadorId || null,
+        descripcion: `Pago $${montoPago.toLocaleString('es-AR')} - ${metodoPago} - Saldo restante: $${Math.max(0, nuevoSaldo).toLocaleString('es-AR')}`,
       },
     })
 

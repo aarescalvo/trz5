@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+// Helper para obtener operadorId desde headers o query params
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // GET - Fetch facturas
 export async function GET(request: NextRequest) {
   try {
+    const operadorId = getOperadorId(request)
+    const puedeVer = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeVer) {
+      return NextResponse.json(
+        { success: false, error: 'Sin permisos de facturación' },
+        { status: 403 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const estado = searchParams.get('estado')
     const clienteId = searchParams.get('clienteId')
@@ -12,38 +27,40 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
     const tipoComprobante = searchParams.get('tipoComprobante')
     
-    let where: any = {}
+    // Build filters with AND to avoid OR overriding other conditions
+    const conditions: any[] = []
     
     if (estado && estado !== 'TODOS') {
-      where.estado = estado
+      conditions.push({ estado })
     }
     
     if (clienteId) {
-      where.clienteId = clienteId
+      conditions.push({ clienteId })
     }
     
     if (tipoComprobante) {
-      where.tipoComprobante = tipoComprobante
+      conditions.push({ tipoComprobante })
     }
     
     if (desde || hasta) {
-      where.fecha = {}
-      if (desde) {
-        where.fecha.gte = new Date(desde)
-      }
-      if (hasta) {
-        where.fecha.lte = new Date(hasta + 'T23:59:59')
-      }
+      const fechaFilter: any = {}
+      if (desde) fechaFilter.gte = new Date(desde)
+      if (hasta) fechaFilter.lte = new Date(hasta + 'T23:59:59')
+      conditions.push({ fecha: fechaFilter })
     }
     
     if (search) {
-      where.OR = [
-        { numero: { contains: search } },
-        { cliente: { nombre: { contains: search } } },
-        { cliente: { razonSocial: { contains: search } } },
-        { remito: { contains: search } }
-      ]
+      conditions.push({
+        OR: [
+          { numero: { contains: search } },
+          { cliente: { nombre: { contains: search } } },
+          { cliente: { razonSocial: { contains: search } } },
+          { remito: { contains: search } }
+        ]
+      })
     }
+    
+    const where = conditions.length > 0 ? { AND: conditions } : {}
     
     const facturas = await db.factura.findMany({
       where,
@@ -72,7 +89,21 @@ export async function GET(request: NextRequest) {
             id: true,
             nombre: true
           }
-        }
+        },
+        notas: {
+          where: { estado: 'EMITIDA' },
+          select: {
+            id: true,
+            tipo: true,
+            numero: true,
+            puntoVenta: true,
+            total: true,
+            estado: true,
+            motivo: true,
+          },
+          orderBy: { createdAt: 'desc' }
+        },
+        tributos: true
       },
       orderBy: { createdAt: 'desc' }
     })
@@ -137,6 +168,15 @@ export async function POST(request: NextRequest) {
       despachoId,
       operadorId 
     } = body
+    
+    // Validate permissions
+    const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeFacturar) {
+      return NextResponse.json(
+        { success: false, error: 'Sin permisos de facturación' },
+        { status: 403 }
+      )
+    }
     
     if (!clienteId) {
       return NextResponse.json(
@@ -223,6 +263,8 @@ export async function POST(request: NextRequest) {
     const discriminadoIva = tipoComprobante === 'FACTURA_A'
     const iva = discriminadoIva ? totalIva : 0
     const totalFinal = discriminadoIva ? total : subtotal
+    // Prevent division by zero when subtotal is 0
+    const porcentajeIvaCalculado = subtotal > 0 ? (totalIva / subtotal * 100) : 0
     
     // Crear la factura con sus detalles
     const factura = await db.factura.create({
@@ -238,7 +280,7 @@ export async function POST(request: NextRequest) {
         fecha: fechaFactura,
         subtotal,
         iva,
-        porcentajeIva: totalIva / subtotal * 100 || 0,
+        porcentajeIva: porcentajeIvaCalculado,
         total: totalFinal,
         saldo: totalFinal,  // Inicialmente el saldo es el total
         estado: 'PENDIENTE',
@@ -292,7 +334,16 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, estado, observaciones, remito, fechaVencimiento } = body
+    const { id, estado, observaciones, remito, fechaVencimiento, operadorId } = body
+    
+    // Validate permissions
+    const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeFacturar) {
+      return NextResponse.json(
+        { success: false, error: 'Sin permisos de facturación' },
+        { status: 403 }
+      )
+    }
     
     if (!id) {
       return NextResponse.json(
@@ -333,6 +384,16 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+    const operadorId = searchParams.get('operadorId') || request.headers.get('x-operador-id')
+    
+    // Validate permissions
+    const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeFacturar) {
+      return NextResponse.json(
+        { success: false, error: 'Sin permisos de facturación' },
+        { status: 403 }
+      )
+    }
     
     if (!id) {
       return NextResponse.json(

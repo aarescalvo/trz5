@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // Fuentes estándar para pdfmake
 const fonts = {
@@ -41,6 +46,11 @@ const TIPOS_COMPROBANTE_FACT: Record<string, string> = {
 // POST /api/facturacion/notas/pdf — Generar PDF de nota de crédito/débito
 export async function POST(request: NextRequest) {
   try {
+    const operadorId = getOperadorId(request)
+    const puedeVer = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeVer) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
     const body = await request.json()
     const { notaId } = body
 

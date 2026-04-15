@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { validarPermiso } from '@/lib/auth-helpers';
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // GET - Listar usuarios (usando Operador como usuarios internos del sistema)
 export async function GET(request: NextRequest) {
   try {
+    const operadorId = getOperadorId(request)
+    const puedeVer = await validarPermiso(operadorId, 'puedeConfiguracion')
+    if (!puedeVer) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de configuración' }, { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url);
     const rol = searchParams.get('rol');
     const activos = searchParams.get('activos');

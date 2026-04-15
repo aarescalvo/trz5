@@ -12,11 +12,15 @@ import {
   calculateNextBackup,
   getBackupDir
 } from '@/lib/backup-scheduler'
+import { checkPermission } from '@/lib/auth-helpers'
 
 const execAsync = promisify(exec)
 
 // GET - Listar backups disponibles con información adicional
 export async function GET(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const { searchParams } = new URL(request.url)
     const includeHistory = searchParams.get('history') === 'true'
@@ -130,6 +134,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Crear nuevo backup
 export async function POST(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const { includeFiles = false, compress = true, verify = false } = body
@@ -175,6 +182,9 @@ export async function POST(request: NextRequest) {
 
 // DELETE - Eliminar backup
 export async function DELETE(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const { searchParams } = new URL(request.url)
     const fileName = searchParams.get('file')

@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { validarPermiso } from '@/lib/auth-helpers'
 
 // POST - Generar facturas desde tropas de servicio faena
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { tropaIds, operadorId } = body
+
+    // Validate permissions
+    const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeFacturar) {
+      return NextResponse.json(
+        { success: false, error: 'Sin permisos de facturación' },
+        { status: 403 }
+      )
+    }
 
     if (!tropaIds || !Array.isArray(tropaIds) || tropaIds.length === 0) {
       return NextResponse.json(

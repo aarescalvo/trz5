@@ -270,12 +270,14 @@ export function FacturacionModule({ operador }: Props) {
     if (formData.clienteId) {
       const cliente = clientes.find(c => c.id === formData.clienteId)
       if (cliente) {
-        const cond = (cliente.condicionIva || '').toUpperCase()
-        if (cond.includes('RESPONSABLE') || cond.includes('INSCRIPTO')) {
+        const cond = (cliente.condicionIva || '').toUpperCase().trim()
+        // La BD guarda códigos cortos: RI, CF, MT, EX, NC
+        // También soportar descripciones largas por compatibilidad
+        if (cond === 'RI' || cond.includes('RESPONSABLE') || cond.includes('INSCRIPTO')) {
           setAutoTipoComprobante('FACTURA_A')
-        } else if (cond.includes('MONOTRIBUTO') || cond.includes('CONSUMIDOR') || cond.includes('FINAL')) {
+        } else if (cond === 'CF' || cond === 'MT' || cond.includes('MONOTRIBUTO') || cond.includes('CONSUMIDOR') || cond.includes('FINAL')) {
           setAutoTipoComprobante('FACTURA_B')
-        } else if (cond.includes('EXENTO') || cond.includes('NO CATEGORIZADO')) {
+        } else if (cond === 'EX' || cond === 'NC' || cond === 'NR' || cond.includes('EXENTO') || cond.includes('NO CATEGORIZADO') || cond.includes('NO RESPONSABLE')) {
           setAutoTipoComprobante('FACTURA_C')
         } else {
           setAutoTipoComprobante('FACTURA_B')

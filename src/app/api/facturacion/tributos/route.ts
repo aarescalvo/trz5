@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // GET - List tributos for a factura
 export async function GET(request: NextRequest) {
   try {
+    const operadorId = getOperadorId(request)
+    const puedeVer = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeVer) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
     const { searchParams } = new URL(request.url)
     const facturaId = searchParams.get('facturaId')
     
@@ -26,7 +36,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { facturaId, tributoId, descripcion, baseImponible, alicuota, importe } = body
+    const { facturaId, tributoId, descripcion, baseImponible, alicuota, importe, operadorId } = body
+    
+    const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeFacturar) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
     
     if (!facturaId || !descripcion) {
       return NextResponse.json({ success: false, error: 'Factura y descripción son requeridos' }, { status: 400 })
@@ -60,6 +75,11 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+    const operadorId = searchParams.get('operadorId') || request.headers.get('x-operador-id')
+    const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeFacturar) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
     if (!id) return NextResponse.json({ success: false, error: 'ID requerido' }, { status: 400 })
     
     const tributo = await db.facturaTributo.delete({ where: { id } })

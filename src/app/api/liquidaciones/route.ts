@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { liquidacionService } from '@/modules/facturacion/services/liquidacion.service'
 import { crearLiquidacionSchema } from '@/modules/facturacion/types'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 export async function GET(request: NextRequest) {
   try {
+    const operadorId = getOperadorId(request)
+    const puedeVer = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeVer) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url)
     const modo = searchParams.get('modo') || 'all'
     
@@ -29,6 +40,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const operadorId = body.operadorId || getOperadorId(request)
+    const puedeCrear = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeCrear) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
+
     const parsed = crearLiquidacionSchema.safeParse(body)
     
     if (!parsed.success) {

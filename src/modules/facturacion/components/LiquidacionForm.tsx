@@ -114,7 +114,7 @@ export function LiquidacionForm({ operador, liquidacionId, onClose }: Props) {
   const isEmitida = liquidacion.estado === 'EMITIDA'
   const isAnulada = liquidacion.estado === 'ANULADA'
   const condicionIva = liquidacion.cliente?.condicionIva || 'CF'
-  const tipoComprobante = condicionIva === 'RI' ? 'Factura A' : 'Factura B'
+  const tipoComprobante = condicionIva === 'RI' ? 'Factura A' : condicionIva === 'EX' || condicionIva === 'NC' || condicionIva === 'NR' ? 'Factura C' : 'Factura B'
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">

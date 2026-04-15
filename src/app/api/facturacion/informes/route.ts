@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { validarPermiso } from '@/lib/auth-helpers'
 import { startOfWeek, format } from 'date-fns'
 import { es } from 'date-fns/locale'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // GET - Informes de facturación con datos para gráficos
 export async function GET(request: NextRequest) {
   try {
+    const operadorId = getOperadorId(request)
+    const puedeVer = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeVer) {
+      return NextResponse.json(
+        { success: false, error: 'Sin permisos de facturación' },
+        { status: 403 }
+      )
+    }
     const { searchParams } = new URL(request.url)
     const tipo = searchParams.get('tipo') || 'general' // semanal, mensual, porCliente, porTipo, general
     const clienteId = searchParams.get('clienteId')

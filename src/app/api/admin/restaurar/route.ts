@@ -3,11 +3,15 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import { checkPermission } from '@/lib/auth-helpers'
 
 const execAsync = promisify(exec)
 
 // POST - Restaurar desde backup
 export async function POST(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const { fileName, createBackupBefore = true } = body
@@ -130,6 +134,9 @@ export async function POST(request: NextRequest) {
 
 // GET - Verificar integridad de backup
 export async function GET(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const { searchParams } = new URL(request.url)
     const fileName = searchParams.get('file')

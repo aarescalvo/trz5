@@ -12,9 +12,13 @@ import {
   type FrecuenciaBackup,
   type DestinoBackup
 } from '@/lib/backup-scheduler'
+import { checkPermission } from '@/lib/auth-helpers'
 
 // GET - Obtener configuración actual de backups
 export async function GET(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const config = await getBackupConfig()
     const schedulerStatus = getSchedulerStatus()
@@ -55,6 +59,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Guardar configuración de backups
 export async function POST(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const {
@@ -166,6 +173,9 @@ export async function POST(request: NextRequest) {
 
 // PATCH - Ejecutar acciones específicas
 export async function PATCH(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const { action, fileName } = body

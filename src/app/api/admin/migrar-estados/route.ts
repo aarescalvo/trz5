@@ -1,9 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { checkPermission } from '@/lib/auth-helpers'
 
 // GET - Ver estado de tropas y animales
-// POST - Migrar animales a estado PESADO según criterio
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     // Obtener todas las tropas con sus animales
     const tropas = await db.tropa.findMany({
@@ -57,7 +60,10 @@ export async function GET() {
 }
 
 // POST - Migrar animales de tropas con pesaje completo a estado PESADO
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     // Buscar tropas con pesaje completo (pesoBruto y pesoTara) cuyos animales estén en RECIBIDO
     const tropasConPesajeCompleto = await db.tropa.findMany({

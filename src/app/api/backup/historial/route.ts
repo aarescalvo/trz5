@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import fs from 'fs';
+import { checkPermission } from '@/lib/auth-helpers'
 
 // GET - Historial de backups
 export async function GET(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const { searchParams } = new URL(request.url);
     const limite = parseInt(searchParams.get('limite') || '50');
@@ -27,6 +31,9 @@ export async function GET(request: NextRequest) {
 
 // DELETE - Eliminar un backup
 export async function DELETE(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

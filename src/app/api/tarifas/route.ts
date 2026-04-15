@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tarifasService } from '@/modules/facturacion/services/tarifas.service'
 import { crearTarifaSchema } from '@/modules/facturacion/types'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,6 +58,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const operadorId = getOperadorId(request)
+    const puedeCrear = await validarPermiso(operadorId, 'puedeFacturacion')
+    if (!puedeCrear) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })
+    }
+
     const body = await request.json()
     const parsed = crearTarifaSchema.safeParse(body)
     

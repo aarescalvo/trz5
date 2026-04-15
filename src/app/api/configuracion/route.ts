@@ -1,5 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { validarPermiso } from '@/lib/auth-helpers'
+
+function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+}
 
 // GET - Obtener configuración del frigorífico
 export async function GET() {
@@ -34,8 +39,14 @@ export async function GET() {
 }
 
 // PUT - Actualizar configuración del frigorífico
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
+    const operadorId = getOperadorId(request)
+    const puedeEditar = await validarPermiso(operadorId, 'puedeConfiguracion')
+    if (!puedeEditar) {
+      return NextResponse.json({ success: false, error: 'Sin permisos de configuración' }, { status: 403 })
+    }
+
     const body = await request.json()
 
     // Buscar configuración existente
