@@ -4117,3 +4117,35 @@ Stage Summary:
 - **3 componentes frontend**: Expedición, Pallets, Rendimiento
 - **11 rutas API C2** en build
 - **Push a ambos repos**: produccion4z + trazasole
+---
+Task ID: Stage5-C2
+Agent: main
+Task: Ciclo II Stage 5 - Reportes C2 (Stock, Degradación, Reportes Consolidados)
+
+Work Log:
+- Created API route /api/c2-stock with GET supporting 4 grouping modes: by producto, estado, cámara, tropa
+- Created C2Stock component: 4 tab views with badges, progress bars, expandable tropa detail
+- Created C2Degradacion component: register trimming/decomiso/aprovechamiento, select box, reassign product, filter by type
+- Created C2Reportes component: 3 tabs (Merma Cuarteo with per-record analysis, Resumen Diario with rendimiento+stock+degradaciones, Trazabilidad search by code)
+- Updated page.tsx: added 4 imports, 4 Page types, 4 nav items, 4 switch cases, AlertTriangle icon import
+- Build successful with 12 C2 API routes
+- Committed: cd65866, pushed to both GitHub repos
+
+Stage Summary:
+- **API c2-stock**: GET con 4 modos de agrupación
+- **C2Stock**: 4 vistas con KPIs y badges de estado
+- **C2Degradacion**: registro y consulta de degradaciones (usa API c2-degradacion existente)
+- **C2Reportes**: merma cuarteo, resumen diario, trazabilidad
+- **12 rutas API C2** en build
+- **Push a ambos repos**: produccion4z + trazasole
+- **CICLO II COMPLETO**: 5 etapas implementadas
+
+=== CICLO II - RESUMEN FINAL ===
+Stage 1: Maestros (Rubros, Tipos Cuarto, Productos Desposte, BOM) ✅
+Stage 2: Cuarteo Mejorado + Ingreso Desposte ✅
+Stage 3: Producción/Desposte (Cajas + Subproductos) ✅
+Stage 4: Logística/Expedición (Pallets, Expedición, Rendimiento) ✅
+Stage 5: Reportes (Stock, Degradación, Reportes Consolidados) ✅
+
+Total API routes C2: 12
+Total componentes C2: 15
