@@ -55,6 +55,9 @@ import C2BOMModule from '@/components/c2-bom'
 import C2IngresoDesposteModule from '@/components/c2-ingreso-desposte'
 import C2ProduccionModule from '@/components/c2-produccion'
 import C2SubproductosModule from '@/components/c2-subproductos'
+import C2ExpedicionModule from '@/components/c2-expedicion'
+import C2PalletsModule from '@/components/c2-pallets'
+import C2RendimientoModule from '@/components/c2-rendimiento'
 import { CalidadRegistroUsuariosModule } from '@/components/calidad-registro-usuarios'
 import { DespachosModule } from '@/components/despachos'
 import { ConfigOperadoresModule } from '@/components/config-operadores'
@@ -119,7 +122,7 @@ interface Stats {
   enCamara: number
 }
 
-type Page = 'dashboard' | 'pesajeCamiones' | 'pesajeIndividual' | 'movimientoHacienda' | 'listaFaena' | 'ingresoCajon' | 'romaneo' | 'vbRomaneo' | 'movimientoCamaras' | 'expedicion' | 'despachos' | 'cuarteo' | 'ingresoDespostada' | 'movimientosDespostada' | 'cortesDespostada' | 'empaque' | 'menudencias' | 'cueros' | 'grasa' | 'desperdicios' | 'fondoDigestor' | 'stock' | 'stocksCorrales' | 'planilla01' | 'rindesTropa' | 'busquedaFiltro' | 'reportesSenasa' | 'facturacion' | 'precios' | 'insumos' | 'stocksInsumos' | 'configRotulos' | 'editorRotulos' | 'configInsumos' | 'configUsuarios' | 'configCodigobarras' | 'configBalanzas' | 'configOperadores' | 'configProductos' | 'configSubproductos' | 'configListadoInsumos' | 'configCondicionesEmbalaje' | 'configTiposProducto' | 'configC2Rubros' | 'configC2TiposCuarto' | 'configC2ProductosDesposte' | 'configC2BOM' | 'c2IngresoDesposte' | 'c2Produccion' | 'c2Subproductos' | 'calidadRegistroUsuarios' | 'reportes' | 'configuracion'
+type Page = 'dashboard' | 'pesajeCamiones' | 'pesajeIndividual' | 'movimientoHacienda' | 'listaFaena' | 'ingresoCajon' | 'romaneo' | 'vbRomaneo' | 'movimientoCamaras' | 'expedicion' | 'despachos' | 'cuarteo' | 'ingresoDespostada' | 'movimientosDespostada' | 'cortesDespostada' | 'empaque' | 'menudencias' | 'cueros' | 'grasa' | 'desperdicios' | 'fondoDigestor' | 'stock' | 'stocksCorrales' | 'planilla01' | 'rindesTropa' | 'busquedaFiltro' | 'reportesSenasa' | 'facturacion' | 'precios' | 'insumos' | 'stocksInsumos' | 'configRotulos' | 'editorRotulos' | 'configInsumos' | 'configUsuarios' | 'configCodigobarras' | 'configBalanzas' | 'configOperadores' | 'configProductos' | 'configSubproductos' | 'configListadoInsumos' | 'configCondicionesEmbalaje' | 'configTiposProducto' | 'configC2Rubros' | 'configC2TiposCuarto' | 'configC2ProductosDesposte' | 'configC2BOM' | 'c2IngresoDesposte' | 'c2Produccion' | 'c2Subproductos' | 'c2Expedicion' | 'c2Pallets' | 'c2Rendimiento' | 'calidadRegistroUsuarios' | 'reportes' | 'configuracion'
 
 // Navigation item
 interface NavItem {
@@ -176,6 +179,9 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'c2IngresoDesposte', label: 'Ingreso a Desposte C2', icon: Package, permiso: 'puedeConfiguracion' },
       { id: 'c2Produccion', label: 'Producción / Desposte', icon: Scissors, permiso: 'puedeConfiguracion' },
       { id: 'c2Subproductos', label: 'Subproductos C2', icon: Package, permiso: 'puedeConfiguracion' },
+      { id: 'c2Expedicion', label: 'Expedición C2', icon: Truck, permiso: 'puedeStock' },
+      { id: 'c2Pallets', label: 'Pallets C2', icon: Package, permiso: 'puedeStock' },
+      { id: 'c2Rendimiento', label: 'Rendimiento C2', icon: TrendingUp, permiso: 'puedeReportes' },
       { id: 'ingresoDespostada', label: 'Ingreso a Despostada', icon: Package, permiso: 'puedeConfiguracion' },
       { id: 'movimientosDespostada', label: 'Movimientos de Despostada', icon: RefreshCw, permiso: 'puedeConfiguracion' },
       { id: 'cortesDespostada', label: 'Cortes en Despostada', icon: Scissors, permiso: 'puedeConfiguracion' },
@@ -927,6 +933,12 @@ export default function FrigorificoApp() {
         return wrapModule('c2Produccion', <C2ProduccionModule operador={operador} />)
       case 'c2Subproductos':
         return wrapModule('c2Subproductos', <C2SubproductosModule operador={operador} />)
+      case 'c2Expedicion':
+        return wrapModule('c2Expedicion', <C2ExpedicionModule operador={operador} />)
+      case 'c2Pallets':
+        return wrapModule('c2Pallets', <C2PalletsModule operador={operador} />)
+      case 'c2Rendimiento':
+        return wrapModule('c2Rendimiento', <C2RendimientoModule operador={operador} />)
       case 'ingresoDespostada':
         return wrapModule('ingresoDespostada', <IngresoDespostadaModule operador={operador} />)
       case 'movimientosDespostada':
