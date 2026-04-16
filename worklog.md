@@ -4149,3 +4149,35 @@ Stage 5: Reportes (Stock, Degradación, Reportes Consolidados) ✅
 
 Total API routes C2: 12
 Total componentes C2: 15
+
+---
+Task ID: 7
+Agent: Main Agent
+Task: Auditoria completa - Permisos C2, integracion balanza/impresora, export Excel/PDF
+
+Work Log:
+- Auditoria completa de 18 APIs C2 y relacionadas: NINGUNA tenia autenticacion
+- Agregados 4 permisos nuevos al schema Prisma: puedeDesposte, puedeCuarteo, puedeEmpaque, puedeExpedicionC2
+- Agregado checkPermission a 18 rutas API (53 handlers protegidos total)
+- Mapping: c2-masters->puedeConfiguracion, c2-produccion->puedeDesposte, c2-expedicion->puedeExpedicionC2, cuarteo->puedeCuarteo, empaque->puedeEmpaque, balanza->puedePesajeIndividual/puedeConfiguracion
+- Actualizado page.tsx: 11 permisos de navegacion CICLO II corregidos, agregado despachos a CICLO I
+- Creado hook useBalanza (src/hooks/useBalanza.ts): polling a /api/balanza/lectura, captura de peso estable
+- Creado hook useImpresora (src/hooks/useImpresora.ts): impresion de rotulos via /api/rotulos/imprimir
+- Integracion balanza en Empaque: toggle + lectura en vivo + captura de peso + fallback manual
+- Integracion balanza en Cuarteo: captura por tipo de cuarto + captura individual por campo
+- Integracion balanza en C2 Produccion: captura de peso neto + auto-calculo peso bruto
+- Integracion impresora en Empaque: auto-impresion al crear + boton reimprimir
+- Integracion impresora en Cuarteo: etiquetas de cuarto al registrar + reimprimir
+- Integracion impresora en C2 Produccion: etiquetas de caja al registrar + reimprimir
+- Verificada exportacion Excel/PDF en 5 componentes C2 (ya existian de Stage 5)
+- Build exitoso sin errores
+- Push a GitHub: ed1956c
+
+Stage Summary:
+- 18 APIs con autenticacion completa (0 -> 53 handlers protegidos)
+- 4 permisos nuevos en schema Prisma
+- 2 hooks nuevos (useBalanza, useImpresora)
+- 3 componentes con integracion balanza (Empaque, Cuarteo, C2 Produccion)
+- 3 componentes con integracion impresora (Empaque, Cuarteo, C2 Produccion)
+- 5 componentes con exportacion Excel/PDF verificada
+- Commit: ed1956c
