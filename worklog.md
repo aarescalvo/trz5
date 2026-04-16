@@ -4093,3 +4093,27 @@ Stage Summary:
 - **Bug IVA corregido** en frontend
 - **Build exitoso** sin errores
 - **Sistema mucho mÃ¡s seguro** contra acceso no autorizado
+---
+Task ID: Stage4-C2
+Agent: main
+Task: Ciclo II Stage 4 - Logística/Expedición C2 + Rendimiento
+
+Work Log:
+- Created API route /api/c2-expedicion with GET (list with filters), POST (create order with FIFO validation), PUT (update status, confirm dispatch, annul)
+- Created API route /api/c2-pallets with GET (list with filters), POST (create pallet grouping boxes), PUT (add/remove boxes, move to cámara), DELETE (dissolve pallet)
+- Created API route /api/c2-rendimiento with GET supporting 3 modes: global, por-producto, por-ingreso
+- Created C2Expedicion component: order creation with client selection, transport data, box selection by product grouping, FIFO alerts, state management (PENDIENTE → EN_PREPARACION → DESPACHADO)
+- Created C2Pallets component: box grouping into pallets, SSCC code generation, mixed pallet support, camera movement, pallet dissolution
+- Created C2Rendimiento component: 3 tabs (Global, By Product, By Ingreso/Tropa), visual distribution bar (cajas/subproductos/merma), performance indicators with color coding
+- Updated page.tsx: added 3 new imports, 3 new Page types, 3 nav items in CICLO II, 3 switch cases
+- Fixed Turbopack parsing issue with arrow functions in setState callbacks
+- Build successful with all 11 C2 API routes
+- Committed: 48f23be, pushed to both GitHub repos
+
+Stage Summary:
+- **API c2-expedicion**: CRUD completo con validación FIFO
+- **API c2-pallets**: CRUD con SSCC, agrupación, cámara
+- **API c2-rendimiento**: 3 modos (global, productos, ingresos)
+- **3 componentes frontend**: Expedición, Pallets, Rendimiento
+- **11 rutas API C2** en build
+- **Push a ambos repos**: produccion4z + trazasole

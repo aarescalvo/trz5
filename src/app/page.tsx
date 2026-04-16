@@ -58,6 +58,9 @@ import C2SubproductosModule from '@/components/c2-subproductos'
 import C2ExpedicionModule from '@/components/c2-expedicion'
 import C2PalletsModule from '@/components/c2-pallets'
 import C2RendimientoModule from '@/components/c2-rendimiento'
+import C2StockModule from '@/components/c2-stock'
+import C2DegradacionModule from '@/components/c2-degradacion'
+import C2ReportesModule from '@/components/c2-reportes'
 import { CalidadRegistroUsuariosModule } from '@/components/calidad-registro-usuarios'
 import { DespachosModule } from '@/components/despachos'
 import { ConfigOperadoresModule } from '@/components/config-operadores'
@@ -68,7 +71,8 @@ import {
   Truck, Beef, Scale, ClipboardList, TrendingUp, Package, Tag, Scissors, 
   Warehouse, FileText, Settings, Calendar, LogOut, Lock, Users,
   Loader2, Plus, Search, Weight, RefreshCw, BoxSelect, Barcode, Printer, Monitor,
-  ChevronDown, ChevronRight, LayoutDashboard, Wifi, WifiOff, CloudUpload, DollarSign
+  ChevronDown, ChevronRight, LayoutDashboard, Wifi, WifiOff, CloudUpload, DollarSign,
+  AlertTriangle
 } from 'lucide-react'
 
 // Resilience imports
@@ -122,7 +126,7 @@ interface Stats {
   enCamara: number
 }
 
-type Page = 'dashboard' | 'pesajeCamiones' | 'pesajeIndividual' | 'movimientoHacienda' | 'listaFaena' | 'ingresoCajon' | 'romaneo' | 'vbRomaneo' | 'movimientoCamaras' | 'expedicion' | 'despachos' | 'cuarteo' | 'ingresoDespostada' | 'movimientosDespostada' | 'cortesDespostada' | 'empaque' | 'menudencias' | 'cueros' | 'grasa' | 'desperdicios' | 'fondoDigestor' | 'stock' | 'stocksCorrales' | 'planilla01' | 'rindesTropa' | 'busquedaFiltro' | 'reportesSenasa' | 'facturacion' | 'precios' | 'insumos' | 'stocksInsumos' | 'configRotulos' | 'editorRotulos' | 'configInsumos' | 'configUsuarios' | 'configCodigobarras' | 'configBalanzas' | 'configOperadores' | 'configProductos' | 'configSubproductos' | 'configListadoInsumos' | 'configCondicionesEmbalaje' | 'configTiposProducto' | 'configC2Rubros' | 'configC2TiposCuarto' | 'configC2ProductosDesposte' | 'configC2BOM' | 'c2IngresoDesposte' | 'c2Produccion' | 'c2Subproductos' | 'c2Expedicion' | 'c2Pallets' | 'c2Rendimiento' | 'calidadRegistroUsuarios' | 'reportes' | 'configuracion'
+type Page = 'dashboard' | 'pesajeCamiones' | 'pesajeIndividual' | 'movimientoHacienda' | 'listaFaena' | 'ingresoCajon' | 'romaneo' | 'vbRomaneo' | 'movimientoCamaras' | 'expedicion' | 'despachos' | 'cuarteo' | 'ingresoDespostada' | 'movimientosDespostada' | 'cortesDespostada' | 'empaque' | 'menudencias' | 'cueros' | 'grasa' | 'desperdicios' | 'fondoDigestor' | 'stock' | 'stocksCorrales' | 'planilla01' | 'rindesTropa' | 'busquedaFiltro' | 'reportesSenasa' | 'facturacion' | 'precios' | 'insumos' | 'stocksInsumos' | 'configRotulos' | 'editorRotulos' | 'configInsumos' | 'configUsuarios' | 'configCodigobarras' | 'configBalanzas' | 'configOperadores' | 'configProductos' | 'configSubproductos' | 'configListadoInsumos' | 'configCondicionesEmbalaje' | 'configTiposProducto' | 'configC2Rubros' | 'configC2TiposCuarto' | 'configC2ProductosDesposte' | 'configC2BOM' | 'c2IngresoDesposte' | 'c2Produccion' | 'c2Subproductos' | 'c2Expedicion' | 'c2Pallets' | 'c2Rendimiento' | 'c2Stock' | 'c2Degradacion' | 'c2Reportes' | 'calidadRegistroUsuarios' | 'reportes' | 'configuracion'
 
 // Navigation item
 interface NavItem {
@@ -182,6 +186,9 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'c2Expedicion', label: 'Expedición C2', icon: Truck, permiso: 'puedeStock' },
       { id: 'c2Pallets', label: 'Pallets C2', icon: Package, permiso: 'puedeStock' },
       { id: 'c2Rendimiento', label: 'Rendimiento C2', icon: TrendingUp, permiso: 'puedeReportes' },
+      { id: 'c2Stock', label: 'Stock C2', icon: Warehouse, permiso: 'puedeStock' },
+      { id: 'c2Degradacion', label: 'Degradación C2', icon: AlertTriangle, permiso: 'puedeConfiguracion' },
+      { id: 'c2Reportes', label: 'Reportes C2', icon: FileText, permiso: 'puedeReportes' },
       { id: 'ingresoDespostada', label: 'Ingreso a Despostada', icon: Package, permiso: 'puedeConfiguracion' },
       { id: 'movimientosDespostada', label: 'Movimientos de Despostada', icon: RefreshCw, permiso: 'puedeConfiguracion' },
       { id: 'cortesDespostada', label: 'Cortes en Despostada', icon: Scissors, permiso: 'puedeConfiguracion' },
@@ -939,6 +946,12 @@ export default function FrigorificoApp() {
         return wrapModule('c2Pallets', <C2PalletsModule operador={operador} />)
       case 'c2Rendimiento':
         return wrapModule('c2Rendimiento', <C2RendimientoModule operador={operador} />)
+      case 'c2Stock':
+        return wrapModule('c2Stock', <C2StockModule operador={operador} />)
+      case 'c2Degradacion':
+        return wrapModule('c2Degradacion', <C2DegradacionModule operador={operador} />)
+      case 'c2Reportes':
+        return wrapModule('c2Reportes', <C2ReportesModule operador={operador} />)
       case 'ingresoDespostada':
         return wrapModule('ingresoDespostada', <IngresoDespostadaModule operador={operador} />)
       case 'movimientosDespostada':
