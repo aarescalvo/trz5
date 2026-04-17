@@ -1,172 +1,300 @@
-# Solemar Alimentaria - Sistema Frigorifico
+# Sistema de Gestion Frigorifica - Produccion4Z
 
-Sistema integral de gestion para frigorificos desarrollado en Next.js 16 + TypeScript + Bun.
+Sistema integral de gestion para frigorificos desarrollado en Next.js 16 + TypeScript + Bun. Incluye Ciclo I (recepcion y faena), Ciclo II (desposte, empaque y expedicion), facturacion completa y reportes.
 
-## 🚀 Instalacion Rapida
+**Version:** 3.14.1 | **Repositorio:** https://github.com/aarescalvo/produccion4z
 
-### Windows 11
+---
 
-#### Opcion A: Instalador Automatico (Recomendado)
+## Instalacion Rapida
 
-1. Descargar desde GitHub: https://github.com/aarescalvo/123
-2. Extraer el contenido del ZIP en `C:\Solemar`
+### Windows 11 (Produccion)
+
+#### Opcion A: Instalacion Paso a Paso (Recomendado)
+
+1. **Instalar Bun** - Abrir PowerShell como Administrador:
+   ```powershell
+   powershell -c "irm bun.sh/install.ps1 | iex"
+   ```
+
+2. **Cerrar y reabrir PowerShell**
+
+3. **Instalar Git** (si no esta) - Descargar de https://git-scm.com
+
+4. **Instalar PostgreSQL 16** - Descargar de https://www.postgresql.org/download/windows/
+   - Durante la instalacion, recordar la contrasena del usuario `postgres`
+   - Puerto por defecto: 5432
+
+5. **Crear la base de datos:**
+   ```powershell
+   # Abrir psql (SQL Shell) y ejecutar:
+   CREATE DATABASE produccion4z;
+   ```
+
+6. **Clonar e instalar el sistema:**
+   ```powershell
+   cd C:\
+   git clone https://github.com/aarescalvo/produccion4z.git C:\Produccion4Z
+   cd C:\Produccion4Z
+   bun install
+   ```
+
+7. **Configurar variables de entorno:**
+   ```powershell
+   copy .env.example .env
+   notepad .env
+   ```
+   
+   Contenido del `.env`:
+   ```env
+   DATABASE_URL="postgresql://postgres:TU_PASSWORD@localhost:5432/produccion4z"
+   NEXTAUTH_SECRET="cualquier-texto-seguro-aqui"
+   NEXTAUTH_URL="http://localhost:3000"
+   ```
+
+8. **Inicializar la base de datos:**
+   ```powershell
+   bun run db:generate
+   bun run db:push
+   bun run db:seed
+   ```
+
+9. **Compilar y ejecutar:**
+   ```powershell
+   bun run build
+   npx next start
+   ```
+
+10. **Acceder al sistema:** Abrir navegador en `http://localhost:3000`
+
+#### Opcion B: Instalador Automatico
+
+1. Descargar desde GitHub: https://github.com/aarescalvo/produccion4z
+2. Extraer el contenido del ZIP en `C:\Produccion4Z`
 3. Abrir PowerShell como **Administrador**
 4. Ejecutar:
    ```powershell
    Set-ExecutionPolicy Bypass -Scope Process -Force
-   cd C:\Solemar\install
+   cd C:\Produccion4Z\install
    .\install-windows.ps1
    ```
 5. Abrir navegador en `http://localhost:3000`
 
-#### Opcion B: Clonar desde GitHub
-
-```powershell
-# Abrir PowerShell como Administrador
-Set-ExecutionPolicy Bypass -Scope Process -Force
-
-# Instalar Bun
-powershell -c "irm bun.sh/install.ps1 | iex"
-
-# Clonar repositorio
-git clone https://github.com/aarescalvo/123.git C:\Solemar
-
-# Configurar
-cd C:\Solemar
-bun install
-bun run db:generate
-bun run db:push
-bun run db:seed
-bun run build
-bun run start
-```
-
-### Instalacion Manual
+### Linux / macOS
 
 ```bash
-# 1. Instalar Bun desde https://bun.sh
-# 2. Instalar Git desde https://git-scm.com
+# 1. Instalar Bun
+curl -fsSL https://bun.sh/install | bash
+source ~/.bashrc
+
+# 2. Instalar PostgreSQL (Ubuntu/Debian)
+sudo apt install -y postgresql postgresql-contrib
+sudo -u postgres createuser -s $USER
+sudo -u postgres createdb produccion4z
 
 # 3. Clonar e instalar
-git clone https://github.com/aarescalvo/123.git
-cd 123
+git clone https://github.com/aarescalvo/produccion4z.git
+cd produccion4z
 bun install
 
-# 4. Configurar base de datos
+# 4. Configurar .env
+cp .env.example .env
+# Editar DATABASE_URL con datos de PostgreSQL
+
+# 5. Inicializar base de datos
 bun run db:generate
 bun run db:push
 bun run db:seed
 
-# 5. Compilar y ejecutar
+# 6. Compilar y ejecutar
 bun run build
 bun run start
 ```
 
-## 📋 Requisitos
+---
 
-- Windows 10/11 (64 bits)
-- 4 GB RAM minimo (8 GB recomendado)
-- 2 GB espacio en disco
-- Puerto 3000 disponible
-- Conexion a internet (para instalacion inicial)
+## Requisitos
 
-## 🔑 Credenciales por Defecto
+| Componente | Minimo | Recomendado |
+|------------|--------|-------------|
+| Sistema Operativo | Windows 10 / Ubuntu 20.04 | Windows 11 / Ubuntu 22.04 |
+| CPU | 2 nucleos | 4 nucleos |
+| RAM | 4 GB | 8 GB |
+| Disco | 10 GB | 50 GB SSD |
+| PostgreSQL | 14 | 16+ |
+| Bun | 1.1+ | Ultima version |
+| Puerto | 3000 disponible | - |
+
+---
+
+## Credenciales por Defecto
 
 | Usuario | Password | PIN | Rol |
 |---------|----------|-----|-----|
 | admin | admin123 | 1234 | Administrador |
-| balanza | balanza123 | 1111 | Operador Balanza |
 | supervisor | super123 | 2222 | Supervisor |
+| balanza | balanza123 | 1111 | Operador |
 
-⚠️ **IMPORTANTE**: Cambiar credenciales en produccion
+**IMPORTANTE:** Cambiar estas credenciales en produccion desde Configuracion > Operadores.
 
-## 📚 Documentacion
+---
 
-- `INSTRUCCIONES-INSTALACION.txt` - Guia detallada de instalacion
-- `AI-PROMPT.txt` - Documentacion tecnica completa del sistema
+## Modulos del Sistema
 
-## 📁 Estructura del Proyecto
+### CICLO I - Recepcion y Faena
+- Pesaje Camiones (ingreso hacienda, particular, salida mercaderia)
+- Pesaje Individual (con seleccion rapida de raza y tipo)
+- Movimiento de Hacienda (corrales, movimiento entre corrales)
+- Lista de Faena (planificacion diaria, asignacion de garrones)
+- Ingreso a Cajon
+- Romaneo (pesaje de medias, calculo automatico de rinde)
+- VB Romaneo (verificacion y aprobacion)
+- Expedicion (despachos de medias reses, FIFO)
 
-```
-C:\Solemar\
-├── src/
-│   ├── app/           # Paginas y APIs
-│   ├── components/    # Componentes React
-│   └── lib/           # Utilidades
-├── prisma/            # Esquema de base de datos
-├── db/                # SQLite database
-├── install/           # Archivos de instalacion
-└── scripts/           # Scripts de utilidad
-```
+### CICLO II - Desposte, Empaque y Expedicion
+- Cuarteo (tipos dinamicos, merma de oreo)
+- Ingreso Desposte C2 (seleccion multiple, historial)
+- Produccion / Desposte (control de masa, auto-descuento BOM)
+- Subproductos C2 (hueso, grasa, incomestible, recortes)
+- Degradacion (trimming, golpeado, decomiso, aprovechamiento)
+- Empaque (GS1-128, fechas de vencimiento automaticas)
+- Expedicion C2 (pallets, control de temperatura)
 
-## 🛠️ Comandos
+### Subproductos
+- Menudencias (con tipos personalizados)
+- Cueros
+- Rendering (grasa, desperdicios, fondo digestor)
+
+### Stocks y Reportes
+- Stocks Corrales
+- Stock Camaras / Cajas (unificado C1 + C2)
+- Planilla 01 (SENASA)
+- Rindes por Tropa
+- Busqueda por Filtro
+- Reportes SENASA
+- Reportes SIGICA
+- Reportes Gerenciales
+- Dashboard Ejecutivo (KPIs, alertas)
+- Dashboard Financiero (metricas financieras, facturacion por cliente)
+
+### Administracion y Facturacion
+- Facturacion (notas de credito/debito, cheques, arqueos)
+- Cuenta Corriente
+- Despachos y Remitos
+- Tarifas y Precios (por servicio, por cliente, historicos)
+- Proveedores y Ordenes de Compra
+
+### Trazabilidad y Calidad
+- Trazabilidad completa
+- CCIR / Declaracion Jurada
+- Calidad - Reclamos y Novedades
+
+### Configuracion
+- Operadores (16 permisos individuales)
+- Productos y Subproductos
+- Corrales y Camaras
+- Balanzas y Puestos de Trabajo
+- Rotulos ZPL/DPL (Zebra ZT410/ZT230, Datamax Mark II)
+- Codigo de Barras
+- C2 Maestros (rubros, tipos de cuarto, productos desposte, BOM)
+
+---
+
+## Seguridad
+
+- Autenticacion con usuario/password o PIN
+- Rate limiting: 10 intentos / 15 min, bloqueo 5 min
+- 16 permisos individuales por operador
+- 97.8% de rutas API protegidas
+- Auditoria de acciones criticas
+- Rol ADMINISTRADOR con acceso completo automatico
+
+---
+
+## Comandos
 
 | Comando | Descripcion |
 |---------|-------------|
 | `bun run dev` | Servidor de desarrollo |
 | `bun run build` | Compilar para produccion |
-| `bun run start` | Iniciar en produccion |
+| `bun run start` | Iniciar en produccion (standalone) |
+| `npx next start` | Iniciar en produccion (Windows) |
+| `bun run db:generate` | Generar cliente Prisma |
 | `bun run db:push` | Sincronizar base de datos |
 | `bun run db:seed` | Cargar datos iniciales |
+| `bun run lint` | Verificar codigo |
 
-## 📦 Scripts de Utilidad
+---
 
-Despues de la instalacion, encontrara los siguientes scripts en `C:\Solemar\`:
+## Scripts .bat (Windows)
 
 | Script | Descripcion |
 |--------|-------------|
-| `iniciar.bat` | Inicia el sistema |
-| `detener.bat` | Detiene el sistema |
-| `backup.bat` | Crea backup de la base de datos |
-| `actualizar.bat` | Actualiza desde GitHub |
+| `iniciar-servidor.bat` | Inicia el sistema |
+| `detener-servidor.bat` | Detiene el sistema |
+| `actualizar-sistema.bat` | Descarga actualizaciones |
+| `backup-sistema.bat` | Crea backup de PostgreSQL |
 
-## 🔄 Actualizacion
+---
 
-### Automatica
-```batch
-C:\Solemar\actualizar.bat
-```
+## Actualizacion
 
-### Manual
-```bash
-cd C:\Solemar
+```powershell
+# Windows
+cd C:\Produccion4Z
 git pull origin master
 bun install
+bun run db:generate
 bun run db:push
 bun run build
+# Luego reiniciar el servidor
 ```
 
-## 💾 Backup
-
-### Automatico
-```batch
-C:\Solemar\backup.bat
+```bash
+# Linux
+cd /opt/produccion4z
+git pull origin master
+bun install
+bun run db:generate
+bun run db:push
+bun run build
+sudo systemctl restart produccion4z
 ```
 
-### Programado
-1. Abrir Programador de tareas de Windows
-2. Crear tarea basica
-3. Accion: Iniciar programa
-4. Programa: `C:\Solemar\backup.bat`
-5. Programar: Diariamente a las 23:00
+---
 
-## 📞 Soporte
+## Backup
 
-- **Repositorio**: https://github.com/aarescalvo/123
-- **Issues**: https://github.com/aarescalvo/123/issues
-- **Documentacion**: Ver `AI-PROMPT.txt`
+```powershell
+# Windows - Backup manual con pg_dump
+pg_dump -U postgres -d produccion4z -F c -f C:\backups\backup_20260417.backup
 
-## 🔧 Solucion de Problemas
+# Windows - Restaurar
+pg_restore -U postgres -d produccion4z C:\backups\backup_20260417.backup
+```
+
+```bash
+# Linux - Backup manual
+pg_dump -U $USER -d produccion4z -F c -f /var/backups/produccion4z_$(date +%Y%m%d).backup
+```
+
+Tambien disponible desde la API del sistema (solo admin):
+- `GET /api/sistema/backup` - Listar backups
+- `POST /api/sistema/backup` - Crear backup
+
+---
+
+## Solucion de Problemas
 
 ### Error: "bun no se reconoce"
 ```powershell
 # Instalar Bun
 powershell -c "irm bun.sh/install.ps1 | iex"
-# Reiniciar PowerShell
+# Cerrar y reabrir PowerShell
 ```
 
 ### Error: "Port 3000 is already in use"
-```batch
+```powershell
 # Ver proceso que usa el puerto
 netstat -ano | findstr :3000
 # Matar proceso
@@ -174,13 +302,31 @@ taskkill /PID [numero] /F
 ```
 
 ### Error: "Cannot find module"
-```bash
-cd C:\Solemar
+```powershell
+cd C:\Produccion4Z
 bun install
 bun run db:generate
 bun run build
 ```
 
+### Error: "Prisma Client could not be generated"
+```powershell
+bunx prisma generate
+bun run db:push
+```
+
+### Error: "Connection refused" (PostgreSQL)
+1. Verificar que PostgreSQL esta ejecutandose: `services.msc` > buscar PostgreSQL
+2. Verificar credenciales en `.env`
+3. Verificar que la base de datos existe: `psql -U postgres -l`
+
 ---
 
-**Solemar Alimentaria** - Sistema de Gestion Frigorifica v2.0
+## Soporte
+
+- **Repositorio:** https://github.com/aarescalvo/produccion4z
+- **Issues:** https://github.com/aarescalvo/produccion4z/issues
+
+---
+
+**Sistema de Gestion Frigorifica** v3.14.1

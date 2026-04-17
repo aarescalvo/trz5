@@ -4257,3 +4257,65 @@ Work Log:
 Stage Summary:
 - **Rate limiting unificado**: todos los auth endpoints ahora 10 intentos/15min, bloqueo 5min
 - **Versión: 3.14.0 → 3.14.1**
+
+---
+Task ID: 1604
+Agent: main
+Task: Actualizar documentacion (README + instalacion) con funcionalidades actuales
+
+Work Log:
+
+#### 1. README.md Principal (reescrito completo)
+- Version actualizada: 0.3.0 → 3.14.1
+- Lista completa de modulos CICLO I y CICLO II con descripciones
+- Seccion de Seguridad: rate limiting, auth en API, permisos, auditoria
+- Tabla de Tecnologias actualizada (Next.js 16, React 19, Prisma 6, etc.)
+- Instalacion con PostgreSQL (produccion) y SQLite (desarrollo)
+- Instalacion paso a paso para Windows (PowerShell)
+- Estructura del proyecto actualizada (~314 endpoints, 50+ modelos)
+- Tabla de 16 permisos del sistema
+- Comandos disponibles
+- Seccion de backup con pg_dump y API
+
+#### 2. install/README.md (reescrito completo)
+- URL correcta: github.com/aarescalvo/produccion4z
+- Instalacion rapida Windows con PostgreSQL paso a paso
+- Instalacion Linux/macOS
+- Requisitos actualizados (PostgreSQL 16+, Bun 1.1+)
+- Credenciales por defecto
+- Lista completa de modulos CICLO I + CICLO II
+- Scripts .bat disponibles
+- Solucion de problemas
+
+#### 3. install/README_INSTALL.md (reescrito completo)
+- Version 3.14.1
+- Estructura del paquete actualizada (server/, client/, etc.)
+- Modulos completos CICLO I + CICLO II + Facturacion
+- Seguridad documentada
+- URLs correctas
+
+#### 4. install/INSTALL.md (reescrito completo)
+- Instalacion detallada Windows paso a paso (12 pasos)
+- Instalacion detallada Linux paso a paso (10 pasos)
+- Configuracion de PostgreSQL con parametros recomendados
+- Backup automatico con pg_dump y cron
+- Configuracion post-instalacion (7 pasos)
+- Configuracion de hardware (balanzas, impresoras, puestos)
+- Solucion de problemas completa (8 errores comunes)
+- Nginx como reverse proxy (opcional)
+- URLs correctas (produccion4z)
+
+#### 5. Cambios clave vs version anterior
+- Version: 0.3.0 → 3.14.1
+- GitHub URL: aarescalvo/1532 → aarescalvo/produccion4z
+- Solo SQLite → PostgreSQL (produccion) + SQLite (desarrollo)
+- Solo CICLO I → CICLO I + CICLO II + Facturacion + Reportes
+- Sin seguridad documentada → Seccion completa de seguridad
+- Sin C2 → CICLO II completo documentado
+
+Stage Summary:
+- **4 archivos de documentacion reescritos** completamente
+- **Documentacion al dia con v3.14.1** y todas las funcionalidades
+- **URLs correctas** (produccion4z)
+- **PostgreSQL** como base de datos de produccion
+- **Build pasa sin errores**

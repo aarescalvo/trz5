@@ -1,746 +1,717 @@
-# 📦 GUÍA DE INSTALACIÓN - SISTEMA FRIGORÍFICO
+# GUIA DE INSTALACION - SISTEMA FRIGORIFICO PRODUCCION4Z
 
-## Solemar Alimentaria - CICLO I
-### Versión: 2.0
+## Version 3.14.1 - CICLO I + CICLO II + Facturacion
 
 ---
 
-## 📋 ÍNDICE
+## INDICE
 
 1. [Requisitos del Sistema](#requisitos-del-sistema)
-2. [Instalación Rápida](#instalación-rápida)
-3. [Instalación Detallada - Linux](#instalación-detallada---linux)
-4. [Instalación Detallada - Windows](#instalación-detallada---windows)
-5. [Instalación Detallada - macOS](#instalación-detallada---macos)
-6. [Solución de Problemas](#solución-de-problemas)
-7. [Configuración Post-Instalación](#configuración-post-instalación)
-8. [Actualización del Sistema](#actualización-del-sistema)
-9. [Backup y Restauración](#backup-y-restauración)
+2. [Instalacion Rapida](#instalacion-rapida)
+3. [Instalacion Detallada - Windows](#instalacion-detallada---windows)
+4. [Instalacion Detallada - Linux](#instalacion-detallada---linux)
+5. [Configuracion de PostgreSQL](#configuracion-de-postgresql)
+6. [Configuracion Post-Instalacion](#configuracion-post-instalacion)
+7. [Actualizacion del Sistema](#actualizacion-del-sistema)
+8. [Backup y Restauracion](#backup-y-restauracion)
+9. [Solucion de Problemas](#solucion-de-problemas)
+10. [Configuracion de Hardware](#configuracion-de-hardware)
 
 ---
 
-## 🔧 REQUISITOS DEL SISTEMA
+## REQUISITOS DEL SISTEMA
 
-### Hardware Mínimo
-| Componente | Mínimo | Recomendado |
+### Hardware
+
+| Componente | Minimo | Recomendado |
 |------------|--------|-------------|
-| CPU | 2 núcleos | 4 núcleos |
+| CPU | 2 nucleos | 4 nucleos |
 | RAM | 4 GB | 8 GB |
 | Disco | 10 GB | 50 GB SSD |
 | Red | 100 Mbps | 1 Gbps |
 
-### Software Requerido
+### Software
 
-#### Linux (Ubuntu/Debian)
-- Ubuntu 20.04 LTS o superior
-- O Debian 11 o superior
-
-#### Windows
-- Windows 10 Pro/Enterprise
-- O Windows Server 2019/2022
-
-#### macOS
-- macOS 11 (Big Sur) o superior
+| Componente | Version | Notas |
+|------------|---------|-------|
+| Bun | 1.1+ | Runtime JavaScript |
+| PostgreSQL | 14+ | Recomendado 16 |
+| Git | 2.30+ | Para clonar/actualizar |
 
 ### Puertos de Red
-- **3000**: Puerto principal de la aplicación (HTTP)
-- **3001**: Puerto alternativo (opcional)
+
+| Puerto | Servicio | Notas |
+|--------|----------|-------|
+| 3000 | Aplicacion web | Puerto principal |
+| 5432 | PostgreSQL | Base de datos |
+| 9100 | Impresoras | ZPL/DPL (opcional) |
 
 ---
 
-## ⚡ INSTALACIÓN RÁPIDA
+## INSTALACION RAPIDA
 
-### Linux (Ubuntu/Debian)
-```bash
-# 1. Descargar el paquete
-wget https://github.com/aarescalvo/104/archive/refs/heads/main.zip
-unzip main.zip
-cd 104-main/install
+### Windows
 
-# 2. Ejecutar instalador
-sudo chmod +x install.sh
-sudo ./install.sh
-
-# 3. Acceder al sistema
-# http://localhost:3000
-# Usuario: admin | Password: admin123
-```
-
-### Windows (PowerShell como Administrador)
 ```powershell
-# 1. Descargar el paquete
-# Extraer el archivo ZIP en una carpeta
+# 1. Instalar Bun (PowerShell como Admin)
+powershell -c "irm bun.sh/install.ps1 | iex"
 
-# 2. Ejecutar instalador
-cd install
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\install.ps1
+# 2. Cerrar y reabrir PowerShell
 
-# 3. Acceder al sistema
-# http://localhost:3000
-# Usuario: admin | Password: admin123
-```
+# 3. Clonar repositorio
+git clone https://github.com/aarescalvo/produccion4z.git C:\Produccion4Z
 
----
-
-## 📖 INSTALACIÓN DETALLADA - LINUX
-
-### Paso 1: Preparar el Sistema
-
-```bash
-# Actualizar paquetes
-sudo apt update && sudo apt upgrade -y
-
-# Instalar dependencias básicas
-sudo apt install -y curl wget git unzip
-
-# Verificar versión de Node.js (opcional, Bun lo reemplaza)
-node --version  # Si está instalado
-```
-
-### Paso 2: Instalar Bun Runtime
-
-```bash
-# Instalar Bun
-curl -fsSL https://bun.sh/install | bash
-
-# Agregar al PATH (reiniciar terminal después)
-source ~/.bashrc
-# o para zsh:
-source ~/.zshrc
-
-# Verificar instalación
-bun --version
-```
-
-**⚠️ Posible Error 1**: `bun: command not found`
-```bash
-# Solución: Agregar manualmente al PATH
-echo 'export BUN_INSTALL="$HOME/.bun"' >> ~/.bashrc
-echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### Paso 3: Crear Directorios
-
-```bash
-# Crear directorios del sistema
-sudo mkdir -p /opt/solemar
-sudo mkdir -p /var/lib/solemar/db
-sudo mkdir -p /var/lib/solemar/logs
-sudo mkdir -p /var/lib/solemar/backups
-
-# Establecer permisos
-sudo chown -R $USER:$USER /opt/solemar
-sudo chown -R $USER:$USER /var/lib/solemar
-```
-
-### Paso 4: Copiar Archivos
-
-```bash
-# Copiar desde el directorio de instalación
-cp -r /ruta/al/proyecto/install/* /opt/solemar/
-
-# Crear archivo de configuración
-cd /opt/solemar
-cp .env.example .env
-```
-
-### Paso 5: Configurar Variables de Entorno
-
-Editar el archivo `.env`:
-```bash
-nano /opt/solemar/.env
-```
-
-Contenido:
-```env
-DATABASE_URL=file:/var/lib/solemar/db/custom.db
-NODE_ENV=production
-PORT=3000
-NEXTAUTH_SECRET=generar-un-secret-seguro-aqui
-NEXTAUTH_URL=http://su-servidor:3000
-```
-
-**⚠️ Posible Error 2**: `DATABASE_URL invalid`
-```bash
-# Verificar que la ruta existe
-ls -la /var/lib/solemar/db/
-# Crear si no existe
-mkdir -p /var/lib/solemar/db
-```
-
-### Paso 6: Instalar Dependencias
-
-```bash
-cd /opt/solemar
+# 4. Instalar dependencias
+cd C:\Produccion4Z
 bun install
-```
 
-**⚠️ Posible Error 3**: `Network error` o `ETIMEDOUT`
-```bash
-# Verificar conexión a internet
-ping registry.npmjs.org
+# 5. Configurar base de datos
+copy .env.example .env
+notepad .env
+# Configurar DATABASE_URL con datos de PostgreSQL
 
-# Si hay proxy corporativo, configurar:
-export HTTP_PROXY=http://proxy:puerto
-export HTTPS_PROXY=http://proxy:puerto
-```
-
-### Paso 7: Configurar Base de Datos
-
-```bash
-cd /opt/solemar
-
-# Generar cliente Prisma
+# 6. Inicializar base de datos
 bun run db:generate
-
-# Crear estructura de base de datos
 bun run db:push
-
-# Cargar datos iniciales
 bun run db:seed
-```
 
-**⚠️ Posible Error 4**: `Prisma Client not generated`
-```bash
-# Regenerar manualmente
-bunx prisma generate
-bunx prisma db push
-bunx prisma db seed
-```
-
-### Paso 8: Compilar el Proyecto
-
-```bash
-cd /opt/solemar
+# 7. Compilar y ejecutar
 bun run build
+npx next start
 ```
 
-**⚠️ Posible Error 5**: `Build failed` o `TypeScript error`
+### Linux
+
 ```bash
-# Limpiar y reconstruir
-rm -rf .next node_modules
+# 1. Instalar Bun
+curl -fsSL https://bun.sh/install | bash
+source ~/.bashrc
+
+# 2. Clonar e instalar
+git clone https://github.com/aarescalvo/produccion4z.git /opt/produccion4z
+cd /opt/produccion4z
 bun install
+
+# 3. Configurar .env con PostgreSQL
+cp .env.example .env
+nano .env
+
+# 4. Inicializar
+bun run db:generate
+bun run db:push
+bun run db:seed
+
+# 5. Compilar y ejecutar
 bun run build
-```
-
-### Paso 9: Crear Servicio del Sistema
-
-```bash
-# Crear archivo de servicio
-sudo nano /etc/systemd/system/solemar.service
-```
-
-Contenido:
-```ini
-[Unit]
-Description=Sistema Frigorífico - Solemar Alimentaria
-After=network.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/opt/solemar
-Environment="NODE_ENV=production"
-ExecStart=/root/.bun/bin/bun .next/standalone/server.js
-Restart=always
-RestartSec=10
-StandardOutput=append:/var/lib/solemar/logs/app.log
-StandardError=append:/var/lib/solemar/logs/error.log
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-# Habilitar y iniciar servicio
-sudo systemctl daemon-reload
-sudo systemctl enable solemar
-sudo systemctl start solemar
-
-# Verificar estado
-sudo systemctl status solemar
-```
-
-### Paso 10: Configurar Firewall
-
-```bash
-# Para UFW (Ubuntu)
-sudo ufw allow 3000/tcp
-sudo ufw reload
-
-# Para firewalld (CentOS/RHEL)
-sudo firewall-cmd --permanent --add-port=3000/tcp
-sudo firewall-cmd --reload
+bun run start
 ```
 
 ---
 
-## 📖 INSTALACIÓN DETALLADA - WINDOWS
+## INSTALACION DETALLADA - WINDOWS
 
-### Paso 1: Preparar el Sistema
+### Paso 1: Instalar Bun Runtime
 
 1. Abrir **PowerShell como Administrador**
-2. Verificar versión de Windows:
-```powershell
-winver
-```
+2. Ejecutar:
+   ```powershell
+   powershell -c "irm bun.sh/install.ps1 | iex"
+   ```
+3. **Cerrar y reabrir PowerShell** para que detecte el comando `bun`
+4. Verificar:
+   ```powershell
+   bun --version
+   ```
 
-3. Instalar características necesarias (si no están):
-```powershell
-# Verificar .NET Framework
-Get-WindowsFeature -Name NET-Framework-45-Core
-
-# Instalar si falta
-Install-WindowsFeature -Name NET-Framework-45-Core
-```
-
-### Paso 2: Instalar Bun Runtime
-
-```powershell
-# Método 1: Usando PowerShell
-irm bun.sh/install.ps1 | iex
-
-# Método 2: Si tiene npm instalado
-npm install -g bun
-
-# Verificar instalación
-bun --version
-```
-
-**⚠️ Posible Error 1**: `bun no reconocido como comando`
+**Error comun:** `bun no se reconoce como comando`
 ```powershell
 # Agregar al PATH manualmente
 $env:Path += ";$env:USERPROFILE\.bun\bin"
-
-# Hacer permanente
 [Environment]::SetEnvironmentVariable("Path", $env:Path + ";$env:USERPROFILE\.bun\bin", "User")
+# Cerrar y reabrir PowerShell
 ```
 
-**⚠️ Posible Error 2**: `Execution Policy restricted`
+### Paso 2: Instalar Git
+
+1. Descargar de https://git-scm.com
+2. Instalar con opciones por defecto
+3. Verificar:
+   ```powershell
+   git --version
+   ```
+
+### Paso 3: Instalar PostgreSQL
+
+1. Descargar PostgreSQL 16 de https://www.postgresql.org/download/windows/
+2. Ejecutar el instalador:
+   - Contraseña del superusuario: **elegir y recordar** (ej: `postgres123`)
+   - Puerto: **5432** (por defecto)
+   - Locale: **Default**
+3. Al finalizar, desmarcar "Launch Stack Builder" (no necesario)
+4. Verificar que el servicio esta corriendo:
+   ```powershell
+   # Abrir services.msc y buscar PostgreSQL
+   # O verificar en SQL Shell (psql):
+   psql -U postgres
+   # Escribir la contrasena elegida
+   ```
+
+### Paso 4: Crear la Base de Datos
+
 ```powershell
-# Cambiar política de ejecución
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+# Opcion A: Desde SQL Shell (psql)
+# Abrir "SQL Shell (psql)" desde el menu Inicio
+# Conectar con: postgres / tu_password / localhost / 5432 / postgres
+CREATE DATABASE produccion4z;
+\q
+
+# Opcion B: Desde PowerShell
+psql -U postgres -c "CREATE DATABASE produccion4z;"
 ```
 
-### Paso 3: Crear Directorios
+### Paso 5: Clonar el Repositorio
 
 ```powershell
-# Crear estructura de directorios
-New-Item -ItemType Directory -Path "C:\Solemar" -Force
-New-Item -ItemType Directory -Path "C:\Solemar\Data\db" -Force
-New-Item -ItemType Directory -Path "C:\Solemar\Data\logs" -Force
-New-Item -ItemType Directory -Path "C:\Solemar\Data\backups" -Force
-```
-
-### Paso 4: Copiar Archivos
-
-1. Extraer el archivo ZIP del proyecto
-2. Copiar contenido de `install/` a `C:\Solemar\`
-```powershell
-Copy-Item -Path "install\*" -Destination "C:\Solemar\" -Recurse -Force
-```
-
-### Paso 5: Configurar Variables de Entorno
-
-```powershell
-# Crear archivo .env
-Copy-Item "C:\Solemar\.env.example" "C:\Solemar\.env"
-
-# Editar archivo
-notepad C:\Solemar\.env
-```
-
-Contenido:
-```env
-DATABASE_URL=file:C:/Solemar/Data/db/custom.db
-NODE_ENV=production
-PORT=3000
-NEXTAUTH_SECRET=generar-un-secret-seguro-aqui
-NEXTAUTH_URL=http://localhost:3000
+cd C:\
+git clone https://github.com/aarescalvo/produccion4z.git C:\Produccion4Z
+cd C:\Produccion4Z
 ```
 
 ### Paso 6: Instalar Dependencias
 
 ```powershell
-cd C:\Solemar
 bun install
 ```
 
-**⚠️ Posible Error 3**: `Network error`
+**Error comun:** `Network error`
 ```powershell
-# Verificar conexión
+# Verificar conexion
 Test-NetConnection registry.npmjs.org -Port 443
-
-# Configurar proxy si es necesario
+# Si hay proxy corporativo:
 $env:HTTP_PROXY = "http://proxy:puerto"
 $env:HTTPS_PROXY = "http://proxy:puerto"
 ```
 
-### Paso 7: Configurar Base de Datos
+### Paso 7: Configurar Variables de Entorno
 
 ```powershell
-cd C:\Solemar
+# Crear archivo .env
+copy .env.example .env
+notepad .env
+```
 
+Contenido del `.env`:
+```env
+# Base de datos PostgreSQL
+DATABASE_URL="postgresql://postgres:TU_PASSWORD@localhost:5432/produccion4z"
+
+# Autenticacion
+NEXTAUTH_SECRET="generar-un-texto-aleatorio-seguro-aqui"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Entorno
+NODE_ENV="production"
+```
+
+**Importante:** Reemplazar `TU_PASSWORD` con la contrasena elegida en el Paso 3.
+
+### Paso 8: Inicializar Base de Datos
+
+```powershell
+# Generar cliente Prisma
 bun run db:generate
+
+# Crear todas las tablas
 bun run db:push
+
+# Cargar datos iniciales (operadores, configuracion)
 bun run db:seed
 ```
 
-**⚠️ Posible Error 4**: `Cannot find module '@prisma/client'`
+**Error comun:** `Can't reach database server`
 ```powershell
-# Instalar Prisma globalmente
-bun add -g prisma
+# Verificar que PostgreSQL esta corriendo
+Get-Service -Name postgresql*
+# Si no esta, iniciarlo
+Start-Service postgresql-x64-16
 
-# Regenerar
-bunx prisma generate
-bunx prisma db push
+# Verificar que la base de datos existe
+psql -U postgres -c "\l" | findstr produccion4z
 ```
 
-### Paso 8: Compilar el Proyecto
+### Paso 9: Compilar el Proyecto
 
 ```powershell
-cd C:\Solemar
 bun run build
 ```
 
-### Paso 9: Crear Servicio de Windows (Opcional)
+**Error comun:** `Build failed`
+```powershell
+# Limpiar y reconstruir
+Remove-Item -Recurse -Force .next
+bun install
+bun run db:generate
+bun run build
+```
 
-**Opción A: Usando NSSM (Recomendado)**
+### Paso 10: Iniciar el Sistema
+
+```powershell
+# Opcion A: Con bun (desarrollo)
+bun run dev
+
+# Opcion B: Con next start (produccion - RECOMENDADO)
+npx next start
+```
+
+**Acceder al sistema:** Abrir navegador en `http://localhost:3000`
+
+### Paso 11: Crear Servicio de Windows (Opcional - Recomendado)
+
+Para que el sistema inicie automaticamente con Windows:
+
+**Opcion A: Usando NSSM**
 
 ```powershell
 # Descargar NSSM
 Invoke-WebRequest -Uri "https://nssm.cc/release/nssm-2.24.zip" -OutFile "nssm.zip"
 Expand-Archive "nssm.zip" -DestinationPath "C:\temp"
-
-# Copiar ejecutable
-Copy-Item "C:\temp\nssm-2.24\win64\nssm.exe" "C:\Solemar\"
+Copy-Item "C:\temp\nssm-2.24\win64\nssm.exe" "C:\Produccion4Z\"
 
 # Crear servicio
-C:\Solemar\nssm.exe install SolemarFrigorifico "C:\Users\$env:USERNAME\.bun\bin\bun.exe" ".next\standalone\server.js"
-C:\Solemar\nssm.exe set SolemarFrigorifico AppDirectory "C:\Solemar"
-C:\Solemar\nssm.exe set SolemarFrigorifico AppStdout "C:\Solemar\Data\logs\app.log"
-C:\Solemar\nssm.exe set SolemarFrigorifico AppStderr "C:\Solemar\Data\logs\error.log"
+C:\Produccion4Z\nssm.exe install Produccion4Z "C:\Users\$env:USERNAME\.bun\bin\bun.exe" ".next\standalone\server.js"
+C:\Produccion4Z\nssm.exe set Produccion4Z AppDirectory "C:\Produccion4Z"
+C:\Produccion4Z\nssm.exe set Produccion4Z AppStdout "C:\Produccion4Z\logs\app.log"
+C:\Produccion4Z\nssm.exe set Produccion4Z AppStderr "C:\Produccion4Z\logs\error.log"
+C:\Produccion4Z\nssm.exe set Produccion4Z Start SERVICE_AUTO_START
 
 # Iniciar servicio
-Start-Service SolemarFrigorifico
+Start-Service Produccion4Z
 ```
 
-**Opción B: Script de inicio manual**
+**Opcion B: Usando los scripts .bat incluidos**
+
+Doble click en `iniciar-servidor.bat` para iniciar, `detener-servidor.bat` para detener.
+
+### Paso 12: Configurar Firewall
 
 ```powershell
-# Crear script iniciar.bat
-Set-Content -Path "C:\Solemar\iniciar.bat" -Value @"
-@echo off
-cd /d C:\Solemar
-set NODE_ENV=production
-bun .next\standalone\server.js
-pause
-"@
-
-# Crear acceso directo en escritorio
-$WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Solemar.lnk")
-$Shortcut.TargetPath = "C:\Solemar\iniciar.bat"
-$Shortcut.Save()
-```
-
-### Paso 10: Configurar Firewall
-
-```powershell
-# Crear regla de firewall
-New-NetFirewallRule -DisplayName "Solemar Frigorífico - Puerto 3000" `
+# Crear regla de firewall para el puerto 3000
+New-NetFirewallRule -DisplayName "Produccion4Z - Puerto 3000" `
     -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow
 ```
 
 ---
 
-## 📖 INSTALACIÓN DETALLADA - macOS
+## INSTALACION DETALLADA - LINUX
 
-### Paso 1: Instalar Homebrew (si no está instalado)
+### Paso 1: Preparar el Sistema
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl wget git unzip postgresql postgresql-contrib
 ```
 
 ### Paso 2: Instalar Bun
 
 ```bash
 curl -fsSL https://bun.sh/install | bash
-
-# Agregar al PATH
-source ~/.zshrc  # o source ~/.bash_profile
+source ~/.bashrc
+bun --version
 ```
 
-### Paso 3: Crear Directorios
+### Paso 3: Configurar PostgreSQL
 
 ```bash
-sudo mkdir -p /usr/local/solemar
-sudo mkdir -p /usr/local/var/solemar/db
-sudo mkdir -p /usr/local/var/solemar/logs
-sudo chown -R $(whoami) /usr/local/solemar
-sudo chown -R $(whoami) /usr/local/var/solemar
+# Iniciar servicio
+sudo systemctl enable postgresql
+sudo systemctl start postgresql
+
+# Crear usuario y base de datos
+sudo -u postgres createuser -s $USER
+sudo -u postgres createdb produccion4z
+
+# Para acceder sin contrasena local (peer auth):
+sudo -u postgres psql -c "ALTER USER $USER WITH PASSWORD 'tu_password';"
 ```
 
-### Paso 4: Copiar e Instalar
+### Paso 4: Clonar e Instalar
 
 ```bash
-# Copiar archivos
-cp -r install/* /usr/local/solemar/
-cd /usr/local/solemar
-
-# Configurar .env
-cp .env.example .env
-# Editar DATABASE_URL=file:/usr/local/var/solemar/db/custom.db
-
-# Instalar y compilar
+git clone https://github.com/aarescalvo/produccion4z.git /opt/produccion4z
+cd /opt/produccion4z
 bun install
+```
+
+### Paso 5: Configurar .env
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+```env
+DATABASE_URL="postgresql://tu_usuario:tu_password@localhost:5432/produccion4z"
+NEXTAUTH_SECRET="generar-un-texto-aleatorio-seguro"
+NEXTAUTH_URL="http://localhost:3000"
+NODE_ENV="production"
+```
+
+### Paso 6: Inicializar Base de Datos
+
+```bash
 bun run db:generate
 bun run db:push
 bun run db:seed
+```
+
+### Paso 7: Compilar
+
+```bash
 bun run build
 ```
 
-### Paso 5: Crear Servicio launchd
+### Paso 8: Crear Servicio del Sistema
 
 ```bash
-nano ~/Library/LaunchAgents/com.solemar.frigorifico.plist
+sudo nano /etc/systemd/system/produccion4z.service
 ```
 
 Contenido:
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.solemar.frigorifico</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/Users/tu_usuario/.bun/bin/bun</string>
-        <string>.next/standalone/server.js</string>
-    </array>
-    <key>WorkingDirectory</key>
-    <string>/usr/local/solemar</string>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>/usr/local/var/solemar/logs/app.log</string>
-    <key>StandardErrorPath</key>
-    <string>/usr/local/var/solemar/logs/error.log</string>
-</dict>
-</plist>
+```ini
+[Unit]
+Description=Sistema Frigorifico Produccion4Z
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=produccion4z
+WorkingDirectory=/opt/produccion4z
+Environment="NODE_ENV=production"
+ExecStart=/home/produccion4z/.bun/bin/bun .next/standalone/server.js
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/produccion4z/app.log
+StandardError=append:/var/log/produccion4z/error.log
+
+[Install]
+WantedBy=multi-user.target
 ```
 
 ```bash
-# Cargar servicio
-launchctl load ~/Library/LaunchAgents/com.solemar.frigorifico.plist
+sudo systemctl daemon-reload
+sudo systemctl enable produccion4z
+sudo systemctl start produccion4z
+sudo systemctl status produccion4z
+```
+
+### Paso 9: Configurar Firewall
+
+```bash
+sudo ufw allow 3000/tcp
+sudo ufw reload
+```
+
+### Paso 10: Configurar Nginx (Opcional)
+
+```bash
+sudo apt install -y nginx
+sudo nano /etc/nginx/sites-available/produccion4z
+```
+
+```nginx
+server {
+    listen 80;
+    server_name frigorifico.tudominio.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+```bash
+sudo ln -s /etc/nginx/sites-available/produccion4z /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
 ```
 
 ---
 
-## 🔧 SOLUCIÓN DE PROBLEMAS
+## CONFIGURACION DE POSTGRESQL
 
-### Error: `Port 3000 already in use`
+### Parametros Recomendados para Produccion
+
+Editar `postgresql.conf`:
+
+```
+# Memoria (ajustar segun RAM disponible)
+shared_buffers = 2GB          # 25% de RAM
+effective_cache_size = 6GB    # 75% de RAM
+work_mem = 64MB
+maintenance_work_mem = 512MB
+
+# Conexiones
+max_connections = 100
+
+# WAL
+wal_buffers = 16MB
+min_wal_size = 1GB
+max_wal_size = 4GB
+
+# Logging
+log_min_duration_statement = 500
+log_checkpoints = on
+log_connections = on
+log_disconnections = on
+```
+
+### Backup Automatico con pg_dump
 
 ```bash
-# Linux/macOS
-lsof -i :3000
-kill -9 <PID>
+# Crear script de backup
+cat > /opt/produccion4z/backup.sh << 'EOF'
+#!/bin/bash
+BACKUP_DIR="/var/backups/produccion4z"
+mkdir -p $BACKUP_DIR
+pg_dump -U $USER -d produccion4z -F c -f $BACKUP_DIR/backup_$(date +%Y%m%d_%H%M).backup
+# Mantener solo ultimos 30 backups
+ls -t $BACKUP_DIR/*.backup | tail -n +31 | xargs -r rm
+EOF
 
+chmod +x /opt/produccion4z/backup.sh
+```
+
+```bash
+# Programar con cron (diario a las 2 AM)
+crontab -e
+# Agregar:
+0 2 * * * /opt/produccion4z/backup.sh
+```
+
+---
+
+## CONFIGURACION POST-INSTALACION
+
+### 1. Cambiar Credenciales por Defecto
+
+Acceder al sistema con admin / admin123, luego ir a **Configuracion > Operadores** y cambiar la contrasena del administrador.
+
+### 2. Configurar Datos del Frigorifico
+
+Ir a **Configuracion > Frigorifico** y completar:
+- Nombre del establecimiento
+- Numero de establecimiento SENASA
+- CUIT
+- Direccion
+
+### 3. Configurar Corrales y Camaras
+
+Ir a **Configuracion > Corrales** y **Configuracion > Camaras** para crear las estructuras fisicas del frigorifico.
+
+### 4. Configurar Tipificadores
+
+Ir a **Configuracion > Tipificadores** y agregar los matriculados habilitados.
+
+### 5. Configurar Clientes
+
+Ir a **Configuracion > Clientes** y crear:
+- Productores (propietarios de hacienda)
+- Usuarios de Faena (matarifes)
+
+### 6. Configurar Permisos de Operadores
+
+Ir a **Configuracion > Operadores** y asignar los 16 permisos disponibles segun el rol de cada operador. Los permisos se organizan en:
+- **CICLO I:** Pesaje Camiones, Pesaje Individual, Movimiento Hacienda, Lista Faena, Ingreso Cajon, Romaneo
+- **Subproductos:** Menudencias
+- **Stock:** Stock Camaras, Trazabilidad
+- **CICLO II:** Cuarteo, Desposte, Empaque, Expedicion C2
+- **Reportes:** Reportes, Dashboard Financiero
+- **Administracion:** Facturacion
+- **Sistema:** Configuracion
+
+### 7. Configurar Balanzas y Puestos de Trabajo
+
+Ir a **Configuracion > Balanzas** para configurar:
+- Balanzas con conexion serial o TCP
+- Puestos de trabajo con impresoras de rotulos y scanners
+
+---
+
+## ACTUALIZACION DEL SISTEMA
+
+### Windows
+
+```powershell
+cd C:\Produccion4Z
+git pull origin master
+bun install
+bun run db:generate
+bun run db:push
+bun run build
+# Luego reiniciar el servidor
+```
+
+### Linux
+
+```bash
+cd /opt/produccion4z
+git pull origin master
+bun install
+bun run db:generate
+bun run db:push
+bun run build
+sudo systemctl restart produccion4z
+```
+
+---
+
+## BACKUP Y RESTAURACION
+
+### Backup Manual
+
+**Windows:**
+```powershell
+pg_dump -U postgres -d produccion4z -F c -f C:\backups\backup_20260417.backup
+```
+
+**Linux:**
+```bash
+pg_dump -U $USER -d produccion4z -F c -f /var/backups/produccion4z_$(date +%Y%m%d).backup
+```
+
+### Restaurar Backup
+
+**Windows:**
+```powershell
+# Detener el sistema primero
+pg_restore -U postgres -d produccion4z -c C:\backups\backup_20260417.backup
+```
+
+**Linux:**
+```bash
+sudo systemctl stop produccion4z
+pg_restore -U $USER -d produccion4z -c /var/backups/produccion4z_20260417.backup
+sudo systemctl start produccion4z
+```
+
+### Backup desde la API
+
+El sistema incluye una API de backup accesible solo para administradores:
+- `GET /api/sistema/backup` - Listar backups existentes
+- `POST /api/sistema/backup` - Crear backup manual
+- `PUT /api/sistema/backup` - Restaurar desde un backup
+
+---
+
+## CONFIGURACION DE HARDWARE
+
+### Balanzas
+
+El sistema soporta balanzas con conexion:
+- **Serial (RS232):** Configurar puerto COM, baudRate, dataBits, parity
+- **TCP/IP:** Configurar IP y puerto
+- **Simulada:** Para testing y desarrollo
+
+Protocolos soportados: Generico, Toledo, Mettler, Ohaus, Digi, Adam
+
+### Impresoras de Rotulos
+
+Modelos soportados:
+- **Zebra ZT410** (300 DPI) - Formato ZPL
+- **Zebra ZT230** (203 DPI) - Formato ZPL
+- **Datamax Mark II** (203 DPI) - Formato DPL
+
+Tipos de rotulos disponibles:
+- Pesaje Individual (10x5 cm)
+- Media Res (8x12 cm)
+- Menudencia (6x8 cm)
+- Caja C2 (personalizable)
+
+### Puestos de Trabajo
+
+Cada puesto puede configurarse con:
+- Balanza asignada
+- Impresora de rotulos (IP + puerto)
+- Impresora de tickets (IP + puerto)
+- Scanner de codigo de barras (puerto)
+
+---
+
+## SOLUCION DE PROBLEMAS
+
+### Error: `Port 3000 already in use`
+```powershell
 # Windows
 netstat -ano | findstr :3000
 taskkill /PID <PID> /F
+
+# Linux
+lsof -i :3000
+kill -9 <PID>
 ```
 
-### Error: `Database is locked`
+### Error: `Can't reach database server`
+```powershell
+# Verificar que PostgreSQL esta corriendo
+Get-Service -Name postgresql*
+Start-Service postgresql-x64-16
 
-```bash
-# Detener el servicio
-sudo systemctl stop solemar  # Linux
-Stop-Service SolemarFrigorifico  # Windows
-
-# Verificar procesos
-lsof /var/lib/solemar/db/custom.db  # Linux
-
-# Reiniciar
-sudo systemctl start solemar
+# Verificar credenciales en .env
+notepad .env
 ```
 
 ### Error: `Cannot find module`
-
-```bash
-# Reinstalar dependencias
-rm -rf node_modules bun.lock
+```powershell
+cd C:\Produccion4Z
 bun install
+bun run db:generate
+bun run build
 ```
 
 ### Error: `Prisma Client could not be generated`
-
-```bash
-# Regenerar cliente
+```powershell
 bunx prisma generate
 bun run db:push
 ```
 
 ### Error: `Out of memory`
-
-```bash
+```powershell
 # Aumentar memoria para Node/Bun
-export NODE_OPTIONS="--max-old-space-size=4096"
-# o en .env:
-NODE_OPTIONS=--max-old-space-size=4096
-```
-
-### Error: `Permission denied`
-
-```bash
-# Linux/macOS
-sudo chown -R $(whoami):$(whoami) /opt/solemar
-sudo chown -R $(whoami):$(whoami) /var/lib/solemar
-
-# Windows (ejecutar como Admin)
-icacls "C:\Solemar" /grant Users:F /T
-```
-
-### Logs de Error
-
-```bash
-# Linux
-tail -f /var/lib/solemar/logs/error.log
-
-# Windows
-Get-Content C:\Solemar\Data\logs\error.log -Tail 50 -Wait
-
-# macOS
-tail -f /usr/local/var/solemar/logs/error.log
-```
-
----
-
-## ⚙️ CONFIGURACIÓN POST-INSTALACIÓN
-
-### 1. Cambiar Credenciales por Defecto
-
-Acceder al sistema con:
-- Usuario: `admin`
-- Password: `admin123`
-
-Ir a **Configuración > Operadores** y cambiar la contraseña.
-
-### 2. Configurar Datos del Frigorífico
-
-Ir a **Configuración > Frigorífico** y completar:
-- Nombre del establecimiento
-- Número de establecimiento SENASA
-- CUIT
-- Dirección
-
-### 3. Configurar Corrales y Cámaras
-
-Ir a **Configuración > Corrales** y **Configuración > Cámaras** para crear las estructuras físicas.
-
-### 4. Configurar Tipificadores
-
-Ir a **Configuración > Tipificadores** y agregar los matriculados habilitados.
-
-### 5. Configurar Clientes
-
-Ir a **Configuración > Clientes** y crear:
-- Productores
-- Usuarios de Faena (matarifes)
-
----
-
-## 🔄 ACTUALIZACIÓN DEL SISTEMA
-
-### Linux
-```bash
-cd /opt/solemar
-git pull origin main
-bun install
-bun run db:generate
-bun run db:push
+$env:NODE_OPTIONS = "--max-old-space-size=4096"
 bun run build
-sudo systemctl restart solemar
 ```
 
-### Windows
+### Error: `Database connection timeout`
 ```powershell
-cd C:\Solemar
-git pull origin main
-bun install
-bun run db:generate
-bun run db:push
-bun run build
-Restart-Service SolemarFrigorifico
+# Verificar que PostgreSQL acepta conexiones
+psql -U postgres -d produccion4z -c "SELECT 1;"
+
+# Verificar pg_hba.conf para conexiones locales
+# En Windows: C:\Program Files\PostgreSQL\16\data\pg_hba.conf
+```
+
+### Error: `Permission denied` (Linux)
+```bash
+sudo chown -R $(whoami):$(whoami) /opt/produccion4z
+sudo chown -R $(whoami):$(whoami) /var/log/produccion4z
 ```
 
 ---
 
-## 💾 BACKUP Y RESTAURACIÓN
+## SOPORTE TECNICO
 
-### Backup Manual
-
-**Linux:**
-```bash
-cp /var/lib/solemar/db/custom.db /var/lib/solemar/backups/solemar_$(date +%Y%m%d).db
-```
-
-**Windows:**
-```powershell
-Copy-Item "C:\Solemar\Data\db\custom.db" "C:\Solemar\Data\backups\solemar_$(Get-Date -Format 'yyyyMMdd').db"
-```
-
-### Backup Automático (Cron)
-
-**Linux:**
-```bash
-# Editar crontab
-crontab -e
-
-# Agregar línea para backup diario a las 2 AM
-0 2 * * * cp /var/lib/solemar/db/custom.db /var/lib/solemar/backups/solemar_$(date +\%Y\%m\%d).db
-```
-
-**Windows (Task Scheduler):**
-```powershell
-# Crear tarea programada
-$action = New-ScheduledTaskAction -Execute "C:\Solemar\backup.bat"
-$trigger = New-ScheduledTaskTrigger -Daily -At 2am
-Register-ScheduledTask -TaskName "SolemarBackup" -Action $action -Trigger $trigger
-```
-
-### Restaurar Backup
-
-**Linux:**
-```bash
-sudo systemctl stop solemar
-cp /var/lib/solemar/backups/solemar_20250101.db /var/lib/solemar/db/custom.db
-sudo systemctl start solemar
-```
-
-**Windows:**
-```powershell
-Stop-Service SolemarFrigorifico
-Copy-Item "C:\Solemar\Data\backups\solemar_20250101.db" "C:\Solemar\Data\db\custom.db"
-Start-Service SolemarFrigorifico
-```
+- **Repositorio:** https://github.com/aarescalvo/produccion4z
+- **Issues:** https://github.com/aarescalvo/produccion4z/issues
 
 ---
 
-## 📞 SOPORTE TÉCNICO
+## LICENCIA
 
-Para asistencia técnica, contactar:
-- **Email**: soporte@solemar.com.ar
-- **GitHub**: https://github.com/aarescalvo/104/issues
-
----
-
-## 📄 LICENCIA
-
-Software propietario - Solemar Alimentaria
+Software propietario - Uso interno
 Todos los derechos reservados.
