@@ -104,9 +104,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Crear pesaje y actualizar peso del animal
-    const [pesaje, animal] = await db.$transaction([
-      db.pesajeIndividual.create({
+    // Crear pesaje, actualizar animal y tropa todo en transacción
+    const result = await db.$transaction(async (tx) => {
+      const pesaje = await tx.pesajeIndividual.create({
         data: {
           animalId,
           peso: parseFloat(peso),
@@ -119,38 +119,41 @@ export async function POST(request: NextRequest) {
             include: { tropa: true }
           }
         }
-      }),
-      db.animal.update({
+      })
+
+      const animal = await tx.animal.update({
         where: { id: animalId },
         data: { 
           pesoVivo: parseFloat(peso),
           estado: 'PESADO'
         }
       })
-    ])
 
-    // Actualizar peso total individual de la tropa
-    if (animal.tropaId) {
-      const totalPeso = await db.pesajeIndividual.aggregate({
-        where: {
-          animal: { tropaId: animal.tropaId }
-        },
-        _sum: { peso: true }
-      })
-      
-      await db.tropa.update({
-        where: { id: animal.tropaId },
-        data: { pesoTotalIndividual: totalPeso._sum.peso || 0 }
-      })
-    }
+      // Actualizar peso total individual de la tropa (dentro de la transacción)
+      if (animal.tropaId) {
+        const totalPeso = await tx.pesajeIndividual.aggregate({
+          where: {
+            animal: { tropaId: animal.tropaId }
+          },
+          _sum: { peso: true }
+        })
+        
+        await tx.tropa.update({
+          where: { id: animal.tropaId },
+          data: { pesoTotalIndividual: totalPeso._sum.peso || 0 }
+        })
+      }
+
+      return pesaje
+    })
 
     return NextResponse.json({
       success: true,
       data: {
-        id: pesaje.id,
-        peso: pesaje.peso,
-        caravana: pesaje.caravana,
-        animal: pesaje.animal
+        id: result.id,
+        peso: result.peso,
+        caravana: result.caravana,
+        animal: result.animal
       }
     })
   } catch (error) {

@@ -98,55 +98,67 @@ export class LiquidacionService {
     const condicionIva = liq.cliente?.condicionIva || 'CF'
     const tipoComprobante = CONDICION_IVA_COMPROBANTE[condicionIva] || 'FACTURA_B'
     
-    // Get next factura number
-    const numerador = await db.numerador.upsert({
-      where: { nombre: 'FACTURA' },
-      update: { ultimoNumero: { increment: 1 } },
-      create: { nombre: 'FACTURA', ultimoNumero: 1 }
-    })
-    
-    const numeroInterno = numerador.ultimoNumero
-    const numero = String(numeroInterno).padStart(8, '0')
-    
     // Discriminar IVA según tipo
     const discriminadoIva = tipoComprobante === 'FACTURA_A'
     const subtotal = liq.subtotalNeto
     const iva = discriminadoIva ? liq.totalIVA : 0
     const total = discriminadoIva ? liq.totalFinal : liq.subtotalNeto
     
-    // Crear factura
-    const factura = await db.factura.create({
-      data: {
-        numero,
-        numeroInterno,
-        tipoComprobante: tipoComprobante as any,
-        clienteId: liq.clienteId,
-        clienteNombre: liq.cliente?.razonSocial || liq.cliente?.nombre,
-        clienteCuit: liq.cliente?.cuit,
-        clienteCondicionIva: condicionIva as any,
-        subtotal,
-        iva,
-        porcentajeIva: liq.totalIVA / liq.subtotalNeto * 100 || 0,
-        total,
-        saldo: total,
-        estado: 'PENDIENTE',
-        condicionVenta: 'CUENTA_CORRIENTE',
-        detalles: {
-          create: liq.items?.map(item => ({
-            tipoProducto: item.esDescuento ? 'OTRO' : 'OTRO',
-            descripcion: item.descripcion,
-            cantidad: item.cantidad,
-            unidad: item.unidad,
-            precioUnitario: item.tarifaValor,
-            subtotal: item.subtotal,
-            pesoKg: item.unidad === 'POR_KG' || item.unidad === 'POR_KG_POR_DIA' ? item.cantidad : null,
-          })) || []
+    // Ejecutar numerador + factura + liquidación EN TRANSACCIÓN
+    const factura = await db.$transaction(async (tx) => {
+      // Get next factura number (atómico dentro de la tx)
+      const numerador = await tx.numerador.upsert({
+        where: { nombre: 'FACTURA' },
+        update: { ultimoNumero: { increment: 1 } },
+        create: { nombre: 'FACTURA', ultimoNumero: 1 }
+      })
+      
+      const numeroInterno = numerador.ultimoNumero
+      const numero = String(numeroInterno).padStart(8, '0')
+      
+      // Crear factura
+      const fac = await tx.factura.create({
+        data: {
+          numero,
+          numeroInterno,
+          tipoComprobante: tipoComprobante as any,
+          clienteId: liq.clienteId,
+          clienteNombre: liq.cliente?.razonSocial || liq.cliente?.nombre,
+          clienteCuit: liq.cliente?.cuit,
+          clienteCondicionIva: condicionIva as any,
+          subtotal,
+          iva,
+          porcentajeIva: liq.subtotalNeto > 0 ? liq.totalIVA / liq.subtotalNeto * 100 : 0,
+          total,
+          saldo: total,
+          estado: 'PENDIENTE',
+          condicionVenta: 'CUENTA_CORRIENTE',
+          detalles: {
+            create: liq.items?.map(item => ({
+              tipoProducto: item.esDescuento ? 'OTRO' : 'OTRO',
+              descripcion: item.descripcion,
+              cantidad: item.cantidad,
+              unidad: item.unidad,
+              precioUnitario: item.tarifaValor,
+              subtotal: item.subtotal,
+              pesoKg: item.unidad === 'POR_KG' || item.unidad === 'POR_KG_POR_DIA' ? item.cantidad : null,
+            })) || []
+          }
         }
-      }
+      })
+      
+      // Actualizar liquidación (directamente en la tx)
+      await tx.liquidacionFaena.update({
+        where: { id: liquidacionId },
+        data: {
+          estado: 'EMITIDA',
+          facturaId: fac.id,
+          fechaEmision: new Date()
+        }
+      })
+      
+      return fac
     })
-    
-    // Actualizar liquidación
-    await liquidacionRepository.emitir(liquidacionId, factura.id)
     
     eventBus.emit('factura.generada', { facturaId: factura.id, liquidacionId })
     

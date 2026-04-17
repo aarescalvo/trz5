@@ -186,69 +186,71 @@ export async function POST(request: NextRequest) {
       barcodeGs1_128 = `(01)${gtin}(10)${loteTropa}(11)${fechaFaenaStr}(13)${fechaDesposteStr}(3102)${pesoNetoStr}(21)${serial}`
     }
 
-    // Crear la caja
-    const caja = await db.cajaEmpaque.create({
-      data: {
-        numero,
-        productoDesposteId,
-        cuartoId: cuartoId || null,
-        loteId: loteId || null,
-        propietarioId: propietarioId || null,
-        pesoBruto: pesoBrutoFinal,
-        pesoNeto,
-        tara: taraFinal,
-        piezas: piezas || 1,
-        tropaCodigo: tropaFinal,
-        fechaFaena,
-        fechaDesposte: hoy,
-        fechaVencimiento,
-        estado: 'ARMADA',
-        codigoBarras: numero,
-        barcodeGs1_128
-      },
-      include: {
-        productoDesposte: {
-          select: {
-            id: true,
-            nombre: true,
-            codigo: true,
-            gtin: true,
-            rubro: { select: { nombre: true } }
-          }
+    // Crear la caja y descontar insumos EN TRANSACCIÓN
+    const insumosDescontadosCount = productoDesposteId ? await db.c2BOM.count({ where: { productoDesposteId } }) : 0
+    
+    const caja = await db.$transaction(async (tx) => {
+      const nuevaCaja = await tx.cajaEmpaque.create({
+        data: {
+          numero,
+          productoDesposteId,
+          cuartoId: cuartoId || null,
+          loteId: loteId || null,
+          propietarioId: propietarioId || null,
+          pesoBruto: pesoBrutoFinal,
+          pesoNeto,
+          tara: taraFinal,
+          piezas: piezas || 1,
+          tropaCodigo: tropaFinal,
+          fechaFaena,
+          fechaDesposte: hoy,
+          fechaVencimiento,
+          estado: 'ARMADA',
+          codigoBarras: numero,
+          barcodeGs1_128
         },
-        cuarto: {
-          select: { id: true, codigo: true, tipo: true, tipoCuarto: { select: { nombre: true } } }
-        },
-        pallet: { select: { id: true, numero: true } }
-      }
-    })
-
-    // Descontar insumos según BOM
-    if (productoDesposteId) {
-      const bomItems = await db.c2BOM.findMany({
-        where: { productoDesposteId },
-        include: { insumo: true }
+        include: {
+          productoDesposte: {
+            select: {
+              id: true,
+              nombre: true,
+              codigo: true,
+              gtin: true,
+              rubro: { select: { nombre: true } }
+            }
+          },
+          cuarto: {
+            select: { id: true, codigo: true, tipo: true, tipoCuarto: { select: { nombre: true } } }
+          },
+          pallet: { select: { id: true, numero: true } }
+        }
       })
 
-      for (const bom of bomItems) {
-        const cantidadDescontar = bom.cantidadPorCaja * (piezas || 1)
-        try {
-          await db.insumo.update({
+      // Descontar insumos según BOM (dentro de la misma transacción)
+      if (productoDesposteId) {
+        const bomItems = await tx.c2BOM.findMany({
+          where: { productoDesposteId },
+          include: { insumo: true }
+        })
+
+        for (const bom of bomItems) {
+          const cantidadDescontar = bom.cantidadPorCaja * (piezas || 1)
+          await tx.insumo.update({
             where: { id: bom.insumoId },
             data: {
               stockActual: { decrement: cantidadDescontar }
             }
           })
-        } catch (err) {
-          console.warn(`No se pudo descontar insumo ${bom.insumoId}:`, err)
         }
       }
-    }
+
+      return nuevaCaja
+    })
 
     return NextResponse.json({
       success: true,
       data: caja,
-      insumosDescontados: productoDesposteId ? await db.c2BOM.count({ where: { productoDesposteId } }) : 0,
+      insumosDescontados: insumosDescontadosCount,
       message: `Caja ${numero} creada - ${producto.nombre} ${pesoNeto.toFixed(2)} kg`
     })
   } catch (error) {

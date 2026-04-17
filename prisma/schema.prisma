@@ -451,6 +451,8 @@ model Tropa {
   @@index([especie])
   @@index([estado])
   @@index([fechaRecepcion])
+  @@index([dte])
+  @@index([guia])
 }
 
 // Detalle de tipos de animales por tropa

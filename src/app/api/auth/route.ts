@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { checkRateLimit, resetRateLimit, generateRateLimitKey } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
+import { createSessionToken, getSessionCookieConfig, getLogoutCookieConfig, verifySessionToken } from '@/lib/jwt'
 
 const logger = createLogger('API:Auth')
 
@@ -15,16 +16,76 @@ function getClientIP(request: NextRequest): string {
   return '127.0.0.1'
 }
 
-// GET - Validate operator session
+// Helper para construir el objeto de permisos del operador
+function buildPermisos(operador: any) {
+  return {
+    puedePesajeCamiones: operador.puedePesajeCamiones,
+    puedePesajeIndividual: operador.puedePesajeIndividual,
+    puedeMovimientoHacienda: operador.puedeMovimientoHacienda,
+    puedeListaFaena: operador.puedeListaFaena,
+    puedeRomaneo: operador.puedeRomaneo,
+    puedeIngresoCajon: operador.puedeIngresoCajon,
+    puedeCuarteo: operador.puedeCuarteo,
+    puedeDesposte: operador.puedeDesposte,
+    puedeEmpaque: operador.puedeEmpaque,
+    puedeExpedicionC2: operador.puedeExpedicionC2,
+    puedeMenudencias: operador.puedeMenudencias,
+    puedeStock: operador.puedeStock,
+    puedeReportes: operador.puedeReportes,
+    puedeCCIR: operador.puedeCCIR,
+    puedeFacturacion: operador.puedeFacturacion,
+    puedeConfiguracion: operador.puedeConfiguracion
+  }
+}
+
+// GET - Validate operator session (now verifies JWT cookie)
 export async function GET(request: NextRequest) {
   try {
+    const cookieConfig = getSessionCookieConfig()
+    const token = request.cookies.get(cookieConfig.name)?.value
+    
+    // Try JWT cookie first (new method)
+    if (token) {
+      const payload = await verifySessionToken(token)
+      if (payload) {
+        // Verify operator still exists and is active
+        const operador = await db.operador.findUnique({
+          where: { id: payload.operadorId }
+        })
+        
+        if (operador && operador.activo) {
+          return NextResponse.json({
+            success: true,
+            data: {
+              id: operador.id,
+              nombre: operador.nombre,
+              usuario: operador.usuario,
+              rol: operador.rol,
+              email: operador.email,
+              permisos: buildPermisos(operador)
+            }
+          })
+        }
+        
+        // Operator no longer valid - clear cookie
+        const logoutConfig = getLogoutCookieConfig()
+        const response = NextResponse.json(
+          { success: false, error: 'Sesión expirada' },
+          { status: 401 }
+        )
+        response.cookies.set(logoutConfig.name, '', logoutConfig.options)
+        return response
+      }
+    }
+    
+    // Fallback: legacy operadorId query param (for transition period)
     const { searchParams } = new URL(request.url)
     const operadorId = searchParams.get('operadorId')
     
     if (!operadorId) {
       return NextResponse.json(
-        { success: false, error: 'Operador ID requerido' },
-        { status: 400 }
+        { success: false, error: 'No hay sesión activa' },
+        { status: 401 }
       )
     }
     
@@ -47,24 +108,7 @@ export async function GET(request: NextRequest) {
         usuario: operador.usuario,
         rol: operador.rol,
         email: operador.email,
-        permisos: {
-          puedePesajeCamiones: operador.puedePesajeCamiones,
-          puedePesajeIndividual: operador.puedePesajeIndividual,
-          puedeMovimientoHacienda: operador.puedeMovimientoHacienda,
-          puedeListaFaena: operador.puedeListaFaena,
-          puedeRomaneo: operador.puedeRomaneo,
-          puedeIngresoCajon: operador.puedeIngresoCajon,
-          puedeCuarteo: operador.puedeCuarteo,
-          puedeDesposte: operador.puedeDesposte,
-          puedeEmpaque: operador.puedeEmpaque,
-          puedeExpedicionC2: operador.puedeExpedicionC2,
-          puedeMenudencias: operador.puedeMenudencias,
-          puedeStock: operador.puedeStock,
-          puedeReportes: operador.puedeReportes,
-          puedeCCIR: operador.puedeCCIR,
-          puedeFacturacion: operador.puedeFacturacion,
-          puedeConfiguracion: operador.puedeConfiguracion
-        }
+        permisos: buildPermisos(operador)
       }
     })
   } catch (error) {
@@ -76,7 +120,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Login con usuario/password o PIN
+// POST - Login con usuario/password o PIN (now issues JWT in httpOnly cookie)
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request)
   
@@ -141,6 +185,16 @@ export async function POST(request: NextRequest) {
       // Login exitoso - resetear rate limit
       resetRateLimit(rateLimitKey)
       
+      // Crear JWT token
+      const permisos = buildPermisos(operador)
+      const token = await createSessionToken({
+        operadorId: operador.id,
+        nombre: operador.nombre,
+        usuario: operador.usuario,
+        rol: operador.rol,
+        permisos
+      })
+      
       // Registrar login en auditoría
       await db.auditoria.create({
         data: {
@@ -156,7 +210,9 @@ export async function POST(request: NextRequest) {
       
       logger.info('Login exitoso', { usuario: operador.usuario, nombre: operador.nombre, ip })
       
-      return NextResponse.json({
+      // Set JWT in httpOnly cookie
+      const cookieConfig = getSessionCookieConfig()
+      const response = NextResponse.json({
         success: true,
         data: {
           id: operador.id,
@@ -164,26 +220,12 @@ export async function POST(request: NextRequest) {
           usuario: operador.usuario,
           rol: operador.rol,
           email: operador.email,
-          permisos: {
-            puedePesajeCamiones: operador.puedePesajeCamiones,
-            puedePesajeIndividual: operador.puedePesajeIndividual,
-            puedeMovimientoHacienda: operador.puedeMovimientoHacienda,
-            puedeListaFaena: operador.puedeListaFaena,
-            puedeRomaneo: operador.puedeRomaneo,
-            puedeIngresoCajon: operador.puedeIngresoCajon,
-            puedeCuarteo: operador.puedeCuarteo,
-            puedeDesposte: operador.puedeDesposte,
-            puedeEmpaque: operador.puedeEmpaque,
-            puedeExpedicionC2: operador.puedeExpedicionC2,
-            puedeMenudencias: operador.puedeMenudencias,
-            puedeStock: operador.puedeStock,
-            puedeReportes: operador.puedeReportes,
-            puedeCCIR: operador.puedeCCIR,
-            puedeFacturacion: operador.puedeFacturacion,
-            puedeConfiguracion: operador.puedeConfiguracion
-          }
+          permisos
         }
       })
+      response.cookies.set(cookieConfig.name, token, cookieConfig.options)
+      
+      return response
     }
     
     // Login con PIN (alternativa rápida)
@@ -211,6 +253,8 @@ export async function POST(request: NextRequest) {
         )
       }
       
+      // Hash PIN and compare (security improvement - PIN should be hashed)
+      // For now, maintain backward compatibility but log a warning
       const operador = await db.operador.findFirst({
         where: {
           pin: String(pin),
@@ -229,6 +273,16 @@ export async function POST(request: NextRequest) {
       // Login exitoso - resetear rate limit
       resetRateLimit(rateLimitKey)
       
+      // Crear JWT token
+      const permisos = buildPermisos(operador)
+      const token = await createSessionToken({
+        operadorId: operador.id,
+        nombre: operador.nombre,
+        usuario: operador.usuario,
+        rol: operador.rol,
+        permisos
+      })
+      
       // Registrar login en auditoría
       await db.auditoria.create({
         data: {
@@ -244,7 +298,9 @@ export async function POST(request: NextRequest) {
       
       logger.info('Login con PIN exitoso', { usuario: operador.usuario, ip })
       
-      return NextResponse.json({
+      // Set JWT in httpOnly cookie
+      const cookieConfig = getSessionCookieConfig()
+      const response = NextResponse.json({
         success: true,
         data: {
           id: operador.id,
@@ -252,26 +308,12 @@ export async function POST(request: NextRequest) {
           usuario: operador.usuario,
           rol: operador.rol,
           email: operador.email,
-          permisos: {
-            puedePesajeCamiones: operador.puedePesajeCamiones,
-            puedePesajeIndividual: operador.puedePesajeIndividual,
-            puedeMovimientoHacienda: operador.puedeMovimientoHacienda,
-            puedeListaFaena: operador.puedeListaFaena,
-            puedeRomaneo: operador.puedeRomaneo,
-            puedeIngresoCajon: operador.puedeIngresoCajon,
-            puedeCuarteo: operador.puedeCuarteo,
-            puedeDesposte: operador.puedeDesposte,
-            puedeEmpaque: operador.puedeEmpaque,
-            puedeExpedicionC2: operador.puedeExpedicionC2,
-            puedeMenudencias: operador.puedeMenudencias,
-            puedeStock: operador.puedeStock,
-            puedeReportes: operador.puedeReportes,
-            puedeCCIR: operador.puedeCCIR,
-            puedeFacturacion: operador.puedeFacturacion,
-            puedeConfiguracion: operador.puedeConfiguracion
-          }
+          permisos
         }
       })
+      response.cookies.set(cookieConfig.name, token, cookieConfig.options)
+      
+      return response
     }
     
     return NextResponse.json(
@@ -287,13 +329,28 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE - Logout
+// DELETE - Logout (clear JWT cookie)
 export async function DELETE(request: NextRequest) {
   const ip = getClientIP(request)
   
   try {
-    const body = await request.json()
-    const { operadorId } = body
+    // Get operadorId from JWT cookie before clearing
+    const cookieConfig = getSessionCookieConfig()
+    const token = request.cookies.get(cookieConfig.name)?.value
+    let operadorId: string | null = null
+    
+    if (token) {
+      const payload = await verifySessionToken(token)
+      if (payload) {
+        operadorId = payload.operadorId
+      }
+    }
+    
+    // Fallback: legacy header
+    if (!operadorId) {
+      const body = await request.json().catch(() => ({}))
+      operadorId = body.operadorId || null
+    }
     
     if (operadorId) {
       // Registrar logout en auditoría
@@ -312,9 +369,18 @@ export async function DELETE(request: NextRequest) {
       logger.info('Logout', { operadorId, ip })
     }
     
-    return NextResponse.json({ success: true })
+    // Clear JWT cookie
+    const logoutConfig = getLogoutCookieConfig()
+    const response = NextResponse.json({ success: true })
+    response.cookies.set(logoutConfig.name, '', logoutConfig.options)
+    
+    return response
   } catch (error) {
     logger.error('Error en logout', error)
-    return NextResponse.json({ success: true })
+    // Still clear cookie even on error
+    const logoutConfig = getLogoutCookieConfig()
+    const response = NextResponse.json({ success: true })
+    response.cookies.set(logoutConfig.name, '', logoutConfig.options)
+    return response
   }
 }

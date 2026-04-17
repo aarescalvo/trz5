@@ -1,213 +1,223 @@
-# Manual de Usuario - Frigorífico Sistema
+# 📖 Manual de Usuario - Sistema Frigorífico
 
-## Índice
-
-1. [Inicio de Sesión](#inicio-de-sesión)
-2. [Módulos del Sistema](#módulos-del-sistema)
-3. [Flujo de Trabajo](#flujo-de-trabajo)
-4. [Glosario](#glosario)
+## Solemar Alimentaria - CICLO I
 
 ---
 
-## Inicio de Sesión
+## 🔐 Inicio de Sesión
 
-### Login
-1. Abrir navegador: `http://localhost:3000`
-2. Ingresar nombre de usuario
-3. Ingresar PIN (4 dígitos)
-4. Click en "Ingresar"
+### Métodos de Acceso
 
-### Roles de Usuario
+| Método | Uso |
+|--------|-----|
+| **Usuario + Contraseña** | Acceso completo, escritorio |
+| **PIN (4-6 dígitos)** | Acceso rápido, pantallas táctiles |
 
-| Rol | Permisos |
-|-----|----------|
-| **Administrador** | Acceso total |
-| **Supervisor** | Reportes, configuración, anular facturas |
-| **Operador** | Módulos asignados según configuración |
+### Usuarios Predefinidos
+
+| Usuario | Contraseña | PIN | Permisos |
+|---------|------------|-----|----------|
+| admin | admin123 | 1234 | Todos los módulos |
+| supervisor | super123 | 2222 | Operativos + Reportes |
+| balanza | balanza123 | 1111 | Solo pesaje |
 
 ---
 
-## Módulos del Sistema
+## 📋 Flujo de Trabajo Principal
 
-### 1. Pesaje de Camiones
-**Función:** Registrar el peso de los camiones que traen hacienda.
+### 1️⃣ Recepción de Hacienda (Pesaje Camiones)
+
+```
+Camión llega → Pesaje Bruto → Verificar DTE → Asignar Corral → Pesaje Tara → Tropa Creada
+```
 
 **Pasos:**
-1. Seleccionar "Nuevo Pesaje"
-2. Ingresar datos del transporte (patente, chofer)
-3. Seleccionar tipo: Entrada o Salida
-4. Registrar peso bruto
-5. (Más tarde) Registrar peso tara
-6. Sistema calcula peso neto automáticamente
+1. Ir a **Pesaje Camiones**
+2. Clic en **"Nuevo Pesaje"**
+3. Seleccionar tipo: INGRESO HACIENDA
+4. Ingresar datos del camión:
+   - Patente chasis (obligatorio)
+   - Patente acoplado
+   - Nombre del chofer
+   - DNI del chofer
+5. Seleccionar transportista
+6. Ingresar peso bruto (pesar camión con animales)
+7. Completar datos de la tropa:
+   - Usuario de faena (quién faena)
+   - Productor (opcional)
+   - DTE (Documento de Tránsito)
+   - Guía de tránsito
+   - Tipos y cantidad de animales
+8. Clic en **"Crear Tropa"**
+9. El sistema asigna corral automáticamente
+10. Cuando el camión descarga, hacer **Tara** (peso vacío)
 
 ---
 
-### 2. Movimiento de Hacienda
-**Función:** Ingreso de animales a los corrales.
+### 2️⃣ Pesaje Individual
+
+```
+Animales en corral → Pesaje uno por uno → Estado: PESADO
+```
 
 **Pasos:**
-1. Crear nueva tropa
-2. Asignar productor y usuario de faena
-3. Especificar cantidad de animales
-4. Seleccionar corral de destino
-5. Confirmar ingreso
+1. Ir a **Pesaje Individual**
+2. Seleccionar tropa de la lista
+3. Para cada animal:
+   - Ingresar número o escanear caravana
+   - El sistema muestra el peso (si hay balanza conectada)
+   - Confirmar peso
+4. Al terminar todos los animales, la tropa queda **PESADA**
 
 ---
 
-### 3. Lista de Faena
-**Función:** Programar los animales a faenar.
+### 3️⃣ Lista de Faena
+
+```
+Tropas pesadas → Crear lista del día → Asignar garrones → Faena
+```
 
 **Pasos:**
-1. Seleccionar fecha de faena
-2. Agregar animales desde corrales
-3. Asignar número de garrón a cada animal
-4. Imprimir lista para producción
+1. Ir a **Lista de Faena**
+2. Seleccionar fecha (hoy por defecto)
+3. Agregar tropas a la lista
+4. Indicar cantidad de animales de cada tropa
+5. Clic en **"Asignar Garrones"**
+6. El sistema asigna números correlativos
+7. Imprimir lista para la playa de faena
 
 ---
 
-### 4. Romaneo (VB Romaneo)
-**Función:** Registrar el peso de las medias reses.
+### 4️⃣ Romaneo (Pesaje de Medias Reses)
+
+```
+Animal faenado → Media res izquierda → Media res derecha → Rinde automático
+```
 
 **Pasos:**
-1. Seleccionar animal por garrón
-2. Registrar peso de media derecha
-3. Registrar peso de media izquierda
-4. Asignar tipificación si corresponde
-5. Repetir para cada animal
+1. Ir a **Romaneo**
+2. Ingresar número de garrón
+3. Registrar:
+   - Peso media izquierda
+   - Peso media derecha
+   - Tipificación (A, B, C)
+   - Número de dientes
+   - Tipificador
+4. El sistema calcula **RINDE** automáticamente:
+   ```
+   Rinde = (Peso Media Izq + Peso Media Der) / Peso Vivo × 100
+   ```
+5. Las medias reses quedan en stock de cámara
 
 ---
 
-### 5. Ingreso a Cámara
-**Función:** Ubicar las medias reses en cámaras frigoríficas.
+### 5️⃣ Despacho de Mercadería
+
+```
+Cliente solicita → Armar despacho → Orden de carga → Pesaje salida → Entrega
+```
 
 **Pasos:**
-1. Seleccionar cámara de destino
-2. Escanear o ingresar código de media
-3. Confirmar ubicación
-4. El sistema actualiza stock automáticamente
+1. Ir a **Despacho**
+2. Clic en **"Nuevo Despacho"**
+3. Seleccionar cliente
+4. Agregar productos desde el stock:
+   - Seleccionar cámara
+   - Clic en + para agregar cantidad
+   - Los productos pasan al panel derecho
+5. Completar datos de transporte:
+   - Patentes
+   - Chofer
+   - DNI
+6. Completar documentos:
+   - Remito N°
+   - Factura N°
+   - Precintos
+   - PTR (si corresponde)
+7. Registrar temperaturas
+8. **Guardar Despacho**
+9. Generar **Orden de Carga** (imprimible)
+10. Cuando el camión está listo, hacer **Pesaje de Salida**
 
 ---
 
-### 6. Despacho 1/2 Res
-**Función:** Despachar medias reses a clientes.
+## 📊 Reportes Disponibles
 
-**Pasos:**
-1. Seleccionar medias desde cámaras
-2. Ingresar datos del transporte (destino, patente, chofer)
-3. Registrar ticket de pesaje (opcional)
-4. Confirmar despacho
-5. Opcional: Generar factura
+### Reporte de Faena
+- Animales faenados por día
+- Kilos producidos
+- Rendimiento promedio
 
-**Datos importantes:**
-- Se muestra KG por usuario/cliente
-- Se puede anular un despacho (restaura stock)
-- Se puede ver detalle completo
+### Reporte de Rendimiento
+- Por tropa
+- Por productor
+- Por tipo de animal
 
----
-
-### 7. Facturación
-**Función:** Generar facturas por servicios y productos.
-
-**Pestañas:**
-
-#### Pestaña 1: Desde Despacho
-1. Seleccionar despacho pendiente
-2. Ingresar precio por KG
-3. Confirmar factura
-
-#### Pestaña 2: Otros Items
-1. Seleccionar tipo de item:
-   - Servicio Desposte
-   - Venta de Menudencias
-   - Venta de Carne
-   - Venta de Cortes
-   - Servicio de Frío
-   - Otros
-2. Ingresar cantidad y precio
-3. Agregar más items si es necesario
-4. Confirmar factura
-
-#### Pestaña 3: Histórico
-- Ver todas las facturas
-- Filtrar por estado o cliente
-- Editar/Anular (requiere PIN supervisor)
-
----
-
-### 8. Stock
-**Función:** Ver inventario de medias reses en cámaras.
-
-**Vistas:**
+### Reporte de Stock
 - Stock por cámara
-- Stock por usuario/cliente
-- Stock por tropa
+- Stock por cliente
+- Antigüedad de stock
 
 ---
 
-### 9. Reportes
-**Función:** Generar informes del sistema.
+## ⚙️ Configuración
 
-**Reportes disponibles:**
-- Faena diaria
-- Rinde de faena
-- Stock actual
-- Despachos por período
-- Facturación
+### Operadores
+- Crear usuarios
+- Asignar permisos por módulo
+- Establecer PIN de acceso rápido
 
----
+### Corrales
+- Definir capacidad
+- Ver ocupación actual
 
-### 10. Configuración
-**Función:** Administrar el sistema.
+### Cámaras
+- Tipos: Faena, Cuarteo, Depósito
+- Capacidad en ganchos o KG
 
-**Opciones:**
-- Gestión de clientes
-- Gestión de operadores
-- Gestión de corrales
-- Gestión de cámaras
-- Gestión de tipificadores
-- Precios por cliente
+### Clientes
+- Productores
+- Usuarios de faena
+- Datos de contacto
 
----
-
-## Flujo de Trabajo
-
-### Flujo Principal (Ciclo I)
-
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  Recepción  │───▶│   Corrales  │───▶│ Lista Faena │
-│  (Camiones) │    │             │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘
-                                            │
-                                            ▼
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  Despacho   │◀───│   Cámaras   │◀───│   Romaneo   │
-│             │    │             │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘
-       │
-       ▼
-┌─────────────┐
-│ Facturación │
-│             │
-└─────────────┘
-```
+### Productos
+- Catálogo por especie
+- Códigos para rótulos
+- Días de conservación
 
 ---
 
-## Glosario
+## ❓ Preguntas Frecuentes
 
-| Término | Definición |
-|---------|------------|
-| **Tropa** | Grupo de animales de un mismo productor |
-| **Garrón** | Número de identificación del animal en faena |
-| **Media Res** | Cada mitad de la res después de la faena |
-| **Romaneo** | Pesaje de las medias reses |
-| **Usuario/Cliente** | El que faena en el frigorífico (con matrícula) |
-| **Operador** | El que usa el sistema de trazabilidad |
-| **Despacho** | Salida de medias reses del frigorífico |
-| **Expedición** | Salida de productos elaborados (Ciclo II) |
+### ¿Cómo cambio mi contraseña?
+1. Ir a Configuración → Operadores
+2. Buscar tu usuario
+3. Clic en editar
+4. Ingresar nueva contraseña
+
+### ¿Qué hago si se bloquea el sistema?
+1. Presionar F5 para recargar
+2. Si persiste, cerrar navegador y volver a abrir
+3. Verificar conexión de red
+
+### ¿Cómo imprimo un ticket?
+1. En Pesaje Camiones, buscar el pesaje
+2. Clic en "Ver Ticket"
+3. Clic en "Imprimir"
+
+### ¿Puedo anular una tropa?
+Sí, ir a la tropa y cambiar estado a ANULADO. Esto revierte el stock de corral.
+
+### ¿Cómo veo el historial de cambios?
+En Configuración → Auditoría se registran todas las acciones.
 
 ---
 
-**Versión documento:** 0.7.2  
-**Última actualización:** Enero 2024
+## 📞 Soporte Técnico
+
+- **GitHub Issues**: https://github.com/aarescalvo/localzai/issues
+- **Administrador del sistema**: Consultar internamente
+
+---
+
+*Manual de Usuario v1.0 - Marzo 2026*

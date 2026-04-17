@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { Especie, TipoAnimal, EstadoPesaje, TipoPesajeCamion } from '@prisma/client'
 
-// V3 - Updated: 2025-03-03 - Fixed FK validation
+// V4 - Updated: Transactions, corral stock, capacity warning, DTE validation
 
 // Función para generar código de tropa
 import { checkPermission } from '@/lib/auth-helpers'
@@ -118,14 +118,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Create new pesaje
+// POST - Create new pesaje (with transactions, stock update, capacity check, DTE validation)
 export async function POST(request: NextRequest) {
   const authError = await checkPermission(request, 'puedePesajeCamiones')
   if (authError) return authError
 
   try {
     const body = await request.json()
-    console.log('[POST pesaje-camion] === INICIANDO CREACIÓN DE PESAJE v2 ===')
+    console.log('[POST pesaje-camion] === INICIANDO CREACIÓN DE PESAJE v4 ===')
     console.log('[POST pesaje-camion] Body:', JSON.stringify(body, null, 2))
     
     const {
@@ -150,7 +150,8 @@ export async function POST(request: NextRequest) {
       destino,
       remito,
       descripcion,
-      operadorId
+      operadorId,
+      forzarCapacidad // Permite sobrepasar capacidad del corral
     } = body
     
     // Obtener último número de ticket
@@ -164,8 +165,6 @@ export async function POST(request: NextRequest) {
     
     // === VALIDACIÓN DE CLAVES FORÁNEAS ===
     console.log('[POST pesaje-camion] === VALIDANDO FKs ===')
-    console.log('[POST pesaje-camion] operadorId recibido:', operadorId)
-    console.log('[POST pesaje-camion] transportistaId recibido:', transportistaId)
     
     // Validate operadorId if provided
     let validOperadorId: string | undefined = undefined
@@ -211,35 +210,18 @@ export async function POST(request: NextRequest) {
       fechaTara: pesoTara ? new Date() : null
     }
     
-    // Solo agregar FKs si tienen valores válidos (null es válido para FKs opcionales)
-    // NO agregar FKs con IDs que no existen en la BD
-    if (validTransportistaId) {
-      pesajeData.transportistaId = validTransportistaId
-    }
-    // Importante: operadorId se pasa solo si es válido, de lo contrario no se incluye
-    // Esto previene el error de FK constraint
-    if (validOperadorId) {
-      pesajeData.operadorId = validOperadorId
-    }
+    if (validTransportistaId) pesajeData.transportistaId = validTransportistaId
+    if (validOperadorId) pesajeData.operadorId = validOperadorId
     
-    console.log('[POST pesaje-camion] === DATOS VALIDADOS ===')
-    console.log('[POST pesaje-camion] pesajeData:', JSON.stringify(pesajeData, null, 2))
-    
-    const pesaje = await db.pesajeCamion.create({
-      data: pesajeData,
-      include: {
-        transportista: true,
-        operador: true
-      }
-    })
-    
-    console.log('[POST pesaje-camion] Pesaje creado:', pesaje.id)
-    
-    // Si es ingreso de hacienda, crear la tropa
+    // Si es ingreso de hacienda, crear todo dentro de una transacción
     if (tipo === 'INGRESO_HACIENDA') {
       // Verificar que tenemos los datos mínimos para crear la tropa
       if (!usuarioFaenaId) {
-        console.log('[POST pesaje-camion] Sin usuarioFaenaId, no se crea tropa')
+        // Crear solo el pesaje sin tropa
+        const pesaje = await db.pesajeCamion.create({
+          data: pesajeData,
+          include: { transportista: true, operador: true }
+        })
         return NextResponse.json({
           success: true,
           data: {
@@ -257,7 +239,6 @@ export async function POST(request: NextRequest) {
         where: { id: usuarioFaenaId }
       })
       if (!usuarioFaenaExists) {
-        console.log('[POST pesaje-camion] usuarioFaenaId no válido:', usuarioFaenaId)
         return NextResponse.json({
           success: false,
           error: 'Usuario de faena no válido'
@@ -270,26 +251,78 @@ export async function POST(request: NextRequest) {
         const productorExists = await db.cliente.findUnique({
           where: { id: productorId }
         })
-        if (productorExists) {
-          validProductorId = productorId
-        }
+        if (productorExists) validProductorId = productorId
       }
       
-      // Validate corralId if provided
+      // Validate corralId and check capacity
       let validCorralId: string | undefined = undefined
+      let advertenciaCapacidad: string | null = null
+      
       if (corralId) {
         const corralExists = await db.corral.findUnique({
           where: { id: corralId }
         })
         if (corralExists) {
           validCorralId = corralId
+          
+          // Verificar capacidad del corral (advertencia, no bloqueante)
+          const cantidadIngresar = parseInt(cantidadCabezas) || 0
+          const especieEnum = (especie || 'BOVINO') as Especie
+          const stockActual = especieEnum === 'BOVINO' ? corralExists.stockBovinos : corralExists.stockEquinos
+          const disponible = corralExists.capacidad - stockActual
+          
+          if (disponible < cantidadIngresar && !forzarCapacidad) {
+            // Retornar advertencia para que el frontend consulte al usuario
+            return NextResponse.json({
+              success: false,
+              requiresConfirmation: true,
+              error: `Capacidad insuficiente en corral "${corralExists.nombre}". Disponible: ${disponible}, Se requieren: ${cantidadIngresar}. ¿Desea continuar de todas formas?`,
+              capacidadInfo: {
+                corral: corralExists.nombre,
+                capacidad: corralExists.capacidad,
+                stockActual,
+                disponible,
+                cantidadIngresar
+              }
+            }, { status: 409 }) // 409 Conflict = needs user decision
+          }
+          
+          if (disponible < cantidadIngresar && forzarCapacidad) {
+            advertenciaCapacidad = `ATENCIÓN: Se excedió la capacidad del corral "${corralExists.nombre}". Capacidad: ${corralExists.capacidad}, Stock actual: ${stockActual}, Ingresando: ${cantidadIngresar}`
+            console.warn(`[POST pesaje-camion] ${advertenciaCapacidad}`)
+          }
+        }
+      }
+      
+      // === VALIDAR DTE/GUÍA DUPLICADOS ===
+      if (dte && dte.trim()) {
+        const dteExistente = await db.tropa.findFirst({
+          where: { dte: dte.trim() }
+        })
+        if (dteExistente) {
+          return NextResponse.json({
+            success: false,
+            error: `Ya existe una tropa con DTE "${dte.trim()}" (Tropa: ${dteExistente.codigo}). No se pueden duplicar documentos SENASA.`
+          }, { status: 400 })
+        }
+      }
+      
+      if (guia && guia.trim()) {
+        const guiaExistente = await db.tropa.findFirst({
+          where: { guia: guia.trim() }
+        })
+        if (guiaExistente) {
+          return NextResponse.json({
+            success: false,
+            error: `Ya existe una tropa con Guía "${guia.trim()}" (Tropa: ${guiaExistente.codigo}). No se pueden duplicar documentos SENASA.`
+          }, { status: 400 })
         }
       }
       
       const especieEnum = (especie || 'BOVINO') as Especie
       const { codigo, numero } = await generarCodigoTropa(especieEnum)
       
-      // Crear la tropa
+      // Preparar datos de tropa
       const tropaData: any = {
         numero,
         codigo,
@@ -298,11 +331,10 @@ export async function POST(request: NextRequest) {
         cantidadCabezas: parseInt(cantidadCabezas) || 0,
         dte: dte || '',
         guia: guia || '',
-        pesajeCamionId: pesaje.id,
+        pesajeCamionId: undefined, // Se asigna después dentro de la tx
         estado: 'RECIBIDO'
       }
       
-      // Campos opcionales validados
       if (validProductorId) tropaData.productorId = validProductorId
       if (validCorralId) tropaData.corralId = validCorralId
       if (pesoBruto) tropaData.pesoBruto = parseFloat(pesoBruto)
@@ -311,158 +343,187 @@ export async function POST(request: NextRequest) {
       if (observaciones) tropaData.observaciones = observaciones
       if (validOperadorId) tropaData.operadorId = validOperadorId
       
-      console.log('[POST pesaje-camion] Creando tropa:', tropaData)
-      
-      const tropa = await db.tropa.create({
-        data: tropaData,
-        include: {
-          productor: true,
-          usuarioFaena: true,
-          tiposAnimales: true,
-          corral: true
-        }
-      })
-      
-      console.log('[POST pesaje-camion] Tropa creada:', tropa.id, tropa.codigo)
-      
-      // Crear tipos de animales si existen
-      if (tiposAnimales && Array.isArray(tiposAnimales) && tiposAnimales.length > 0) {
-        console.log('[POST pesaje-camion] Creando tiposAnimales:', tiposAnimales.length)
-        for (const t of tiposAnimales) {
-          if (t.tipoAnimal && t.cantidad > 0) {
-            console.log('[POST pesaje-camion] Insertando tipo:', t.tipoAnimal, 'cantidad:', t.cantidad)
-            try {
-              await db.tropaAnimalCantidad.create({
-                data: {
-                  tropaId: tropa.id,
-                  tipoAnimal: t.tipoAnimal as TipoAnimal,
-                  cantidad: parseInt(t.cantidad)
-                }
-              })
-              console.log('[POST pesaje-camion] Tipo insertado:', t.tipoAnimal)
-            } catch (insertError) {
-              console.error('[POST pesaje-camion] Error insertando tipo:', t.tipoAnimal, insertError)
-            }
-          }
-        }
-        console.log('[POST pesaje-camion] Todos los tipos insertados')
-      }
-      
-      // ========================================
-      // CREAR ANIMALES INDIVIDUALES
-      // ========================================
-      console.log('[POST pesaje-camion] === CREANDO ANIMALES INDIVIDUALES ===')
-      
+      // Preparar datos de animales individuales
       const totalAnimales = parseInt(cantidadCabezas) || 0
-      const codigoBase = tropa.codigo.replace(/ /g, '') // "B20260001"
+      const codigoBase = codigo.replace(/ /g, '')
       
-      // Distribuir tipos de animales
       interface TipoAnimalItem { tipoAnimal: string; cantidad: number }
       const tiposDistribucion: TipoAnimalItem[] = (tiposAnimales && Array.isArray(tiposAnimales)) 
         ? tiposAnimales.filter((t: TipoAnimalItem) => t.cantidad > 0)
         : []
       
-      let animalNumero = 1
-      let animalesCreados = 0
+      const animalesData: { tropaId: string; numero: number; codigo: string; tipoAnimal: TipoAnimal; estado: string; corralId?: string }[] = []
       
-      // Crear animales distribuidos por tipo
+      let animalNumero = 1
       for (const tipoInfo of tiposDistribucion) {
         const cantidadTipo = parseInt(tipoInfo.cantidad) || 0
-        console.log(`[POST pesaje-camion] Creando ${cantidadTipo} animales tipo ${tipoInfo.tipoAnimal}`)
-        
         for (let i = 0; i < cantidadTipo; i++) {
-          const codigoAnimal = `${codigoBase}-${String(animalNumero).padStart(3, '0')}`
-          
-          try {
-            await db.animal.create({
-              data: {
-                tropaId: tropa.id,
-                numero: animalNumero,
-                codigo: codigoAnimal,
-                tipoAnimal: tipoInfo.tipoAnimal as TipoAnimal,
-                estado: 'RECIBIDO',
-                corralId: validCorralId || null
-              }
-            })
-            animalesCreados++
-            animalNumero++
-          } catch (animalError) {
-            console.error(`[POST pesaje-camion] Error creando animal ${codigoAnimal}:`, animalError)
-          }
+          animalesData.push({
+            tropaId: '', // Se asigna dentro de la tx
+            numero: animalNumero,
+            codigo: `${codigoBase}-${String(animalNumero).padStart(3, '0')}`,
+            tipoAnimal: tipoInfo.tipoAnimal as TipoAnimal,
+            estado: 'RECIBIDO',
+            ...(validCorralId ? { corralId: validCorralId } : {})
+          })
+          animalNumero++
         }
       }
       
       // Si no había tipos definidos pero sí cantidad total, crear animales genéricos
       if (tiposDistribucion.length === 0 && totalAnimales > 0) {
-        console.log(`[POST pesaje-camion] Creando ${totalAnimales} animales sin tipo definido`)
-        
         for (let i = 1; i <= totalAnimales; i++) {
-          const codigoAnimal = `${codigoBase}-${String(i).padStart(3, '0')}`
-          
-          try {
-            await db.animal.create({
-              data: {
-                tropaId: tropa.id,
-                numero: i,
-                codigo: codigoAnimal,
-                tipoAnimal: 'VA' as TipoAnimal, // Default, se corrige al pesar
-                estado: 'RECIBIDO',
-                corralId: validCorralId || null
-              }
-            })
-            animalesCreados++
-          } catch (animalError) {
-            console.error(`[POST pesaje-camion] Error creando animal ${codigoAnimal}:`, animalError)
-          }
+          animalesData.push({
+            tropaId: '',
+            numero: i,
+            codigo: `${codigoBase}-${String(i).padStart(3, '0')}`,
+            tipoAnimal: 'VA' as TipoAnimal,
+            estado: 'RECIBIDO',
+            ...(validCorralId ? { corralId: validCorralId } : {})
+          })
         }
       }
       
-      console.log(`[POST pesaje-camion] ✅ ${animalesCreados} animales individuales creados`)
+      // Preparar tiposAnimales para crear
+      const tiposAnimalesData = (tiposAnimales && Array.isArray(tiposAnimales))
+        ? tiposAnimales.filter((t: TipoAnimalItem) => t.tipoAnimal && t.cantidad > 0)
+            .map((t: TipoAnimalItem) => ({
+              tipoAnimal: t.tipoAnimal as TipoAnimal,
+              cantidad: parseInt(t.cantidad)
+            }))
+        : []
       
-      // Re-fetch tropa with tiposAnimales
-      const tropaCompleta = await db.tropa.findUnique({
-        where: { id: tropa.id },
-        include: {
-          productor: true,
-          usuarioFaena: true,
-          tiposAnimales: true,
-          corral: true,
-          animales: {
-            select: { id: true, numero: true, codigo: true, tipoAnimal: true, estado: true }
+      // === EJECUTAR TODO EN UNA TRANSACCIÓN ===
+      console.log('[POST pesaje-camion] === EJECUTANDO EN TRANSACCIÓN ===')
+      
+      const result = await db.$transaction(async (tx) => {
+        // 1. Crear pesaje
+        const pesaje = await tx.pesajeCamion.create({
+          data: pesajeData,
+          include: { transportista: true, operador: true }
+        })
+        
+        // 2. Crear tropa vinculada al pesaje
+        tropaData.pesajeCamionId = pesaje.id
+        const tropa = await tx.tropa.create({
+          data: tropaData,
+          include: {
+            productor: true,
+            usuarioFaena: true,
+            tiposAnimales: true,
+            corral: true
           }
+        })
+        
+        // 3. Crear tipos de animales
+        for (const tipoData of tiposAnimalesData) {
+          await tx.tropaAnimalCantidad.create({
+            data: {
+              tropaId: tropa.id,
+              tipoAnimal: tipoData.tipoAnimal,
+              cantidad: tipoData.cantidad
+            }
+          })
         }
+        
+        // 4. Crear animales individuales
+        let animalesCreados = 0
+        for (const animalData of animalesData) {
+          await tx.animal.create({
+            data: {
+              tropaId: tropa.id,
+              numero: animalData.numero,
+              codigo: animalData.codigo,
+              tipoAnimal: animalData.tipoAnimal,
+              estado: 'RECIBIDO' as any,
+              corralId: animalData.corralId || null
+            }
+          })
+          animalesCreados++
+        }
+        
+        // 5. Actualizar stock del corral si se asignó uno
+        if (validCorralId && animalesCreados > 0) {
+          const stockField = especieEnum === 'BOVINO' ? 'stockBovinos' : 'stockEquinos'
+          await tx.corral.update({
+            where: { id: validCorralId },
+            data: {
+              [stockField]: { increment: animalesCreados }
+            }
+          })
+        }
+        
+        // 6. Crear registro de movimiento de corral
+        if (validCorralId && animalesCreados > 0) {
+          await tx.movimientoCorral.create({
+            data: {
+              corralDestinoId: validCorralId,
+              cantidad: animalesCreados,
+              especie: especieEnum,
+              tropaId: tropa.id,
+              observaciones: `Ingreso de hacienda - Tropa ${tropa.codigo}`,
+              operadorId: validOperadorId || null
+            }
+          })
+        }
+        
+        // 7. Re-fetch tropa completa
+        const tropaCompleta = await tx.tropa.findUnique({
+          where: { id: tropa.id },
+          include: {
+            productor: true,
+            usuarioFaena: true,
+            tiposAnimales: true,
+            corral: true,
+            animales: {
+              select: { id: true, numero: true, codigo: true, tipoAnimal: true, estado: true }
+            }
+          }
+        })
+        
+        return { pesaje, tropaCompleta, animalesCreados }
       })
       
-      console.log('[POST pesaje-camion] Retornando con tropa')
+      console.log(`[POST pesaje-camion] ✅ Transacción completada: ${result.animalesCreados} animales creados`)
       
-      return NextResponse.json({
+      const response: any = {
         success: true,
         data: {
-          ...pesaje,
-          chofer: pesaje.choferNombre,
-          dniChofer: pesaje.choferDni,
-          descripcion: pesaje.observaciones,
-          animalesCreados,
-          tropa: tropaCompleta ? {
-            id: tropaCompleta.id,
-            codigo: tropaCompleta.codigo,
-            productor: tropaCompleta.productor,
-            usuarioFaena: tropaCompleta.usuarioFaena,
-            especie: tropaCompleta.especie,
-            cantidadCabezas: tropaCompleta.cantidadCabezas,
-            corral: tropaCompleta.corral?.nombre || null,
-            corralId: tropaCompleta.corralId,
-            dte: tropaCompleta.dte,
-            guia: tropaCompleta.guia,
-            tiposAnimales: tropaCompleta.tiposAnimales,
-            animales: tropaCompleta.animales,
-            observaciones: tropaCompleta.observaciones
+          ...result.pesaje,
+          chofer: result.pesaje.choferNombre,
+          dniChofer: result.pesaje.choferDni,
+          descripcion: result.pesaje.observaciones,
+          animalesCreados: result.animalesCreados,
+          tropa: result.tropaCompleta ? {
+            id: result.tropaCompleta.id,
+            codigo: result.tropaCompleta.codigo,
+            productor: result.tropaCompleta.productor,
+            usuarioFaena: result.tropaCompleta.usuarioFaena,
+            especie: result.tropaCompleta.especie,
+            cantidadCabezas: result.tropaCompleta.cantidadCabezas,
+            corral: result.tropaCompleta.corral?.nombre || null,
+            corralId: result.tropaCompleta.corralId,
+            dte: result.tropaCompleta.dte,
+            guia: result.tropaCompleta.guia,
+            tiposAnimales: result.tropaCompleta.tiposAnimales,
+            animales: result.tropaCompleta.animales,
+            observaciones: result.tropaCompleta.observaciones
           } : null
         }
-      })
+      }
+      
+      if (advertenciaCapacidad) {
+        response.advertencia = advertenciaCapacidad
+      }
+      
+      return NextResponse.json(response)
     }
     
-    console.log('[POST pesaje-camion] Retornando sin tropa')
+    // Tipo distinto de INGRESO_HACIENDA — solo crear pesaje
+    const pesaje = await db.pesajeCamion.create({
+      data: pesajeData,
+      include: { transportista: true, operador: true }
+    })
     
     return NextResponse.json({
       success: true,
@@ -482,7 +543,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT - Update pesaje (add tara)
+// PUT - Update pesaje (add tara) — now with transaction
 export async function PUT(request: NextRequest) {
   const authError = await checkPermission(request, 'puedePesajeCamiones')
   if (authError) return authError
@@ -491,57 +552,61 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { id, pesoTara, pesoNeto } = body
     
-    const pesaje = await db.pesajeCamion.update({
-      where: { id },
-      data: {
-        pesoTara: parseFloat(pesoTara),
-        pesoNeto: parseFloat(pesoNeto),
-        estado: 'CERRADO',
-        fechaTara: new Date()
-      },
-      include: {
-        transportista: true,
-        operador: true,
-        tropa: {
-          include: {
-            productor: true,
-            usuarioFaena: true,
-            tiposAnimales: true,
-            corral: true
-          }
-        }
-      }
-    })
-    
-    // Actualizar tropa si existe
-    if (pesaje.tropa) {
-      await db.tropa.update({
-        where: { id: pesaje.tropa.id },
+    const result = await db.$transaction(async (tx) => {
+      const pesaje = await tx.pesajeCamion.update({
+        where: { id },
         data: {
           pesoTara: parseFloat(pesoTara),
           pesoNeto: parseFloat(pesoNeto),
-          estado: 'EN_CORRAL'
+          estado: 'CERRADO',
+          fechaTara: new Date()
+        },
+        include: {
+          transportista: true,
+          operador: true,
+          tropa: {
+            include: {
+              productor: true,
+              usuarioFaena: true,
+              tiposAnimales: true,
+              corral: true
+            }
+          }
         }
       })
-    }
+      
+      // Actualizar tropa si existe
+      if (pesaje.tropa) {
+        await tx.tropa.update({
+          where: { id: pesaje.tropa.id },
+          data: {
+            pesoTara: parseFloat(pesoTara),
+            pesoNeto: parseFloat(pesoNeto),
+            estado: 'EN_CORRAL'
+          }
+        })
+      }
+      
+      return pesaje
+    })
     
     return NextResponse.json({
       success: true,
       data: {
-        ...pesaje,
-        chofer: pesaje.choferNombre,
-        dniChofer: pesaje.choferDni,
-        descripcion: pesaje.observaciones,
-        tropa: pesaje.tropa ? {
-          id: pesaje.tropa.id,
-          codigo: pesaje.tropa.codigo,
-          productor: pesaje.tropa.productor,
-          usuarioFaena: pesaje.tropa.usuarioFaena,
-          especie: pesaje.tropa.especie,
-          cantidadCabezas: pesaje.tropa.cantidadCabezas,
-          corral: pesaje.tropa.corral?.nombre || null,
-          tiposAnimales: pesaje.tropa.tiposAnimales,
-          observaciones: pesaje.tropa.observaciones
+        ...result,
+        chofer: result.choferNombre,
+        dniChofer: result.choferDni,
+        descripcion: result.observaciones,
+        tropa: result.tropa ? {
+          id: result.tropa.id,
+          codigo: result.tropa.codigo,
+          productor: result.tropa.productor,
+          usuarioFaena: result.tropa.usuarioFaena,
+          especie: result.tropa.especie,
+          cantidadCabezas: result.tropa.cantidadCabezas,
+          corral: result.tropa.corral?.nombre || null,
+          tiposAnimales: result.tropa.tiposAnimales,
+          observaciones: result.tropa.observaciones
         } : null
       }
     })

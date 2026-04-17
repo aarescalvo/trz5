@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
-// POST - Register animal death/baja
+// POST - Register animal death/baja (V2: with corral stock update + transaction)
 import { checkPermission } from '@/lib/auth-helpers'
 export async function POST(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeMovimientoHacienda')
@@ -18,54 +18,71 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get animal
-    const animal = await db.animal.findUnique({
-      where: { id: animalId },
-      include: { tropa: true }
-    })
+    // Ejecutar todo en transacción
+    const updatedAnimal = await db.$transaction(async (tx) => {
+      // Get animal
+      const animal = await tx.animal.findUnique({
+        where: { id: animalId },
+        include: { tropa: true }
+      })
 
-    if (!animal) {
-      return NextResponse.json(
-        { success: false, error: 'Animal no encontrado' },
-        { status: 404 }
-      )
-    }
-
-    // Update animal state
-    const updatedAnimal = await db.animal.update({
-      where: { id: animalId },
-      data: {
-        estado: 'FALLECIDO',
-        fechaBaja: new Date(),
-        motivoBaja
+      if (!animal) {
+        throw new Error('Animal no encontrado')
       }
-    })
 
-    // Update tropa cantidadCabezas
-    await db.tropa.update({
-      where: { id: animal.tropaId },
-      data: {
-        cantidadCabezas: { decrement: 1 }
-      }
-    })
+      // 1. Update animal state
+      const updated = await tx.animal.update({
+        where: { id: animalId },
+        data: {
+          estado: 'FALLECIDO',
+          fechaBaja: new Date(),
+          motivoBaja
+        }
+      })
 
-    // Register audit
-    await db.auditoria.create({
-      data: {
-        operadorId: null,
-        modulo: 'MOVIMIENTO_HACIENDA',
-        accion: 'UPDATE',
-        entidad: 'Animal',
-        entidadId: animalId,
-        descripcion: `Animal ${animal.codigo} dado de baja - Motivo: ${motivoBaja}`
+      // 2. Update tropa cantidadCabezas
+      await tx.tropa.update({
+        where: { id: animal.tropaId },
+        data: {
+          cantidadCabezas: { decrement: 1 }
+        }
+      })
+
+      // 3. Decrement corral stock if animal was in a corral
+      if (animal.corralId) {
+        const stockField = animal.tropa.especie === 'BOVINO' ? 'stockBovinos' : 'stockEquinos'
+        await tx.corral.update({
+          where: { id: animal.corralId },
+          data: { [stockField]: { decrement: 1 } }
+        })
       }
+
+      // 4. Register audit
+      await tx.auditoria.create({
+        data: {
+          operadorId: null,
+          modulo: 'MOVIMIENTO_HACIENDA',
+          accion: 'UPDATE',
+          entidad: 'Animal',
+          entidadId: animalId,
+          descripcion: `Animal ${animal.codigo} dado de baja - Motivo: ${motivoBaja}`
+        }
+      })
+
+      return updated
     })
 
     return NextResponse.json({
       success: true,
       data: updatedAnimal
     })
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Animal no encontrado') {
+      return NextResponse.json(
+        { success: false, error: 'Animal no encontrado' },
+        { status: 404 }
+      )
+    }
     console.error('Error registering baja:', error)
     return NextResponse.json(
       { success: false, error: 'Error al registrar baja' },

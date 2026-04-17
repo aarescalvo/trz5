@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verifySessionToken } from '@/lib/jwt'
 
 // Rutas públicas que no requieren autenticación
 const PUBLIC_ROUTES = [
   '/api/auth',
   '/api/seed',
-  '/api/seed-simulacion',
-  '/api/seed-tropas',
   '/api/migrar-usuarios',
   '/api/sistema/status',
   '/api/balanza/lectura',
@@ -28,12 +27,9 @@ const ADMIN_ONLY_ROUTES = [
   '/api/backup',
   '/api/migrar-usuarios',
   '/api/puente-web',
-  '/api/seed-simulacion',
-  '/api/seed-tropas',
 ]
 
 // Mapeo de rutas a permisos requeridos
-// Se usa tanto para documentación como para verificación en middleware
 const ROUTE_PERMISSIONS: Record<string, string> = {
   // Faena y Hacienda
   '/api/facturacion': 'puedeFacturacion',
@@ -239,7 +235,7 @@ function isAdminOnlyRoute(pathname: string): boolean {
   return ADMIN_ONLY_ROUTES.some(route => pathname.startsWith(route))
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const method = request.method
 
@@ -258,15 +254,33 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Obtener operadorId de header o query param
-  const operadorId = request.headers.get('x-operador-id') || request.nextUrl.searchParams.get('operadorId')
-  const operadorRol = request.headers.get('x-operador-rol')
+  // ========================================
+  // JWT AUTHENTICATION (primary method)
+  // ========================================
+  let operadorId: string | null = null
+  let operadorRol: string | null = null
+  
+  // Try JWT cookie first (secure method)
+  const token = request.cookies.get('session_token')?.value
+  if (token) {
+    const payload = await verifySessionToken(token)
+    if (payload) {
+      operadorId = payload.operadorId
+      operadorRol = payload.rol
+    }
+  }
+  
+  // Fallback: legacy header/query param (for transition period)
+  if (!operadorId) {
+    operadorId = request.headers.get('x-operador-id') || request.nextUrl.searchParams.get('operadorId')
+    operadorRol = request.headers.get('x-operador-rol')
+  }
 
-  // Para escritura (POST/PUT/DELETE/PATCH): exigir operadorId
+  // Para escritura (POST/PUT/DELETE/PATCH): exigir autenticación
   if (method !== 'GET') {
     if (!operadorId) {
       return NextResponse.json(
-        { success: false, error: 'No autenticado - se requiere operadorId' },
+        { success: false, error: 'No autenticado - inicie sesión' },
         { status: 401 }
       )
     }
@@ -282,14 +296,22 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Para GET: si hay operadorId en header, está autenticado
-  // Si no hay operadorId, el handler deberá validar si es necesario
+  // Para GET: si hay autenticación, propagar
+  // Si no hay, el handler deberá validar si es necesario
 
   // Propagar operadorId desde query params a headers si no está presente
   const response = NextResponse.next()
   const operadorIdQuery = request.nextUrl.searchParams.get('operadorId')
   if (operadorIdQuery && !request.headers.get('x-operador-id')) {
     response.headers.set('x-operador-id', operadorIdQuery)
+  }
+  
+  // Set operadorId from JWT if available (for handlers that read headers)
+  if (operadorId && !request.headers.get('x-operador-id')) {
+    response.headers.set('x-operador-id', operadorId)
+  }
+  if (operadorRol && !request.headers.get('x-operador-rol')) {
+    response.headers.set('x-operador-rol', operadorRol)
   }
 
   return response

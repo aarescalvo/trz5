@@ -59,3 +59,18 @@ server.log
 db/*.db
 db/*.backup
 prisma/*.db
+
+# Lockfiles (project uses bun)
+package-lock.json
+
+# Simulation scripts and logs
+simulacion_*.sh
+sim_*.sh
+sim_final.sh
+simulacion_*.log
+simulacion_*.txt
+simulacion_resultados.md
+
+# Seed/simulation API routes (security)
+src/app/api/seed-simulacion/
+src/app/api/seed-tropas/

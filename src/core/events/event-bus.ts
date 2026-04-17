@@ -1,4 +1,4 @@
-type EventCallback = (data: unknown) => void
+type EventCallback = (data: unknown) => void | Promise<void>
 
 class EventBus {
   private listeners: Map<string, Set<EventCallback>> = new Map()
@@ -19,13 +19,40 @@ class EventBus {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       callbacks.forEach(callback => {
-        try {
-          callback(data)
-        } catch (error) {
-          console.error(`Error in event listener for ${event}:`, error)
-        }
+        // Use Promise.resolve to handle both sync and async callbacks
+        Promise.resolve()
+          .then(() => callback(data))
+          .catch(error => {
+            console.error(`Error in event listener for ${event}:`, error)
+            // Error is caught per-listener, other listeners still execute
+          })
       })
     }
+  }
+
+  // Async emit that waits for all listeners to complete
+  // Useful when you need to know if all listeners succeeded
+  async emitAsync(event: string, data: unknown): Promise<{ success: number; failed: number; errors: Error[] }> {
+    const callbacks = this.listeners.get(event)
+    const result = { success: 0, failed: 0, errors: [] as Error[] }
+    
+    if (callbacks) {
+      const promises = Array.from(callbacks).map(async callback => {
+        try {
+          await callback(data)
+          result.success++
+        } catch (error) {
+          result.failed++
+          const err = error instanceof Error ? error : new Error(String(error))
+          result.errors.push(err)
+          console.error(`Error in async event listener for ${event}:`, err)
+        }
+      })
+      
+      await Promise.all(promises)
+    }
+    
+    return result
   }
 
   off(event: string, callback: EventCallback): void {

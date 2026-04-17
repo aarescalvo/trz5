@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
-// GET - Listar despachos
+// V2: Despachos con transacciones para consistencia de datos
 import { checkPermission } from '@/lib/auth-helpers'
+
+// GET - Listar despachos
 export async function GET(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeFacturacion')
   if (authError) return authError
@@ -75,7 +77,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Crear nuevo despacho
+// POST - Crear nuevo despacho (with transaction)
 export async function POST(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeFacturacion')
   if (authError) return authError
@@ -134,41 +136,45 @@ export async function POST(request: NextRequest) {
     // Calcular peso total
     const pesoTotal = medias.reduce((acc, m) => acc + m.peso, 0)
 
-    // Crear despacho con items
-    const despacho = await db.despacho.create({
-      data: {
-        numero,
-        destino,
-        direccionDestino,
-        patenteCamion,
-        patenteAcoplado,
-        chofer,
-        choferDni,
-        transportista,
-        remito,
-        observaciones,
-        kgTotal: pesoTotal,
-        cantidadMedias: medias.length,
-        estado: 'PENDIENTE',
-        operadorId,
-        items: {
-          create: medias.map(m => ({
-            mediaResId: m.id,
-            peso: m.peso,
-            tropaCodigo: m.romaneo?.tropaCodigo,
-            garron: m.romaneo?.garron
-          }))
+    // Crear despacho con items + actualizar medias EN TRANSACCIÓN
+    const despacho = await db.$transaction(async (tx) => {
+      const desp = await tx.despacho.create({
+        data: {
+          numero,
+          destino,
+          direccionDestino,
+          patenteCamion,
+          patenteAcoplado,
+          chofer,
+          choferDni,
+          transportista,
+          remito,
+          observaciones,
+          kgTotal: pesoTotal,
+          cantidadMedias: medias.length,
+          estado: 'PENDIENTE',
+          operadorId,
+          items: {
+            create: medias.map(m => ({
+              mediaResId: m.id,
+              peso: m.peso,
+              tropaCodigo: m.romaneo?.tropaCodigo,
+              garron: m.romaneo?.garron
+            }))
+          }
+        },
+        include: {
+          items: true
         }
-      },
-      include: {
-        items: true
-      }
-    })
+      })
 
-    // Actualizar estado de las medias a DESPACHADO
-    await db.mediaRes.updateMany({
-      where: { id: { in: medias.map(m => m.id) } },
-      data: { estado: 'DESPACHADO' }
+      // Actualizar estado de las medias a DESPACHADO
+      await tx.mediaRes.updateMany({
+        where: { id: { in: medias.map(m => m.id) } },
+        data: { estado: 'DESPACHADO' }
+      })
+
+      return desp
     })
 
     return NextResponse.json({
@@ -185,7 +191,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT - Actualizar despacho
+// PUT - Actualizar despacho (with transaction for anulación)
 export async function PUT(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeFacturacion')
   if (authError) return authError
@@ -201,6 +207,37 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    if (accion === 'anular') {
+      // Anulación en transacción
+      const despacho = await db.$transaction(async (tx) => {
+        const desp = await tx.despacho.findUnique({
+          where: { id },
+          include: { items: true }
+        })
+        
+        if (!desp) throw new Error('Despacho no encontrado')
+        
+        // Devolver medias a cámara
+        await tx.mediaRes.updateMany({
+          where: { id: { in: desp.items.map(i => i.mediaResId) } },
+          data: { estado: 'EN_CAMARA' }
+        })
+        
+        // Actualizar estado del despacho
+        return tx.despacho.update({
+          where: { id },
+          data: { estado: 'ANULADO' },
+          include: { items: { include: { mediaRes: true } } }
+        })
+      })
+      
+      return NextResponse.json({
+        success: true,
+        data: despacho,
+        message: 'Despacho anulado correctamente'
+      })
+    }
+
     let data: any = {}
 
     if (accion === 'confirmar') {
@@ -209,21 +246,6 @@ export async function PUT(request: NextRequest) {
     } else if (accion === 'entregar') {
       data.estado = 'ENTREGADO'
       data.fechaEntrega = new Date()
-    } else if (accion === 'anular') {
-      data.estado = 'ANULADO'
-      
-      // Devolver medias a cámara
-      const despacho = await db.despacho.findUnique({
-        where: { id },
-        include: { items: true }
-      })
-      
-      if (despacho) {
-        await db.mediaRes.updateMany({
-          where: { id: { in: despacho.items.map(i => i.mediaResId) } },
-          data: { estado: 'EN_CAMARA' }
-        })
-      }
     } else {
       // Actualización normal
       if (updateData.destino) data.destino = updateData.destino
@@ -263,7 +285,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE - Eliminar despacho
+// DELETE - Eliminar despacho (with transaction)
 export async function DELETE(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeFacturacion')
   if (authError) return authError
@@ -279,28 +301,30 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Obtener items del despacho
-    const despacho = await db.despacho.findUnique({
-      where: { id },
-      include: { items: true }
-    })
-
-    if (despacho && despacho.estado === 'PENDIENTE') {
-      // Devolver medias a cámara
-      await db.mediaRes.updateMany({
-        where: { id: { in: despacho.items.map(i => i.mediaResId) } },
-        data: { estado: 'EN_CAMARA' }
+    await db.$transaction(async (tx) => {
+      // Obtener items del despacho
+      const despacho = await tx.despacho.findUnique({
+        where: { id },
+        include: { items: true }
       })
-    }
 
-    // Eliminar items primero
-    await db.despachoItem.deleteMany({
-      where: { despachoId: id }
-    })
+      if (despacho && despacho.estado === 'PENDIENTE') {
+        // Devolver medias a cámara
+        await tx.mediaRes.updateMany({
+          where: { id: { in: despacho.items.map(i => i.mediaResId) } },
+          data: { estado: 'EN_CAMARA' }
+        })
+      }
 
-    // Eliminar despacho
-    await db.despacho.delete({
-      where: { id }
+      // Eliminar items primero
+      await tx.despachoItem.deleteMany({
+        where: { despachoId: id }
+      })
+
+      // Eliminar despacho
+      await tx.despacho.delete({
+        where: { id }
+      })
     })
 
     return NextResponse.json({

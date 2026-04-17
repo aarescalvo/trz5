@@ -57,19 +57,42 @@ export class TarifasService {
     motivo: string
     operadorId: string
   }) {
-    // 1. Cerrar la tarifa anterior
-    await tarifasRepository.cerrarTarifaActual({
-      tipoTarifaCodigo: data.tipoTarifaCodigo,
-      clienteId: data.clienteId,
-      especie: data.especie,
-      categoria: data.categoria,
-      hasta: new Date(data.vigenciaDesde.getTime() - 86400000)
+    const { db } = await import('@/lib/db')
+    
+    // Cerrar tarifa anterior y crear la nueva EN TRANSACCIÓN
+    const nueva = await db.$transaction(async (tx) => {
+      // 1. Cerrar la tarifa anterior
+      await tx.tarifa.updateMany({
+        where: {
+          tipoTarifaCodigo: data.tipoTarifaCodigo,
+          clienteId: data.clienteId || null,
+          especie: data.especie || null,
+          categoria: data.categoria || null,
+          vigenciaHasta: null
+        },
+        data: {
+          vigenciaHasta: new Date(data.vigenciaDesde.getTime() - 86400000)
+        }
+      })
+      
+      // 2. Crear la nueva
+      const tarifa = await tx.tarifa.create({
+        data: {
+          tipoTarifaCodigo: data.tipoTarifaCodigo,
+          valor: data.valor,
+          vigenciaDesde: data.vigenciaDesde,
+          clienteId: data.clienteId || null,
+          especie: data.especie || null,
+          categoria: data.categoria || null,
+          motivo: data.motivo,
+          operadorId: data.operadorId
+        }
+      })
+      
+      return tarifa
     })
     
-    // 2. Crear la nueva
-    const nueva = await tarifasRepository.create(data)
-    
-    // 3. Emitir evento
+    // 3. Emitir evento (fuera de la transacción, no afecta consistencia)
     eventBus.emit('tarifa.actualizada', { 
       tipoTarifaCodigo: data.tipoTarifaCodigo, 
       valor: data.valor,
