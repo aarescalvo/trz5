@@ -4236,3 +4236,24 @@ Stage Summary:
 - **Middleware actualizado** con permisos correctos para dashboards
 - **Build pasa sin errores**
 - **Versión: 3.13.0 → 3.14.0**
+
+---
+Task ID: 1603
+Agent: main
+Task: Ajustar configuración de rate limiting - 10 intentos/15min, bloqueo 5min
+
+Work Log:
+
+#### 1. Cambios en Rate Limiting
+**Archivo:** `src/lib/rate-limit.ts`
+- AUTH_LOGIN: 5 intentos/15min, bloqueo 30min → 10 intentos/15min, bloqueo 5min
+- AUTH_PIN: 10 intentos/5min, bloqueo 15min → 10 intentos/15min, bloqueo 5min
+- AUTH_SUPERVISOR: 3 intentos/15min, bloqueo 30min → 10 intentos/15min, bloqueo 5min
+- Configuraciones API_GENERAL, API_WRITE, CREATE_RECORD sin cambios
+
+#### 2. Verificación
+- Build: Compiled successfully (0 errores)
+
+Stage Summary:
+- **Rate limiting unificado**: todos los auth endpoints ahora 10 intentos/15min, bloqueo 5min
+- **Versión: 3.14.0 → 3.14.1**
