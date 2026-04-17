@@ -2,12 +2,15 @@ import { NextResponse, NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { cacheOrFetch, cacheInvalidate, CACHE_KEYS, CACHE_TTL } from '@/lib/cache'
 import { createLogger } from '@/lib/logger'
+import { checkPermission } from '@/lib/auth-helpers'
 
 const logger = createLogger('API:Dashboard')
 
 // GET - Fetch dashboard stats completo con cache
 export async function GET(request: NextRequest) {
   try {
+    const authError = await checkPermission(request, 'puedeReportes')
+    if (authError) return authError
     const { searchParams } = new URL(request.url)
     const periodo = searchParams.get('periodo') || 'semana'
     

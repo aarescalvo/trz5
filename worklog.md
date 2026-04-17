@@ -4181,3 +4181,58 @@ Stage Summary:
 - 3 componentes con integracion impresora (Empaque, Cuarteo, C2 Produccion)
 - 5 componentes con exportacion Excel/PDF verificada
 - Commit: ed1956c
+
+---
+Task ID: 1602
+Agent: main
+Task: Auditoría de seguridad completa - Auth en rutas API, rate limiting, middleware
+
+Work Log:
+
+#### 1. Auditoría de Autenticación API (Security Audit)
+- Escaneadas 314 rutas API route.ts
+- Encontradas 7 rutas sin protección (de 314):
+  - 3 CRÍTICAS (dashboard, dashboard/ejecutivo, dashboard-financiero)
+  - 1 baja (api/route.ts - "Hello World")
+  - 3 esperadas (auth, auth/validar-pin, auth/supervisor - login endpoints)
+- Resultado: 307 de 314 rutas protegidas (97.8%)
+
+#### 2. Rutas de Dashboard Protegidas
+- `/api/dashboard/route.ts`: Agregado `checkPermission(request, 'puedeReportes')`
+- `/api/dashboard/ejecutivo/route.ts`: Agregado `checkPermission(request, 'puedeReportes')`
+- `/api/dashboard-financiero/route.ts`: Reescrito completamente
+  - Eliminado bypass de seguridad (operadorId como query param era opcional)
+  - Ahora usa `checkPermission(request, 'puedeDashboardFinanciero')`
+  - Request type actualizado de `Request` a `NextRequest`
+  - Eliminado parámetro `operadorId` del query string
+
+#### 3. Ruta "Hello World" Eliminada
+- Eliminado `src/app/api/route.ts` que retornaba `{ message: "Hello, world!" }`
+- No tiene sentido en producción, expone endpoint innecesario
+
+#### 4. Rate Limiting en Supervisor Login
+- `src/app/api/auth/supervisor/route.ts`: Agregado rate limiting con `AUTH_SUPERVISOR` config
+  - 3 intentos en 15 minutos, bloqueo de 30 minutos
+  - Usa `checkRateLimit` con `generateRateLimitKey`
+  - Retorna HTTP 429 con headers `Retry-After` cuando se excede
+
+#### 5. Middleware Actualizado
+- `src/middleware.ts`:
+  - Eliminados `/api/dashboard` y `/api/dashboard-financiero` de `READ_ONLY_NO_PERM`
+  - Agregados al `ROUTE_PERMISSIONS`:
+    - `/api/dashboard` → `puedeReportes`
+    - `/api/dashboard-financiero` → `puedeDashboardFinanciero`
+
+#### 6. Verificación Final
+- Build: Compiled successfully (0 errores)
+- 302 páginas estáticas generadas correctamente
+- Todas las rutas API protegidas excepto endpoints de autenticación (correcto)
+
+Stage Summary:
+- **Auditoría de seguridad completa** - 97.8% de rutas API protegidas
+- **3 rutas de dashboard protegidas** que exponían datos sensibles sin auth
+- **Rate limiting en supervisor login** (3 intentos/15min, bloqueo 30min)
+- **Ruta "Hello World" eliminada**
+- **Middleware actualizado** con permisos correctos para dashboards
+- **Build pasa sin errores**
+- **Versión: 3.13.0 → 3.14.0**

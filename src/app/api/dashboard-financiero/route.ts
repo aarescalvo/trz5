@@ -1,28 +1,16 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { checkPermission } from '@/lib/auth-helpers'
 
 // Dashboard financiero - Solo para usuarios autorizados
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
+    const authError = await checkPermission(request, 'puedeDashboardFinanciero')
+    if (authError) return authError
+
     const { searchParams } = new URL(request.url)
     const fechaDesde = searchParams.get('fechaDesde')
     const fechaHasta = searchParams.get('fechaHasta')
-    const operadorId = searchParams.get('operadorId')
-
-    // Verificar permiso del operador
-    if (operadorId) {
-      const operador = await db.operador.findUnique({
-        where: { id: operadorId },
-        select: { puedeDashboardFinanciero: true, activo: true }
-      })
-      
-      if (!operador || !operador.activo || !operador.puedeDashboardFinanciero) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'No tiene permisos para acceder al dashboard financiero' 
-        }, { status: 403 })
-      }
-    }
 
     // Fechas por defecto: mes actual
     const hoy = new Date()

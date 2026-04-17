@@ -1,10 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { checkRateLimit, generateRateLimitKey } from '@/lib/rate-limit'
 
 // POST - Validar credenciales de supervisor
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting para supervisor
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const rateLimitKey = generateRateLimitKey(ip, 'auth:supervisor')
+    const rateLimit = checkRateLimit(rateLimitKey, 'AUTH_SUPERVISOR')
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: rateLimit.blocked
+            ? 'Demasiados intentos de supervisor. Intente más tarde.'
+            : 'Rate limit excedido',
+          retryAfter: rateLimit.retryAfter
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimit.retryAfter || 60)
+          }
+        }
+      )
+    }
+
     const body = await request.json()
     const { pin, password, usuario } = body
 

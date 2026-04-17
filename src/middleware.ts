@@ -17,8 +17,6 @@ const PUBLIC_ROUTES = [
 const READ_ONLY_NO_PERM = [
   '/api/configuracion',
   '/api/indicadores',
-  '/api/dashboard',
-  '/api/dashboard-financiero',
 ]
 
 // Rutas que requieren rol ADMINISTRADOR para escritura (POST/PUT/DELETE/PATCH)
@@ -214,6 +212,8 @@ const ROUTE_PERMISSIONS: Record<string, string> = {
   '/api/afip': 'puedeConfiguracion',
   '/api/alertas': 'puedeStock',
   '/api/barcode': 'puedeConfiguracion',
+  '/api/dashboard': 'puedeReportes',
+  '/api/dashboard-financiero': 'puedeDashboardFinanciero',
   '/api/depositos': 'puedeStock',
   '/api/valores-indicador': 'puedeReportes',
 }

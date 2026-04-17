@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createLogger } from '@/lib/logger'
+import { checkPermission } from '@/lib/auth-helpers'
 
 const logger = createLogger('API:DashboardEjecutivo')
 
 // GET - Dashboard ejecutivo con KPIs y alertas
 export async function GET(request: NextRequest) {
   try {
+    const authError = await checkPermission(request, 'puedeReportes')
+    if (authError) return authError
     const hoy = new Date()
     hoy.setHours(0, 0, 0, 0)
 
