@@ -1,5 +1,73 @@
 # Changelog - Sistema Frigorífico
 
+## [3.17.0] - 2026-04-20
+
+### Agregado - Mejoras UX (20 items)
+
+**Dashboard:**
+- D1: Tarjetas de estadísticas clickeables que navegan a módulos correspondientes
+- D2: Feed de actividad en tiempo real (últimos 10 movimientos)
+
+**Pesaje Camiones:**
+- PC1: Resumen visual antes de guardar (dialog con datos del vehículo, tropa, productor, tipos de animal, pesos)
+
+**Pesaje Individual:**
+- PI1: Modo producción pantalla completa (sidebar se oculta, vista simplificada)
+- PI2: Barra de progreso X/Y animales pesados por tropa
+- PI3: Feedback visual (flash verde) al registrar peso exitosamente
+
+**Lista de Faena:**
+- LF2: Tarjetas de tropa informativas con íconos de especie, bordes por estado, badges de corral
+- LF4: Empty state mejorado con ícono y mensajes descriptivos
+
+**Romaneo:**
+- RO1: Modo producción con balanza integrada, vista fullscreen, últimos 3 items registrados
+- T7: Atajos de teclado (Enter=registrar peso, Esc=salir dialogs/modo producción)
+
+**Cuarteo:**
+- CU3: Empty state mejorado con ícono Scissors y mensaje descriptivo
+
+**Ciclo II - Producción:**
+- C2-2: Diagrama visual de flujo (Ingreso → Desposte → Producción → Empaque → Stock) con estados activos/completados/pendientes
+
+**Stock Cámaras:**
+- SC2: Alertas de vencimiento inline (badges rojo "Vencido", ámbar "Vence en X días") con highlight de fila
+- SC3: Filtros persistentes con sessionStorage
+
+**Facturación:**
+- FA1: Separación visual con tabs (Pendientes, Emitidas, Cobradas)
+- FA2: Tarjetas resumen financiero (Total del Mes, Pendiente de Cobro, Vencidas)
+- FA3: Timeline visual de factura (Emitida → Enviada → Cobrada)
+
+**Configuración:**
+- CF2: Command palette estilo VS Code (Ctrl+K) con secciones agrupadas por categoría
+
+**Transversales:**
+- SB1: Sidebar colapsable (w-16 iconos / w-64 completo)
+- T6: Componente ConfirmDeleteDialog reutilizable estandarizado
+- T7: Atajos de teclado en Pesaje Individual y Romaneo
+
+### Corregido (QA v3.17.0)
+- pesaje-camiones: Bug crítico - referencia a variable `tropaSeleccionada` inexistente en validación del botón guardar, reemplazada por validaciones correctas (usuarioFaenaId, totalCabezas, corralId)
+- page.tsx: Imports no utilizados eliminados (ChevronLeft, ChevronRightIcon)
+- stock-camaras: Import Filter no utilizado eliminado
+- facturacion: Badge "Facturas Vencidas" renderizaba array en vez de count
+- romaneo: Interface AsignacionGarron faltaban propiedades productorNombre/Cuit/Matricula
+- lista-faena: Dialog "Quitar Tropa" no se abría cuando requería confirmación
+- pesaje-camiones: Ticket # se renderizaba como string literal en vez del número formateado
+- pesaje-camiones: Imports no utilizados (useCallback, Plus, Eye, Minus, X)
+- facturacion: Imports no utilizados (Calendar, User, ArrowDownToLine)
+- cuarteo: Import Textarea no utilizado
+- stock-camaras: Inconsistencia en umbrales de vencimiento (23 vs 21 días) unificados a 21
+- stock-camaras: Referencia muerta a proximoVencer eliminada
+
+### Verificado (QA v3.17.0)
+- Build: Compilación exitosa sin errores
+- Permisos: Todos los módulos respetan el sistema de permisos existente (puedePesajeCamiones, puedeRomaneo, etc.)
+- APIs: 47 endpoints verificados, todos existen y usan rutas relativas
+- Iconos: Todos los íconos de lucide-react verificados (versión 0.525.0)
+- Modo producción: Evento `production-mode-change` funciona correctamente entre Romaneo/Pesaje Individual y el sidebar
+
 ## [0.5.0] - 2025-03-18
 
 ### Agregado

@@ -1,5 +1,5 @@
 'use client'
-// Sistema Frigorífico - Solemar Alimentaria v2.2.0
+// Sistema Frigorífico - Solemar Alimentaria v2.3.0
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -75,7 +75,7 @@ import {
   Warehouse, FileText, Settings, Calendar, LogOut, Lock, Users,
   Loader2, Search, RefreshCw, BoxSelect, Barcode,
   ChevronDown, ChevronRight, LayoutDashboard, Wifi, WifiOff, CloudUpload, DollarSign,
-  AlertTriangle
+  AlertTriangle, Clock, Activity, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react'
 
 // Resilience imports
@@ -350,6 +350,8 @@ export default function FrigorificoApp() {
   const [stats, setStats] = useState<Stats>({ tropasActivas: 0, enPesaje: 0, pesajesHoy: 0, enCamara: 0 })
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['CICLO I', 'Subproductos'])
   const [expandedSubGroups, setExpandedSubGroups] = useState<string[]>(['Subproductos-Consumo', 'Subproductos-Rendering'])
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [actividadReciente, setActividadReciente] = useState<Array<{id: string; tipo: string; descripcion: string; fecha: string}>>([])
   
   // Login state
   const [loginTab, setLoginTab] = useState<'usuario' | 'pin'>('usuario')
@@ -382,8 +384,18 @@ export default function FrigorificoApp() {
     if (operador) {
       fetchTropas()
       fetchStats()
+      fetchActividad()
     }
   }, [operador])
+
+  // Listen for production mode changes from child modules
+  useEffect(() => {
+    const handleProductionMode = (e: CustomEvent) => {
+      setSidebarCollapsed(e.detail.active)
+    }
+    window.addEventListener('production-mode-change', handleProductionMode as EventListener)
+    return () => window.removeEventListener('production-mode-change', handleProductionMode as EventListener)
+  }, [])
 
   const fetchTropas = async () => {
     try {
@@ -406,6 +418,18 @@ export default function FrigorificoApp() {
       }
     } catch (error) {
       console.error('Error fetching stats:', error)
+    }
+  }
+
+  const fetchActividad = async () => {
+    try {
+      const res = await fetch('/api/actividad-operador?limite=10')
+      const data = await res.json()
+      if (data.success && Array.isArray(data.data)) {
+        setActividadReciente(data.data)
+      }
+    } catch (error) {
+      console.error('Error fetching actividad:', error)
     }
   }
 
@@ -703,49 +727,61 @@ export default function FrigorificoApp() {
             </p>
           </div>
 
-          {/* Quick Stats */}
+          {/* Quick Stats - Clickable */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <Card className="border-0 shadow-sm bg-amber-50">
+            <Card className="border-0 shadow-sm bg-amber-50 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setCurrentPage('pesajeCamiones')}>
               <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <Beef className="w-5 h-5 text-amber-600" />
-                  <div>
-                    <p className="text-xs text-stone-500">Tropas Activas</p>
-                    <p className="text-xl font-bold text-amber-700">{stats.tropasActivas}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Beef className="w-5 h-5 text-amber-600" />
+                    <div>
+                      <p className="text-xs text-stone-500">Tropas Activas</p>
+                      <p className="text-xl font-bold text-amber-700">{stats.tropasActivas}</p>
+                    </div>
                   </div>
+                  <ChevronRight className="w-4 h-4 text-amber-400" />
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-sm bg-emerald-50">
+            <Card className="border-0 shadow-sm bg-emerald-50 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setCurrentPage('pesajeIndividual')}>
               <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <Scale className="w-5 h-5 text-emerald-600" />
-                  <div>
-                    <p className="text-xs text-stone-500">En Pesaje</p>
-                    <p className="text-xl font-bold text-emerald-700">{stats.enPesaje}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Scale className="w-5 h-5 text-emerald-600" />
+                    <div>
+                      <p className="text-xs text-stone-500">En Pesaje</p>
+                      <p className="text-xl font-bold text-emerald-700">{stats.enPesaje}</p>
+                    </div>
                   </div>
+                  <ChevronRight className="w-4 h-4 text-emerald-400" />
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-sm bg-blue-50">
+            <Card className="border-0 shadow-sm bg-blue-50 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setCurrentPage('pesajeCamiones')}>
               <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <Truck className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="text-xs text-stone-500">Pesajes Hoy</p>
-                    <p className="text-xl font-bold text-blue-700">{stats.pesajesHoy}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="text-xs text-stone-500">Pesajes Hoy</p>
+                      <p className="text-xl font-bold text-blue-700">{stats.pesajesHoy}</p>
+                    </div>
                   </div>
+                  <ChevronRight className="w-4 h-4 text-blue-400" />
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-sm bg-purple-50">
+            <Card className="border-0 shadow-sm bg-purple-50 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setCurrentPage('stockUnificada')}>
               <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <Warehouse className="w-5 h-5 text-purple-600" />
-                  <div>
-                    <p className="text-xs text-stone-500">En Cámara</p>
-                    <p className="text-xl font-bold text-purple-700">{stats.enCamara}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Warehouse className="w-5 h-5 text-purple-600" />
+                    <div>
+                      <p className="text-xs text-stone-500">En Cámara</p>
+                      <p className="text-xl font-bold text-purple-700">{stats.enCamara}</p>
+                    </div>
                   </div>
+                  <ChevronRight className="w-4 h-4 text-purple-400" />
                 </div>
               </CardContent>
             </Card>
@@ -827,6 +863,38 @@ export default function FrigorificoApp() {
                           {tropa.estado}
                         </Badge>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Últimos Movimientos */}
+          <Card className="border-0 shadow-md mt-4">
+            <CardHeader className="bg-stone-50 rounded-t-lg py-3">
+              <CardTitle className="text-base font-semibold text-stone-800 flex items-center gap-2">
+                <Activity className="w-5 h-5" />
+                Últimos Movimientos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {actividadReciente.length === 0 ? (
+                <div className="p-6 text-center text-stone-400">
+                  <Activity className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                  <p>No hay movimientos recientes</p>
+                </div>
+              ) : (
+                <div className="divide-y max-h-64 overflow-y-auto">
+                  {actividadReciente.slice(0, 10).map((mov) => (
+                    <div key={mov.id} className="p-3 hover:bg-stone-50 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs border-stone-200 text-stone-500 capitalize">
+                          {mov.tipo}
+                        </Badge>
+                        <span className="text-sm text-stone-700">{mov.descripcion}</span>
+                      </div>
+                      <span className="text-xs text-stone-400">{new Date(mov.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                   ))}
                 </div>
@@ -1009,40 +1077,50 @@ export default function FrigorificoApp() {
   return (
     <div className="min-h-screen bg-stone-100 flex">
       {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r flex flex-col shadow-lg">
+      <aside className={`fixed inset-y-0 left-0 z-40 bg-white border-r flex flex-col shadow-lg transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
+        {/* Collapse Toggle */}
+        <div className="absolute top-2 right-2 z-10">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="h-7 w-7 text-stone-400 hover:text-stone-600"
+          >
+            {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+          </Button>
+        </div>
         {/* Logo */}
-        <div className="h-28 flex items-center gap-3 px-4 border-b bg-gradient-to-r from-amber-50 to-white">
-          <div className="relative w-20 h-20 flex-shrink-0">
-            <Image 
-              src="/logo.png" 
-              alt="Solemar Alimentaria" 
-              fill
-              className="object-contain"
-              priority
-            />
+        <div className={`h-28 flex items-center gap-3 px-4 border-b bg-gradient-to-r from-amber-50 to-white ${sidebarCollapsed ? 'justify-center px-2' : ''}`}>
+          <div className={`relative flex-shrink-0 ${sidebarCollapsed ? 'w-10 h-10' : 'w-20 h-20'}`}>
+            <Image src="/logo.png" alt="Solemar" fill className="object-contain" priority />
           </div>
-          <div className="flex flex-col">
-            <h1 className="font-bold text-stone-800 text-sm leading-tight">Solemar Alimentaria</h1>
-            <p className="text-xs text-amber-600 font-medium">CICLO I</p>
-          </div>
+          {!sidebarCollapsed && (
+            <div className="flex flex-col">
+              <h1 className="font-bold text-stone-800 text-sm leading-tight">Solemar Alimentaria</h1>
+              <p className="text-xs text-amber-600 font-medium">CICLO I</p>
+            </div>
+          )}
         </div>
         
         {/* Operator info */}
-        <div className="p-3 border-b bg-stone-50">
+        <div className={`p-3 border-b bg-stone-50 ${sidebarCollapsed ? 'px-2' : ''}`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-stone-400" />
-              <div>
-                <p className="text-sm font-medium text-stone-700">{operador.nombre}</p>
-                <p className="text-xs text-stone-400">{operador.rol}</p>
-              </div>
+            <div className={`flex items-center gap-2 ${sidebarCollapsed ? 'justify-center w-full' : ''}`}>
+              <Users className="w-4 h-4 text-stone-400 flex-shrink-0" />
+              {!sidebarCollapsed && (
+                <div>
+                  <p className="text-sm font-medium text-stone-700">{operador.nombre}</p>
+                  <p className="text-xs text-stone-400">{operador.rol}</p>
+                </div>
+              )}
             </div>
-            <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 text-stone-400 hover:text-red-500">
-              <LogOut className="w-4 h-4" />
-            </Button>
+            {!sidebarCollapsed && (
+              <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 text-stone-400 hover:text-red-500">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            )}
           </div>
-          {/* Offline/Sync indicator - Capa 3 */}
-          <OfflineStatusIndicator />
+          {!sidebarCollapsed && <OfflineStatusIndicator />}
         </div>
         
         {/* Navigation */}
@@ -1050,17 +1128,18 @@ export default function FrigorificoApp() {
           {/* Botón Inicio/Dashboard */}
           <button
             onClick={() => setCurrentPage('dashboard')}
+            title={sidebarCollapsed ? 'Inicio' : undefined}
             className={`
-              flex items-center gap-3 px-4 py-3 rounded-lg w-full text-left
-              transition-all duration-150 mb-2
+              flex items-center gap-3 rounded-lg w-full text-left transition-all duration-150 mb-2
+              ${sidebarCollapsed ? 'px-0 py-3 justify-center' : 'px-4 py-3'}
               ${currentPage === 'dashboard'
                 ? 'bg-stone-800 text-white font-medium shadow-md'
                 : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
               }
             `}
           >
-            <LayoutDashboard className={`w-5 h-5 ${currentPage === 'dashboard' ? 'text-white' : 'text-stone-500'}`} />
-            <span className="text-sm font-semibold">Inicio</span>
+            <LayoutDashboard className={`w-5 h-5 flex-shrink-0 ${currentPage === 'dashboard' ? 'text-white' : 'text-stone-500'}`} />
+            {!sidebarCollapsed && <span className="text-sm font-semibold">Inicio</span>}
           </button>
 
           {visibleNavGroups.map((group, index) => {
@@ -1073,17 +1152,18 @@ export default function FrigorificoApp() {
                 <button
                   key={item.id}
                   onClick={() => setCurrentPage(item.id)}
+                  title={sidebarCollapsed ? item.label : undefined}
                   className={`
-                    flex items-center gap-3 px-4 py-3 rounded-lg w-full text-left
-                    transition-all duration-150 mb-2
+                    flex items-center gap-3 rounded-lg w-full text-left transition-all duration-150 mb-2
+                    ${sidebarCollapsed ? 'px-0 py-3 justify-center' : 'px-4 py-3'}
                     ${isActive 
                       ? 'bg-amber-500 text-white font-medium shadow-md' 
                       : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
                     }
                   `}
                 >
-                  <item.icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-amber-600'}`} />
-                  <span className="text-sm font-semibold">{item.label}</span>
+                  <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-amber-600'}`} />
+                  {!sidebarCollapsed && <span className="text-sm font-semibold">{item.label}</span>}
                 </button>
               )
             }
@@ -1098,9 +1178,10 @@ export default function FrigorificoApp() {
                 {/* Group Header */}
                 <button
                   onClick={() => toggleGroup(group.label)}
+                  title={sidebarCollapsed ? group.label : undefined}
                   className={`
-                    flex items-center justify-between px-3 py-2 rounded-lg w-full text-left
-                    transition-all duration-150
+                    flex items-center justify-between rounded-lg w-full text-left transition-all duration-150
+                    ${sidebarCollapsed ? 'px-0 py-2 justify-center' : 'px-3 py-2'}
                     ${hasActiveItem 
                       ? 'bg-amber-50 text-amber-700' 
                       : 'text-stone-600 hover:bg-stone-50'
@@ -1108,14 +1189,14 @@ export default function FrigorificoApp() {
                   `}
                 >
                   <div className="flex items-center gap-2">
-                    {group.icon && <group.icon className={`w-4 h-4 ${hasActiveItem ? 'text-amber-600' : ''}`} />}
-                    <span className="text-xs font-semibold uppercase tracking-wider">{group.label}</span>
+                    {group.icon && <group.icon className={`w-4 h-4 flex-shrink-0 ${hasActiveItem ? 'text-amber-600' : ''}`} />}
+                    {!sidebarCollapsed && <span className="text-xs font-semibold uppercase tracking-wider">{group.label}</span>}
                   </div>
-                  {isExpanded ? (
+                  {!sidebarCollapsed && (isExpanded ? (
                     <ChevronDown className={`w-4 h-4 ${hasActiveItem ? 'text-amber-500' : 'text-stone-400'}`} />
                   ) : (
                     <ChevronRight className={`w-4 h-4 ${hasActiveItem ? 'text-amber-500' : 'text-stone-400'}`} />
-                  )}
+                  ))}
                 </button>
                 
                 {/* Group Items */}
@@ -1127,16 +1208,18 @@ export default function FrigorificoApp() {
                         <button
                           key={item.id}
                           onClick={() => setCurrentPage(item.id)}
+                          title={sidebarCollapsed ? item.label : undefined}
                           className={`
-                            flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 w-full text-left
+                            flex items-center gap-3 rounded-lg transition-all duration-150 w-full text-left
+                            ${sidebarCollapsed ? 'px-0 py-2 justify-center' : 'px-3 py-2'}
                             ${isActive 
                               ? 'bg-amber-100 text-amber-800 font-medium shadow-sm' 
                               : 'text-stone-500 hover:bg-stone-50 hover:text-stone-800'
                             }
                           `}
                         >
-                          <item.icon className={`w-4 h-4 ${isActive ? 'text-amber-600' : ''}`} />
-                          <span className="text-sm">{item.label}</span>
+                          <item.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-amber-600' : ''}`} />
+                          {!sidebarCollapsed && <span className="text-sm">{item.label}</span>}
                         </button>
                       )
                     })}
@@ -1152,21 +1235,23 @@ export default function FrigorificoApp() {
                           {/* SubGroup Header */}
                           <button
                             onClick={() => toggleSubGroup(group.label, subGroup.label)}
+                            title={sidebarCollapsed ? subGroup.label : undefined}
                             className={`
-                              flex items-center justify-between px-3 py-1.5 rounded w-full text-left
+                              flex items-center justify-between rounded w-full text-left
                               transition-all duration-150
+                              ${sidebarCollapsed ? 'px-0 py-1.5 justify-center' : 'px-3 py-1.5'}
                               ${hasActiveSubItem 
                                 ? 'text-amber-600' 
                                 : 'text-stone-500 hover:text-stone-700'
                               }
                             `}
                           >
-                            <span className="text-xs font-medium">{subGroup.label}</span>
-                            {isSubExpanded ? (
+                            {!sidebarCollapsed && <span className="text-xs font-medium">{subGroup.label}</span>}
+                            {!sidebarCollapsed && (isSubExpanded ? (
                               <ChevronDown className="w-3 h-3" />
                             ) : (
                               <ChevronRight className="w-3 h-3" />
-                            )}
+                            ))}
                           </button>
                           
                           {/* SubGroup Items */}
@@ -1178,17 +1263,19 @@ export default function FrigorificoApp() {
                                   <button
                                     key={item.id}
                                     onClick={() => setCurrentPage(item.id)}
+                                    title={sidebarCollapsed ? item.label : undefined}
                                     className={`
-                                      flex items-center gap-2 px-2 py-1.5 rounded w-full text-left
+                                      flex items-center gap-2 rounded w-full text-left
                                       transition-all duration-150
+                                      ${sidebarCollapsed ? 'px-0 py-1.5 justify-center' : 'px-2 py-1.5'}
                                       ${isActive 
                                         ? 'bg-amber-50 text-amber-700 font-medium' 
                                         : 'text-stone-400 hover:text-stone-600 hover:bg-stone-50'
                                       }
                                     `}
                                   >
-                                    <item.icon className={`w-3 h-3 ${isActive ? 'text-amber-500' : ''}`} />
-                                    <span className="text-xs">{item.label}</span>
+                                    <item.icon className={`w-3 h-3 flex-shrink-0 ${isActive ? 'text-amber-500' : ''}`} />
+                                    {!sidebarCollapsed && <span className="text-xs">{item.label}</span>}
                                   </button>
                                 )
                               })}
@@ -1205,16 +1292,16 @@ export default function FrigorificoApp() {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t bg-stone-50">
-          <div className="flex items-center gap-2 text-xs text-stone-500">
-            <Beef className="w-4 h-4 text-amber-500" />
-            <span>Frigorífico Solemar Alimentaria</span>
+        <div className={`p-4 border-t bg-stone-50 ${sidebarCollapsed ? 'px-2 text-center' : ''}`}>
+          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2'} text-xs text-stone-500`}>
+            <Beef className="w-4 h-4 text-amber-500 flex-shrink-0" />
+            {!sidebarCollapsed && <span>Frigorífico Solemar Alimentaria</span>}
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="ml-64 flex-1 min-h-screen">
+      <main className={`flex-1 min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
         {renderPage()}
       </main>
     </div>

@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { 
   Scale, RefreshCw, Plus, CheckCircle, AlertCircle,
   Beef, Edit, Trash2, ArrowRight, Minus, AlertTriangle, ClipboardCheck, Printer, 
-  Edit3, Save, X, Settings2, Move, Eye, Type, Palette, ChevronUp, ChevronDown
+  Edit3, Save, X, Settings2, Move, Eye, Type, Palette, ChevronUp, ChevronDown,
+  Maximize, Minimize
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +20,9 @@ import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Progress } from '@/components/ui/progress'
 
 const TIPOS_ANIMALES: Record<string, { codigo: string; label: string }[]> = {
   BOVINO: [
@@ -318,7 +322,59 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
   const [impresoraIp, setImpresoraIp] = useState('')
   const [usarPredeterminada, setUsarPredeterminada] = useState(false)
 
+  // Delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{ animal: Animal; action: 'delete' | 'repesar' } | null>(null)
+  const [lastRegisteredAnimal, setLastRegisteredAnimal] = useState<Animal | null>(null)
+  const [flashFeedback, setFlashFeedback] = useState(false)
+  const [productionMode, setProductionMode] = useState(false)
+
   const isAdmin = operador.rol === 'ADMINISTRADOR' || (operador.permisos?.puedeAdminSistema ?? false)
+
+  // Computed: progress for PI2
+  const totalAnimales = animales.length
+  const animalesPesados = animales.filter(a => a.estado === 'PESADO').length
+  const progresoPorcentaje = totalAnimales > 0 ? Math.round((animalesPesados / totalAnimales) * 100) : 0
+
+  // PI3: Flash feedback when weight registered
+  useEffect(() => {
+    if (flashFeedback) {
+      const timer = setTimeout(() => setFlashFeedback(false), 600)
+      return () => clearTimeout(timer)
+    }
+  }, [flashFeedback])
+
+  // PI1: Dispatch custom event to hide/show sidebar when production mode changes
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('production-mode-change', { detail: { active: productionMode } }))
+  }, [productionMode])
+
+  // T7: Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return
+      
+      // Enter = registrar peso (primary action)
+      if (e.key === 'Enter' && activeTab === 'pesar' && tropaSeleccionada && pesoActual) {
+        e.preventDefault()
+        handleRegistrarPeso()
+      }
+      // Escape = close current dialog or deselect tropa
+      if (e.key === 'Escape') {
+        if (validacionDialogOpen) {
+          setValidacionDialogOpen(false)
+        } else if (editDialogOpen) {
+          setEditDialogOpen(false)
+        } else if (productionMode) {
+          setProductionMode(false)
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeTab, tropaSeleccionada, pesoActual, validacionDialogOpen, editDialogOpen, productionMode, animales, animalActual, tipoAnimalSeleccionado, caravana, raza])
 
   // Cargar configuración de impresora guardada
   useEffect(() => {
@@ -669,6 +725,9 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
           setAnimalActual(nextIndex)
           resetFormFields()
           toast.success(`Animal ${animal.numero} - ${peso} kg`, { duration: 1500 })
+          // PI3: Visual feedback flash
+          setLastRegisteredAnimal({ ...animalesActualizados[animalActual] })
+          setFlashFeedback(true)
         } else {
           const noPesados = animalesActualizados.filter(a => a.estado === 'RECIBIDO')
           if (noPesados.length === 0) {
@@ -1051,8 +1110,14 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
     }
   }
 
-  const handleDeleteAnimal = async (animal: Animal) => {
-    if (!confirm(`¿Eliminar animal ${animal.numero}?`)) return
+  const handleDeleteAnimal = (animal: Animal) => {
+    setDeleteTarget({ animal, action: 'delete' })
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteAnimal = async () => {
+    if (!deleteTarget) return
+    const animal = deleteTarget.animal
     
     try {
       const res = await fetch(`/api/animales?id=${animal.id}`, { method: 'DELETE' })
@@ -1068,6 +1133,9 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
       }
     } catch {
       toast.error('Error de conexión')
+    } finally {
+      setDeleteDialogOpen(false)
+      setDeleteTarget(null)
     }
   }
 
@@ -1135,8 +1203,14 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
   }
 
   // Repesar: volver a poner el animal como pendiente
-  const handleRepesar = async (animal: Animal) => {
-    if (!confirm(`¿Repesar animal ${animal.numero}? Se eliminará el peso actual.`)) return
+  const handleRepesar = (animal: Animal) => {
+    setDeleteTarget({ animal, action: 'repesar' })
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmRepesarAnimal = async () => {
+    if (!deleteTarget) return
+    const animal = deleteTarget.animal
     
     try {
       const res = await fetch('/api/animales', {
@@ -1163,6 +1237,9 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
       }
     } catch {
       toast.error('Error de conexión')
+    } finally {
+      setDeleteDialogOpen(false)
+      setDeleteTarget(null)
     }
   }
 
@@ -1235,7 +1312,7 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
   }
 
   const animalesPendientes = animales.filter(a => a.estado === 'RECIBIDO')
-  const animalesPesados = animales.filter(a => a.estado === 'PESADO')
+  // Note: animalesPesados is already declared above with PI2
 
   if (loading || !layoutLoaded) {
     return (
@@ -1250,9 +1327,22 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
   const getBoton = (id: string) => botones.find(b => b.id === id)
 
   return (
-    <div className="h-screen bg-stone-100 flex flex-col overflow-hidden">
+    <div className={`h-screen bg-stone-100 flex flex-col overflow-hidden ${productionMode ? '' : ''}`}>
+      {/* PI3: Enhanced flash feedback overlay with checkmark */}
+      {flashFeedback && (
+        <div className="fixed inset-0 z-[100] pointer-events-none flex items-center justify-center">
+          <div className="bg-green-500/15 w-40 h-40 rounded-full animate-ping" />
+          <div className="absolute bg-green-500/10 w-56 h-56 rounded-full" />
+          <div className="absolute flex flex-col items-center gap-2">
+            <CheckCircle className="w-20 h-20 text-green-500 drop-shadow-[0_0_12px_rgba(34,197,94,0.6)] animate-bounce" />
+            <span className="text-green-400 font-bold text-lg drop-shadow-lg">
+              {lastRegisteredAnimal?.pesoVivo} kg
+            </span>
+          </div>
+        </div>
+      )}
       {/* Botón flotante de edición */}
-      {isAdmin && (
+      {isAdmin && !productionMode && (
         <div className="fixed top-20 right-4 z-50 flex flex-col gap-2">
           {/* Botón de configurar impresora - siempre visible */}
           <Button 
@@ -1264,6 +1354,18 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
           >
             <Printer className="w-5 h-5" />
           </Button>
+          {/* PI1: Production mode toggle */}
+          {tropaSeleccionada && activeTab === 'pesar' && (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => setProductionMode(!productionMode)} 
+              className={`shadow-lg h-10 w-10 ${productionMode ? 'bg-emerald-600 border-emerald-700 text-white' : 'bg-stone-50 border-stone-300 text-stone-700 hover:bg-emerald-50'}`}
+              title={productionMode ? 'Salir del modo producción' : 'Modo producción'}
+            >
+              {productionMode ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+            </Button>
+          )}
           {!editMode ? (
             <Button variant="outline" size="icon" onClick={() => { setEditMode(true); setShowConfigPanel(true) }} className="bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 shadow-lg h-10 w-10" title="Editar Layout">
               <Edit3 className="w-5 h-5" />
@@ -1398,8 +1500,39 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
             <Beef className="h-3 w-3 mr-1 text-amber-500" />
             {tropasPorPesar.length} por pesar
           </Badge>
+          {/* PI1: Prominent production mode button in header */}
+          {tropaSeleccionada && activeTab === 'pesar' && animales.length > 0 && !productionMode && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setProductionMode(true)}
+              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 bg-emerald-50"
+            >
+              <Maximize className="w-4 h-4 mr-1" />
+              Modo Producción
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* PI2: Full-width progress bar when weighing */}
+      {tropaSeleccionada && activeTab === 'pesar' && animales.length > 0 && !productionMode && (
+        <div className="px-4 py-1.5 bg-white border-b flex-shrink-0">
+          <div className="flex items-center justify-between text-xs text-stone-500 mb-1">
+            <span className="font-medium">{tropaSeleccionada.codigo} — {animalesPesados}/{totalAnimales} animales pesados</span>
+            <span className="font-mono">{progresoPorcentaje}%</span>
+          </div>
+          <Progress
+            value={progresoPorcentaje}
+            className={cn(
+              "h-2.5",
+              progresoPorcentaje === 100
+                ? "[&>[data-slot=progress-indicator]]:bg-green-500"
+                : "[&>[data-slot=progress-indicator]]:bg-amber-500"
+            )}
+          />
+        </div>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
@@ -1484,11 +1617,19 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
               <CardHeader className="bg-green-50 py-1.5 px-3 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-bold">{tropaSeleccionada?.codigo}</CardTitle>
+                  {/* PI2: Progress bar with shadcn Progress */}
                   <div className="flex items-center gap-2 text-xs">
-                    <span>{animalesPesados.length}/{animales.length}</span>
-                    <div className="w-20 h-1.5 bg-stone-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-green-500" style={{ width: `${(animalesPesados.length / animales.length) * 100}%` }} />
-                    </div>
+                    <span className="font-medium">{animalesPesados}/{animales.length} pesados</span>
+                    <Progress
+                      value={progresoPorcentaje}
+                      className={cn(
+                        "w-28 h-2",
+                        progresoPorcentaje === 100
+                          ? "[&>[data-slot=progress-indicator]]:bg-green-500"
+                          : "[&>[data-slot=progress-indicator]]:bg-amber-500"
+                      )}
+                    />
+                    <span className="text-stone-500 font-mono">{progresoPorcentaje}%</span>
                   </div>
                 </div>
               </CardHeader>
@@ -1587,7 +1728,10 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
                           type="number"
                           value={pesoActual}
                           onChange={(e) => setPesoActual(e.target.value)}
-                          className="text-2xl font-bold text-center h-10"
+                          className={cn(
+                            "text-2xl font-bold text-center h-10 transition-all duration-300",
+                            flashFeedback && "ring-2 ring-green-400 bg-green-50 shadow-[0_0_20px_rgba(34,197,94,0.35)]"
+                          )}
                           placeholder="0"
                           autoFocus
                         />
@@ -2016,6 +2160,158 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* PI1: Production Mode Fullscreen Overlay */}
+      {productionMode && (
+        <div className="fixed inset-0 z-50 bg-stone-900 text-white flex flex-col items-center justify-center p-8">
+          {/* Close button */}
+          <button
+            onClick={() => setProductionMode(false)}
+            className="absolute top-4 right-4 text-stone-400 hover:text-white p-2 rounded-lg hover:bg-stone-800 transition-colors"
+            title="Salir del modo producción (Esc)"
+          >
+            <Minimize className="w-6 h-6" />
+          </button>
+
+          {/* Tropa info + Progress bar (PI2) */}
+          <div className="text-center mb-6 w-full max-w-lg">
+            <p className="text-stone-500 text-xs uppercase tracking-wider mb-1">Tropa Activa</p>
+            <p className="text-2xl font-bold text-amber-400">{tropaSeleccionada?.codigo || 'Sin tropa'}</p>
+            <div className="mt-3 space-y-1.5">
+              <div className="flex justify-between text-xs text-stone-500">
+                <span>{animalesPesados}/{totalAnimales} animales pesados</span>
+                <span className="font-mono">{progresoPorcentaje}%</span>
+              </div>
+              <Progress
+                value={progresoPorcentaje}
+                className={cn(
+                  "h-3 bg-stone-700",
+                  progresoPorcentaje === 100
+                    ? "[&>[data-slot=progress-indicator]]:bg-green-500"
+                    : "[&>[data-slot=progress-indicator]]:bg-amber-500"
+                )}
+              />
+            </div>
+          </div>
+
+          {/* Animal number + Type selector */}
+          {animalesPendientes.length > 0 && animales[animalActual] ? (
+            <>
+              <div className="flex items-center gap-6 mb-6">
+                <div className="text-center">
+                  <span className="text-stone-500 text-xs uppercase tracking-wider">Animal</span>
+                  <p className="text-xl font-mono text-stone-200 font-bold">
+                    #{animales[animalActual].numero}
+                    <span className="text-stone-600 text-sm font-normal"> / {animales.length}</span>
+                  </p>
+                </div>
+                <div className="w-px h-8 bg-stone-700" />
+                <div className="flex flex-wrap gap-1.5 justify-center">
+                  {tiposDisponiblesParaPesar.map((t) => {
+                    const status = isTipoDisponible(t.codigo)
+                    const selected = tipoAnimalSeleccionado === t.codigo
+                    return (
+                      <button
+                        key={t.codigo}
+                        onClick={() => status.disponible && setTipoAnimalSeleccionado(t.codigo)}
+                        disabled={!status.disponible}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-sm font-bold transition-all",
+                          selected
+                            ? "bg-amber-500 text-white shadow-lg shadow-amber-500/25"
+                            : status.disponible
+                              ? "bg-stone-700 text-stone-300 hover:bg-stone-600"
+                              : "bg-stone-800 text-stone-600 cursor-not-allowed"
+                        )}
+                      >
+                        {t.codigo}
+                        <span className="ml-1 opacity-50 text-xs">({status.restantes})</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Peso input (big) */}
+              <div className="text-center mb-8 w-full max-w-md">
+                <p className="text-stone-500 text-xs uppercase tracking-wider mb-2">Peso Leído (kg)</p>
+                <input
+                  type="number"
+                  value={pesoActual}
+                  onChange={(e) => setPesoActual(e.target.value)}
+                  className={cn(
+                    "w-full text-center text-7xl font-mono font-bold bg-transparent border-b-2 border-stone-600 text-green-400 focus:outline-none focus:border-green-400 tabular-nums py-2 transition-all duration-300",
+                    flashFeedback && "border-green-400 shadow-[0_0_30px_rgba(34,197,94,0.5)]"
+                  )}
+                  placeholder="0"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleRegistrarPeso()
+                  }}
+                />
+              </div>
+
+              {/* PI3: Checkmark flash feedback in production mode */}
+              {flashFeedback && (
+                <div className="absolute inset-0 z-[60] pointer-events-none flex items-center justify-center">
+                  <div className="bg-green-500/15 w-40 h-40 rounded-full animate-ping" />
+                  <div className="absolute flex flex-col items-center gap-2">
+                    <CheckCircle className="w-20 h-20 text-green-400 drop-shadow-[0_0_12px_rgba(34,197,94,0.6)] animate-bounce" />
+                    <span className="text-green-300 font-bold text-lg drop-shadow-lg">
+                      {lastRegisteredAnimal?.pesoVivo} kg
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Register button */}
+              <button
+                onClick={handleRegistrarPeso}
+                disabled={saving || !pesoActual || !tipoAnimalSeleccionado}
+                className="bg-green-500 hover:bg-green-600 disabled:bg-stone-700 disabled:text-stone-500 text-white text-2xl font-bold py-5 px-20 rounded-2xl shadow-lg shadow-green-500/25 transition-all active:scale-95"
+              >
+                {saving ? 'Guardando...' : 'REGISTRAR'}
+              </button>
+            </>
+          ) : (
+            <div className="text-center">
+              <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500" />
+              <p className="text-green-400 font-semibold text-xl">Pesaje completado</p>
+              <p className="text-stone-500 mt-1">Todos los animales han sido pesados</p>
+              <button
+                onClick={() => { handleFinalizarPesaje(); setProductionMode(false) }}
+                disabled={saving}
+                className="mt-6 bg-green-600 hover:bg-green-700 disabled:bg-stone-700 text-white font-bold py-3 px-10 rounded-xl transition-all"
+              >
+                {saving ? 'Finalizando...' : 'Finalizar Pesaje'}
+              </button>
+            </div>
+          )}
+
+          {/* Last registered animal */}
+          <div className="mt-8 text-center">
+            <p className="text-stone-600 text-xs uppercase tracking-wider">Último registrado</p>
+            <p className="text-stone-400 text-sm mt-0.5">
+              {lastRegisteredAnimal
+                ? `#${String(lastRegisteredAnimal.numero).padStart(3, '0')} ${lastRegisteredAnimal.tipoAnimal} · ${lastRegisteredAnimal.pesoVivo} kg`
+                : 'Sin registros'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete / Repesar Dialog */}
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={() => {
+          if (deleteTarget?.action === 'delete') confirmDeleteAnimal()
+          else if (deleteTarget?.action === 'repesar') confirmRepesarAnimal()
+        }}
+        title={deleteTarget?.action === 'repesar' ? 'Confirmar Repeso' : 'Confirmar eliminación'}
+        description={deleteTarget?.action === 'repesar' ? 'Se eliminará el peso actual del animal.' : 'Esta acción no se puede deshacer.'}
+        itemName={deleteTarget ? `Animal ${deleteTarget.animal.numero}` : undefined}
+      />
     </div>
   )
 }

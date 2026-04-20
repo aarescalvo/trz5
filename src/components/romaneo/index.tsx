@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { 
   Scale, Printer, RefreshCw, User, Warehouse, ChevronUp, ChevronDown,
-  CheckCircle, AlertTriangle, RotateCcw, Trash2, AlertOctagon, Lock, Edit
+  CheckCircle, AlertTriangle, RotateCcw, Trash2, AlertOctagon, Lock, Edit,
+  Maximize2, Minimize2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -57,6 +58,9 @@ interface AsignacionGarron {
   pesoVivo: number | null
   tieneMediaDer: boolean
   tieneMediaIzq: boolean
+  productorNombre?: string
+  productorCuit?: string
+  productorMatricula?: string
 }
 
 interface Operador {
@@ -118,6 +122,17 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
   const [configImpresoraOpen, setConfigImpresoraOpen] = useState(false)
   const [impresoraIp, setImpresoraIp] = useState('')
   const [usarPredeterminada, setUsarPredeterminada] = useState(false)
+
+  // Toggle production mode with sidebar event
+  const toggleModoProduccion = useCallback((active: boolean) => {
+    setModoProduccion(active)
+    window.dispatchEvent(new CustomEvent('production-mode-change', { detail: { active } }))
+  }, [])
+
+  // Modo producción
+  const [modoProduccion, setModoProduccion] = useState(false)
+  const [pesoProduccion, setPesoProduccion] = useState<number | null>(null)
+  const [flashExito, setFlashExito] = useState(false)
 
   // UI
   const [loading, setLoading] = useState(true)
@@ -827,6 +842,64 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
       .sort((a, b) => a.garron - b.garron)
   }, [mediasPesadas, garronesAsignados])
 
+  // Auto-refresh balanza reading in production mode
+  useEffect(() => {
+    if (!modoProduccion) return
+    const fetchPeso = async () => {
+      try {
+        const res = await fetch('/api/balanza/lectura')
+        const data = await res.json()
+        if (data.success) {
+          setPesoProduccion(data.data?.peso ?? data.data)
+        }
+      } catch { /* ignore */ }
+    }
+    fetchPeso()
+    const interval = setInterval(fetchPeso, 2000)
+    return () => clearInterval(interval)
+  }, [modoProduccion])
+
+  // Keyboard shortcuts: Enter = register weight, Escape = exit production mode / cancel dialogs
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (modoProduccion) {
+          toggleModoProduccion(false)
+          return
+        }
+        if (configOpen) { setConfigOpen(false); return }
+        if (decomisoOpen) { setDecomisoOpen(false); return }
+        if (finFaenaOpen) { handleTerminarFaena(false); return }
+        if (supervisorOpen) { setSupervisorOpen(false); return }
+        if (reimpresionOpen) { setReimpresionOpen(false); return }
+        if (configImpresoraOpen) { setConfigImpresoraOpen(false); return }
+        return
+      }
+
+      if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+        const target = e.target as HTMLElement
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return
+        if (configOpen || decomisoOpen || finFaenaOpen || supervisorOpen || reimpresionOpen || configImpresoraOpen) return
+        if (faenaTerminada && !modoEdicion) return
+
+        if (modoProduccion) {
+          if (pesoProduccion !== null && pesoProduccion > 0 && asignacionActual) {
+            setPesoBalanza(pesoProduccion.toFixed(1))
+            handleAceptarPeso(false)
+            setFlashExito(true)
+            setTimeout(() => setFlashExito(false), 600)
+          }
+        } else {
+          if (pesoBalanza && parseFloat(pesoBalanza) > 0 && asignacionActual && !saving) {
+            handleAceptarPeso(false)
+          }
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [modoProduccion, pesoProduccion, pesoBalanza, asignacionActual, saving, faenaTerminada, modoEdicion, configOpen, decomisoOpen, finFaenaOpen, supervisorOpen, reimpresionOpen, configImpresoraOpen, toggleModoProduccion, handleAceptarPeso])
+
   // Auto-scroll cuando cambia el Ãºltimo garrÃ³n pesado
   useEffect(() => {
     const garronesLista = garronesAgrupados()
@@ -892,6 +965,17 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
               <User className="w-4 h-4 mr-1" />
               Configurar
             </Button>
+            {!modoProduccion ? (
+              <Button variant="outline" size="sm" onClick={() => toggleModoProduccion(true)} className="bg-stone-800 text-white border-stone-600 hover:bg-stone-700">
+                <Maximize2 className="w-4 h-4 mr-1" />
+                Modo ProducciÃ³n
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => toggleModoProduccion(false)} className="bg-green-600 text-white border-green-500 hover:bg-green-700">
+                <Minimize2 className="w-4 h-4 mr-1" />
+                Modo ProducciÃ³n
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={fetchData}>
               <RefreshCw className="w-4 h-4 mr-1" />
               Actualizar
@@ -1330,7 +1414,81 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de configuración de impresora */}
+      {/* Fullscreen Production Mode Overlay */}
+      {modoProduccion && (
+        <div className="fixed inset-0 z-50 bg-stone-900 text-white flex flex-col items-center justify-center p-8">
+          <button onClick={() => toggleModoProduccion(false)} className="absolute top-4 right-4 text-stone-400 hover:text-white p-2">
+            <Minimize2 className="w-6 h-6" />
+          </button>
+
+          <div className="flex items-center gap-6 mb-6">
+            <div className="text-center">
+              <p className="text-stone-400 text-xs uppercase tracking-wider">Tropa</p>
+              <p className="text-2xl font-bold text-amber-400">{asignacionActual?.tropaCodigo || '-'}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-stone-400 text-xs uppercase tracking-wider">Garrón / Lado</p>
+              <p className="text-xl font-bold">#{garronActual} <span className={ladoActual === 'DERECHA' ? 'text-blue-400' : 'text-pink-400'}>{ladoActual === 'DERECHA' ? 'DER' : 'IZQ'}</span></p>
+            </div>
+            {asignacionActual?.tipoAnimal && (
+              <div className="text-center">
+                <p className="text-stone-400 text-xs uppercase tracking-wider">Tipo</p>
+                <p className="text-lg font-medium text-stone-300">{asignacionActual.tipoAnimal}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="text-center mb-2">
+            <p className="text-stone-400 text-sm mb-2">Peso Balanza (kg)</p>
+            <div className={`text-8xl font-mono font-bold tabular-nums transition-all duration-300 ${flashExito ? 'text-green-400 scale-110' : 'text-green-400'}`}>
+              {pesoProduccion !== null ? pesoProduccion.toFixed(1) : '---.-'}
+            </div>
+          </div>
+
+          {/* Last 3 registered media reses */}
+          {mediasPesadas.length > 0 && (
+            <div className="mb-6 w-full max-w-lg">
+              <p className="text-stone-500 text-xs uppercase tracking-wider text-center mb-2">Últimas registradas</p>
+              <div className="space-y-1">
+                {mediasPesadas.slice(-3).reverse().map((m, idx) => (
+                  <div key={m.id} className={`flex items-center justify-between bg-stone-800 rounded-lg px-4 py-2 ${idx === 0 && flashExito ? 'ring-1 ring-green-500' : ''}`}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-stone-500 w-6">#{mediasPesadas.length - idx}</span>
+                      <span className="font-mono font-medium">G{m.garron.toString().padStart(3, '0')}</span>
+                      <span className={`text-xs ${m.lado === 'DERECHA' ? 'text-blue-400' : 'text-pink-400'}`}>{m.lado === 'DERECHA' ? 'DER' : 'IZQ'}</span>
+                      {m.decomisada && <span className="text-xs text-red-400 font-medium">DECOMISO</span>}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-stone-500 text-xs">{m.tropaCodigo}</span>
+                      <span className="font-mono font-bold text-lg">{m.peso.toFixed(1)} <span className="text-sm font-normal text-stone-400">kg</span></span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              if (pesoProduccion !== null && pesoProduccion > 0 && asignacionActual) {
+                setPesoBalanza(pesoProduccion.toFixed(1))
+                handleAceptarPeso(false)
+                setFlashExito(true)
+                setTimeout(() => setFlashExito(false), 600)
+              }
+            }}
+            disabled={pesoProduccion === null || pesoProduccion <= 0 || saving || !asignacionActual}
+            className="bg-green-500 hover:bg-green-600 disabled:bg-stone-700 disabled:text-stone-500 text-white text-2xl font-bold py-6 px-16 rounded-2xl shadow-lg transition-all active:scale-95"
+          >
+            {saving ? 'REGISTRANDO...' : 'REGISTRAR PESO'}
+          </button>
+
+          <div className="absolute bottom-4 text-stone-600 text-xs">
+            Enter = Registrar | Escape = Salir
+          </div>
+        </div>
+      )}
+
       <Dialog open={configImpresoraOpen} onOpenChange={setConfigImpresoraOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { 
   Warehouse, RefreshCw, AlertTriangle, TrendingUp, TrendingDown, 
-  Package, Search, Filter, ArrowRightLeft, Download, Plus, X, Loader2
+  Package, Search, ArrowRightLeft, Download, Plus, X, Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -102,8 +102,23 @@ export function StockCamarasModule({ operador }: { operador: Operador }) {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
+    // Restore filters from sessionStorage
+    try {
+      const saved = sessionStorage.getItem('stock-camaras-filters')
+      if (saved) {
+        const filters = JSON.parse(saved)
+        if (filters.filtroCamara) setFiltroCamara(filters.filtroCamara)
+        if (filters.filtroTropa) setFiltroTropa(filters.filtroTropa)
+        if (filters.busqueda !== undefined) setBusqueda(filters.busqueda)
+      }
+    } catch { /* ignore */ }
     fetchData()
   }, [])
+
+  // Save filters to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('stock-camaras-filters', JSON.stringify({ filtroCamara, filtroTropa, busqueda }))
+  }, [filtroCamara, filtroTropa, busqueda])
 
   const fetchData = async () => {
     setLoading(true)
@@ -478,9 +493,37 @@ export function StockCamarasModule({ operador }: { operador: Operador }) {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {mediasFiltradas.slice(0, 100).map(m => (
-                            <TableRow key={m.id}>
-                              <TableCell className="font-mono text-xs">{m.codigo}</TableCell>
+                          {mediasFiltradas.slice(0, 100).map(m => {
+                            const diasEnCamara = Math.floor((Date.now() - new Date(m.fechaIngreso).getTime()) / (1000 * 60 * 60 * 24))
+                            const isExpired = diasEnCamara >= 30
+                            const isNearExpiry = diasEnCamara >= 23 && diasEnCamara < 30
+                            return (
+                            <TableRow key={m.id} className={isExpired ? 'bg-red-50/60' : isNearExpiry ? 'bg-amber-50/40' : ''}>
+                              <TableCell className="font-mono text-xs">
+                                <div className="flex items-center gap-2">
+                                  {m.codigo}
+                                  {(() => {
+                                    const diasEnCamara = Math.floor((Date.now() - new Date(m.fechaIngreso).getTime()) / (1000 * 60 * 60 * 24))
+                                    const vencido = diasEnCamara >= 30
+                                    const venceEn7Dias = diasEnCamara >= 21 && diasEnCamara < 30
+                                    if (vencido) {
+                                      return (
+                                        <Badge className="bg-red-100 text-red-700 text-[10px] px-1.5 py-0 shrink-0 animate-pulse">
+                                          Vencido
+                                        </Badge>
+                                      )
+                                    }
+                                    if (venceEn7Dias) {
+                                      return (
+                                        <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0 shrink-0">
+                                          Vence en {30 - diasEnCamara} días
+                                        </Badge>
+                                      )
+                                    }
+                                    return null
+                                  })()}
+                                </div>
+                              </TableCell>
                               <TableCell>{m.camara || '-'}</TableCell>
                               <TableCell className="font-mono">{m.tropaCodigo || '-'}</TableCell>
                               <TableCell>{m.lado === 'IZQUIERDA' ? <TextoEditable id="lado-izq" original="Izq" tag="span" /> : <TextoEditable id="lado-der" original="Der" tag="span" />}</TableCell>
@@ -492,7 +535,8 @@ export function StockCamarasModule({ operador }: { operador: Operador }) {
                                 {new Date(m.fechaIngreso).toLocaleDateString('es-AR')}
                               </TableCell>
                             </TableRow>
-                          ))}
+                            )
+                          })}
                         </TableBody>
                       </Table>
                     </div>

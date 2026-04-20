@@ -4,17 +4,17 @@ import { useState, useEffect } from 'react'
 import { 
   FileText, DollarSign, CheckCircle, XCircle, Eye, 
   Plus, Search, Loader2, Printer, RefreshCw, CreditCard,
-  Building2, Receipt, Calendar, User, Package, Beef,
-  ArrowDownToLine, FileSpreadsheet, History, Pencil,
+  Building2, Receipt, Package, Beef,
+  FileSpreadsheet, History, Pencil,
   ArrowLeftRight, Trash2, FileDown, Ban,
-  TrendingUp, Clock, AlertCircle
+  TrendingUp, Clock, AlertCircle, AlertTriangle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -898,6 +898,65 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
     }
   }
 
+  const FacturaStatusTimeline = ({ estado }: { estado: string }) => {
+    const steps = [
+      { id: 'EMITIDA', label: 'Emitida' },
+      { id: 'ENVIADA', label: 'Enviada' },
+      { id: 'COBRADA', label: 'Cobrada' },
+    ]
+    
+    const currentIndex = steps.findIndex(s => {
+      if (estado === 'PAGADA') return s.id === 'COBRADA'
+      if (estado === 'EMITIDA' || estado === 'PENDIENTE') return s.id === 'EMITIDA'
+      if (estado === 'ANULADA') return -1
+      return false
+    })
+
+    const isAnulada = estado === 'ANULADA'
+
+    if (isAnulada) {
+      return getEstadoBadge('ANULADA')
+    }
+
+    return (
+      <div className="flex items-center gap-0.5">
+        {steps.map((step, i) => {
+          const isCompleted = estado === 'PAGADA' ? i <= 2 : i === 0 && (estado === 'EMITIDA' || estado === 'PENDIENTE')
+          const isCurrent = i === Math.max(currentIndex, 0)
+          const isPending = i > Math.max(currentIndex, 0)
+
+          return (
+            <div key={step.id} className="flex items-center">
+              <div className="flex items-center gap-1">
+                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                  isCompleted || isCurrent
+                    ? (step.id === 'COBRADA' && estado === 'PAGADA')
+                      ? 'bg-emerald-500'
+                      : (step.id === 'ENVIADA' && isCurrent)
+                        ? 'bg-blue-500'
+                        : 'bg-amber-500'
+                    : 'bg-stone-200'
+                }`} />
+                <span className={`text-[10px] whitespace-nowrap ${
+                  isCompleted || isCurrent ? 'text-stone-700 font-medium' : 'text-stone-400'
+                }`}>
+                  {step.label}
+                </span>
+              </div>
+              {i < steps.length - 1 && (
+                <div className={`w-4 h-0.5 mx-0.5 ${
+                  (isCompleted && steps.findIndex(s => s.id === 'COBRADA' && estado === 'PAGADA') >= i) || (estado === 'PAGADA' && i < 2)
+                    ? 'bg-stone-400'
+                    : 'bg-stone-200'
+                }`} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
   const formatCurrency = (amount: number) => 
     new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 }).format(amount)
 
@@ -929,7 +988,8 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
     const fechaFact = new Date(f.fecha)
     const diasTranscurridos = Math.floor((ahora.getTime() - fechaFact.getTime()) / (1000 * 60 * 60 * 24))
     return diasTranscurridos > 30
-  }).length
+  })
+  const vencidasMonto = facturasVencidas.reduce((sum, f) => sum + (f.saldo || 0), 0)
   const facturasPagadas = facturas.filter(f => f.estado === 'PAGADA')
   const promedioDiasCobro = facturasPagadas.length > 0
     ? facturasPagadas.reduce((sum, f) => {
@@ -1001,7 +1061,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
                 <div className="p-2 bg-red-200/60 rounded-lg"><AlertCircle className="w-5 h-5 text-red-700" /></div>
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-red-600 font-semibold">Facturas Vencidas</p>
-                  <p className="text-lg font-bold text-red-800">{facturasVencidas}</p>
+                  <p className="text-lg font-bold text-red-800">{facturasVencidas.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -1292,43 +1352,62 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
           {/* TAB FACTURAS */}
           <TabsContent value="facturas" className="space-y-6">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setFiltroEstado('TODOS')}>
+            {/* Financial Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100/50">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-stone-100 rounded-lg"><FileText className="w-5 h-5 text-stone-600" /></div>
-                    <div><p className="text-xs text-stone-500 uppercase">Total Facturas</p><p className="text-2xl font-bold text-stone-800">{totalFacturas}</p></div>
+                    <div className="p-2.5 bg-blue-200/60 rounded-lg"><DollarSign className="w-5 h-5 text-blue-700" /></div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-blue-600 font-semibold">Total del Mes</p>
+                      <p className="text-xl font-bold text-blue-800">{formatCurrency(totalFacturadoMes)}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setFiltroEstado('PENDIENTE')}>
+              <Card className="border-0 shadow-md bg-gradient-to-br from-amber-50 to-amber-100/50">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-50 rounded-lg"><DollarSign className="w-5 h-5 text-amber-600" /></div>
-                    <div><p className="text-xs text-stone-500 uppercase">Pendientes</p><p className="text-2xl font-bold text-amber-600">{pendientes}</p></div>
+                    <div className="p-2.5 bg-amber-200/60 rounded-lg"><Clock className="w-5 h-5 text-amber-700" /></div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-amber-600 font-semibold">Pendiente de Cobro</p>
+                      <p className="text-xl font-bold text-amber-800">{formatCurrency(pendienteCobro)}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setFiltroEstado('PAGADA')}>
+              <Card className="border-0 shadow-md bg-gradient-to-br from-red-50 to-red-100/50">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-50 rounded-lg"><CheckCircle className="w-5 h-5 text-emerald-600" /></div>
-                    <div><p className="text-xs text-stone-500 uppercase">Pagadas</p><p className="text-2xl font-bold text-emerald-600">{pagadas}</p></div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-0 shadow-md">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-stone-100 rounded-lg"><DollarSign className="w-5 h-5 text-stone-600" /></div>
-                    <div><p className="text-xs text-stone-500 uppercase">Monto Total</p><p className="text-lg font-bold text-stone-800">{formatCurrency(montoTotal)}</p></div>
+                    <div className="p-2.5 bg-red-200/60 rounded-lg"><AlertTriangle className="w-5 h-5 text-red-700" /></div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-red-600 font-semibold">Vencidas</p>
+                      <p className="text-xl font-bold text-red-800">{formatCurrency(vencidasMonto)}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Filtros */}
+            {/* Status Tabs: Pendientes / Emitidas / Cobradas */}
+            <Tabs value={filtroEstado === 'TODOS' || filtroEstado === 'ANULADA' ? 'TODOS' : filtroEstado} onValueChange={(v) => setFiltroEstado(v as typeof filtroEstado)} className="space-y-4">
+              <TabsList className="grid w-full max-w-lg grid-cols-4">
+                <TabsTrigger value="TODOS" className="gap-1.5 text-xs">
+                  <FileText className="w-3.5 h-3.5" /> Todas
+                </TabsTrigger>
+                <TabsTrigger value="PENDIENTE" className="gap-1.5 text-xs">
+                  <Clock className="w-3.5 h-3.5" /> Pendientes
+                </TabsTrigger>
+                <TabsTrigger value="EMITIDA" className="gap-1.5 text-xs">
+                  <DollarSign className="w-3.5 h-3.5" /> Emitidas
+                </TabsTrigger>
+                <TabsTrigger value="PAGADA" className="gap-1.5 text-xs">
+                  <CheckCircle className="w-3.5 h-3.5" /> Cobradas
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {/* Search filter */}
             <Card className="border-0 shadow-md">
               <CardContent className="p-4">
                 <div className="flex flex-col md:flex-row gap-3">
@@ -1398,7 +1477,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
                             <TableCell className={factura.saldo > 0 ? 'text-amber-600 font-medium' : ''}>
                               {formatCurrency(factura.saldo)}
                             </TableCell>
-                            <TableCell>{getEstadoBadge(factura.estado)}</TableCell>
+                            <TableCell><FacturaStatusTimeline estado={factura.estado} /></TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1">
                                 <Button variant="ghost" size="icon" onClick={() => { setFacturaSeleccionada(factura); setViewOpen(true) }} title="Ver detalle"><Eye className="w-4 h-4" /></Button>

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
+
 import { toast } from 'sonner'
 import { useBalanza } from '@/hooks/useBalanza'
 import { useImpresora } from '@/hooks/useImpresora'
@@ -588,9 +588,14 @@ export function CuarteoModule({ operador }: { operador: Operador }) {
                 <p className="text-stone-400 mt-2">Cargando registros...</p>
               </div>
             ) : registros.length === 0 ? (
-              <div className="p-8 text-center text-stone-400">
-                <Scissors className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No hay registros de cuarteo</p>
+              <div className="p-12 text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="w-20 h-20 rounded-full bg-stone-100 flex items-center justify-center">
+                    <Scissors className="w-10 h-10 text-stone-300" />
+                  </div>
+                </div>
+                <p className="text-lg font-medium text-stone-400 mb-1">No hay medias reses pendientes de cuarteo</p>
+                <p className="text-sm text-stone-300 max-w-md mx-auto">Las medias reses aparecerán aquí una vez finalizado el romaneo</p>
               </div>
             ) : (
               <div className="max-h-[400px] overflow-y-auto">

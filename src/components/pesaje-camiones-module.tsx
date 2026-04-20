@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Truck, Scale, Save, CheckCircle, Clock, Printer, FileText,
-  ArrowDownToLine, ArrowUpFromLine, Weight, Plus, Eye, Trash2, Beef, AlertCircle,
-  Minus, X, Edit, AlertTriangle
+  ArrowDownToLine, ArrowUpFromLine, Weight, Trash2, Beef, AlertCircle,
+  Edit, AlertTriangle, ClipboardCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,6 +14,11 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Separator } from '@/components/ui/separator'
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction
+} from '@/components/ui/alert-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
@@ -118,6 +123,14 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   
+  // Summary confirmation dialog
+  const [showResumen, setShowResumen] = useState(false)
+
+  const handleConfirmarGuardar = async () => {
+    setShowResumen(false)
+    await handleGuardar()
+  }
+
   // Capacity warning
   const [capacidadWarningOpen, setCapacidadWarningOpen] = useState(false)
   const [capacidadWarningInfo, setCapacidadWarningInfo] = useState<any>(null)
@@ -589,7 +602,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
               {pesajesAbiertos.length} abiertos
             </Badge>
             <Badge className="text-lg px-4 py-2 bg-amber-100 text-amber-700 border-amber-300">
-              Ticket #${String(nextTicket).padStart(6, '0')}
+              {`Ticket #${String(nextTicket).padStart(6, '0')}`}
             </Badge>
           </div>
         </div>
@@ -862,8 +875,52 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
                       </div>
                     </div>
                     
+                    {/* PC1: Summary before saving */}
+                    {pesoBruto > 0 && totalCabezas > 0 && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
+                        <h4 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                          <ClipboardCheck className="w-4 h-4" />
+                          Resumen del Pesaje
+                        </h4>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="flex justify-between bg-white rounded px-2 py-1">
+                            <span className="text-stone-500">Tropa:</span>
+                            <span className="font-mono font-bold">{nextTropaCode?.codigo || '-'}</span>
+                          </div>
+                          <div className="flex justify-between bg-white rounded px-2 py-1">
+                            <span className="text-stone-500">Corral:</span>
+                            <span className="font-medium">{corrales.find(c => c.id === corralId)?.nombre || '-'}</span>
+                          </div>
+                          <div className="flex justify-between bg-white rounded px-2 py-1">
+                            <span className="text-stone-500">Total cabezas:</span>
+                            <span className="font-bold">{totalCabezas}</span>
+                          </div>
+                          <div className="flex justify-between bg-white rounded px-2 py-1">
+                            <span className="text-stone-500">Especie:</span>
+                            <span className="font-medium">{especie}</span>
+                          </div>
+                          {(dte || guia) && (
+                            <div className="flex justify-between bg-white rounded px-2 py-1 col-span-2">
+                              <span className="text-stone-500">DTE/Guía:</span>
+                              <span className="font-mono">{dte || '-'}{guia ? ` / ${guia}` : ''}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between bg-white rounded px-2 py-1 col-span-2">
+                            <span className="text-stone-500">Peso Bruto:</span>
+                            <span className="font-bold text-lg text-amber-700">{pesoBruto.toLocaleString()} kg</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <Button
-                      onClick={handleGuardar}
+                      onClick={() => {
+                        if (!patenteChasis) { toast.error('Ingrese la patente del chasis'); return }
+                        if (tipoPesaje === 'INGRESO_HACIENDA' && !usuarioFaenaId) { toast.error('Seleccione el usuario de faena'); return }
+                        if (tipoPesaje === 'INGRESO_HACIENDA' && totalCabezas <= 0) { toast.error('Indique la cantidad de animales'); return }
+                        if (tipoPesaje === 'INGRESO_HACIENDA' && !corralId) { toast.error('Seleccione el corral'); return }
+                        setShowResumen(true)
+                      }}
                       disabled={saving}
                       className="w-full h-14 text-lg bg-amber-500 hover:bg-amber-600 mt-6"
                     >
@@ -946,7 +1003,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
                     </div>
                   )}
                   <Button
-                    onClick={handleGuardar}
+                    onClick={() => setShowResumen(true)}
                     disabled={saving}
                     className="w-full h-14 text-lg bg-amber-500 hover:bg-amber-600"
                   >
@@ -1064,7 +1121,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
                     </div>
                   )}
                   <Button
-                    onClick={handleGuardar}
+                    onClick={() => setShowResumen(true)}
                     disabled={saving}
                     className="w-full h-14 text-lg bg-amber-500 hover:bg-amber-600"
                   >
@@ -1423,6 +1480,230 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+        {/* PC1: Visual Summary Confirmation Dialog */}
+        <Dialog open={showResumen} onOpenChange={setShowResumen}>
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <ClipboardCheck className="w-6 h-6 text-amber-600" />
+                Resumen del Pesaje
+              </DialogTitle>
+              <DialogDescription>Revise los datos antes de confirmar el registro.</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 mt-2">
+              {/* Tipo de pesaje badge */}
+              <div className="flex items-center gap-2">
+                <Badge className="text-sm px-3 py-1" variant={
+                  tipoPesaje === 'INGRESO_HACIENDA' ? 'default' :
+                  tipoPesaje === 'SALIDA_MERCADERIA' ? 'secondary' : 'outline'
+                }>
+                  {tipoPesaje === 'INGRESO_HACIENDA' ? '📥 Ingreso de Hacienda' :
+                   tipoPesaje === 'SALIDA_MERCADERIA' ? '📤 Salida de Mercadería' :
+                   '⚖️ Pesaje Particular'}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  Ticket #{String(nextTicket).padStart(6, '0')}
+                </Badge>
+              </div>
+
+              {/* Section: Vehículo y Transporte */}
+              <div className="bg-stone-50 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-stone-700 mb-3 flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-stone-500" />
+                  Vehículo y Transporte
+                </h4>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-stone-500">Patente Chasis:</span>
+                    <span className="font-mono font-bold text-stone-800">{patenteChasis.toUpperCase()}</span>
+                  </div>
+                  {patenteAcoplado && (
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">Acoplado:</span>
+                      <span className="font-mono font-bold text-stone-800">{patenteAcoplado.toUpperCase()}</span>
+                    </div>
+                  )}
+                  {chofer && (
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">Chofer:</span>
+                      <span className="font-medium">{chofer}</span>
+                    </div>
+                  )}
+                  {dniChofer && (
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">DNI Chofer:</span>
+                      <span className="font-mono">{dniChofer}</span>
+                    </div>
+                  )}
+                  {transportistaId && (
+                    <div className="flex justify-between col-span-2">
+                      <span className="text-stone-500">Transportista:</span>
+                      <span className="font-medium">{transportistas.find(t => t.id === transportistaId)?.nombre || '-'}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Section: Datos de la Tropa (INGRESO_HACIENDA) */}
+              {tipoPesaje === 'INGRESO_HACIENDA' && (
+                <div className="bg-green-50 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-green-800 mb-3 flex items-center gap-2">
+                    <Beef className="w-4 h-4 text-green-600" />
+                    Datos de la Tropa
+                  </h4>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                    {nextTropaCode && (
+                      <div className="col-span-2 bg-white rounded-md p-2 flex items-center justify-center gap-2">
+                        <span className="text-green-600">Tropa:</span>
+                        <span className="text-2xl font-mono font-bold text-green-700">{nextTropaCode.codigo}</span>
+                      </div>
+                    )}
+                    {productorId && (
+                      <div className="flex justify-between">
+                        <span className="text-green-600">Productor:</span>
+                        <span className="font-medium text-green-800">{productores.find(p => p.id === productorId)?.nombre || '-'}</span>
+                      </div>
+                    )}
+                    {usuarioFaenaId && (
+                      <div className="flex justify-between">
+                        <span className="text-green-600">Usuario Faena:</span>
+                        <span className="font-medium text-green-800">{usuariosFaena.find(u => u.id === usuarioFaenaId)?.nombre || '-'}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-green-600">Especie:</span>
+                      <Badge variant="outline" className="border-green-300 text-green-700">{ESPECIES.find(e => e.id === especie)?.label || especie}</Badge>
+                    </div>
+                    {corralId && (
+                      <div className="flex justify-between">
+                        <span className="text-green-600">Corral:</span>
+                        <span className="font-medium text-green-800">{corrales.find(c => c.id === corralId)?.nombre || '-'}</span>
+                      </div>
+                    )}
+                    {(dte || guia) && (
+                      <div className="flex justify-between col-span-2">
+                        <span className="text-green-600">DTE / Guía:</span>
+                        <span className="font-mono text-green-800">{dte || '-'}{guia ? ` / ${guia}` : ''}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Heads by animal type */}
+                  {tiposAnimales.length > 0 && (
+                    <div className="mt-3">
+                      <Separator className="bg-green-200 mb-3" />
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-green-700">Cabezas por tipo:</span>
+                        <Badge className="bg-green-600 text-white text-xs">Total: {totalCabezas}</Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {tiposAnimales.filter(t => t.cantidad > 0).map((ta) => {
+                          const animalDef = TIPOS_ANIMALES[especie]?.find(a => a.codigo === ta.tipoAnimal)
+                          return (
+                            <Badge key={ta.tipoAnimal} variant="outline" className="border-green-300 text-green-800 bg-white">
+                              {animalDef?.siglas || ta.tipoAnimal}: <span className="font-bold ml-1">{ta.cantidad}</span>
+                            </Badge>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Section: Destino/Remito (SALIDA_MERCADERIA) */}
+              {tipoPesaje === 'SALIDA_MERCADERIA' && (
+                <div className="bg-orange-50 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-orange-800 mb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-orange-600" />
+                    Datos de Salida
+                  </h4>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-orange-600">Destino:</span>
+                      <span className="font-medium text-orange-800">{destino || '-'}</span>
+                    </div>
+                    {remito && (
+                      <div className="flex justify-between">
+                        <span className="text-orange-600">Remito:</span>
+                        <span className="font-mono text-orange-800">{remito}</span>
+                      </div>
+                    )}
+                    {observaciones && (
+                      <div className="flex justify-between col-span-2">
+                        <span className="text-orange-600">Observaciones:</span>
+                        <span className="font-medium text-orange-800">{observaciones}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Section: Descripción (PESAJE_PARTICULAR) */}
+              {tipoPesaje === 'PESAJE_PARTICULAR' && descripcion && (
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                    Descripción
+                  </h4>
+                  <p className="text-sm text-blue-700">{descripcion}</p>
+                </div>
+              )}
+
+              {/* Section: Pesos */}
+              <div className="bg-amber-50 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                  <Scale className="w-4 h-4 text-amber-600" />
+                  Pesos
+                </h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <p className="text-xs text-amber-600 mb-1">Peso Bruto</p>
+                    <p className="text-xl font-bold text-amber-800">{pesoBruto.toLocaleString()}</p>
+                    <p className="text-xs text-amber-500">kg</p>
+                  </div>
+                  {tipoPesaje !== 'INGRESO_HACIENDA' && (
+                    <div className="text-center">
+                      <p className="text-xs text-amber-600 mb-1">Peso Tara</p>
+                      <p className="text-xl font-bold text-amber-800">{pesoTara.toLocaleString()}</p>
+                      <p className="text-xs text-amber-500">kg</p>
+                    </div>
+                  )}
+                  {tipoPesaje !== 'INGRESO_HACIENDA' && pesoNeto > 0 && (
+                    <div className="text-center">
+                      <p className="text-xs text-green-600 mb-1">Peso Neto</p>
+                      <p className="text-2xl font-bold text-green-700">{pesoNeto.toLocaleString()}</p>
+                      <p className="text-xs text-green-500">kg</p>
+                    </div>
+                  )}
+                  {tipoPesaje === 'INGRESO_HACIENDA' && (
+                    <div className="text-center col-span-2">
+                      <p className="text-xs text-stone-500 mb-1">Estado del pesaje</p>
+                      <Badge variant="outline" className="border-orange-300 text-orange-700 text-xs">
+                        Quedará ABIERTO — tara pendiente
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="flex-row gap-3 sm:justify-end mt-2">
+              <Button variant="outline" onClick={() => setShowResumen(false)} disabled={saving}>
+                Volver
+              </Button>
+              <Button onClick={handleConfirmarGuardar} disabled={saving} className="bg-amber-500 hover:bg-amber-600">
+                {saving ? (
+                  <><Scale className="w-4 h-4 mr-2 animate-spin" />Guardando...</>
+                ) : (
+                  <><CheckCircle className="w-4 h-4 mr-2" />Confirmar y Guardar</>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   )
 }

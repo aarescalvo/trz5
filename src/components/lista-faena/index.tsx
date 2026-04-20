@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { 
   ClipboardList, Plus, Calendar, Trash2, 
   CheckCircle, Beef, AlertTriangle, Lock, RefreshCw, Unlock,
-  AlertCircle, Printer, Minus
+  AlertCircle, Printer, Minus, Dog
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -236,6 +236,7 @@ export function ListaFaenaModule({ operador }: { operador: Operador }) {
           ...tropaAQuitar,
           garrones: data.garronesAsignados
         })
+        setQuitarTropaOpen(true)
         return
       } else {
         toast.error(data.error || 'Error al quitar tropa')
@@ -448,6 +449,38 @@ export function ListaFaenaModule({ operador }: { operador: Operador }) {
     )
   }
 
+  const getEspecieBadge = (especie: string) => {
+    const normalized = especie?.toUpperCase().trim()
+    if (normalized === 'BOVINO') {
+      return <Badge className="bg-amber-100 text-amber-700 border-amber-200"><Beef className="w-3.5 h-3.5 mr-1" />Bovino</Badge>
+    }
+    if (normalized === 'EQUINO') {
+      return <Badge className="bg-stone-100 text-stone-600 border-stone-200"><Dog className="w-3.5 h-3.5 mr-1" />Equino</Badge>
+    }
+    return <Badge variant="outline">{especie || 'N/D'}</Badge>
+  }
+
+  const getStockBorderColor = (stock: StockPorCorral) => {
+    if (stock.enListaAbierta > 0) return 'border-l-4 border-l-amber-500 bg-amber-50/50'
+    if (stock.faenados > 0 && stock.disponibles === 0) return 'border-l-4 border-l-gray-400 bg-gray-50/50'
+    if (stock.disponibles > 0) return 'border-l-4 border-l-green-500 bg-green-50/30'
+    return 'border-l-4 border-l-stone-300'
+  }
+
+  const getEspecieIcon = (especie: string) => {
+    const normalized = especie?.toUpperCase().trim()
+    if (normalized === 'BOVINO') return <Beef className="w-5 h-5 text-amber-600" />
+    if (normalized === 'EQUINO') return <Dog className="w-5 h-5 text-stone-600" />
+    return <Beef className="w-5 h-5 text-stone-400" />
+  }
+
+  const getTropaStatusBadge = (enListaAbierta: number, disponibles: number, faenados: number) => {
+    if (enListaAbierta > 0) return <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">En Faena</Badge>
+    if (faenados > 0 && disponibles === 0) return <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">Faenada</Badge>
+    if (disponibles > 0) return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-xs">En Corral</Badge>
+    return <Badge className="bg-gray-100 text-gray-500 border-gray-200 text-xs">Pendiente</Badge>
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-stone-50 to-stone-100 flex items-center justify-center">
@@ -498,23 +531,23 @@ export function ListaFaenaModule({ operador }: { operador: Operador }) {
           {/* LISTA ACTUAL */}
           <TabsContent value="actual" className="space-y-6">
             {!listaActual ? (
-              <Card className="border-0 shadow-md">
-                <CardContent className="p-12 text-center">
-                  <ClipboardList className="w-16 h-16 mx-auto mb-4 text-stone-300" />
-                  <p className="text-lg text-stone-600 mb-2">
-                    <TextoEditable id="msg-no-hay-lista" original="No hay lista de faena" tag="span" />
-                  </p>
-                  <p className="text-stone-400 mb-4">
-                    <TextoEditable id="msg-cree-lista" original="Cree una nueva lista para comenzar" tag="span" />
-                  </p>
-                  {operador.nivel !== 'OPERADOR' && (
-                    <Button onClick={() => setNuevaListaOpen(true)} className="bg-amber-500 hover:bg-amber-600">
-                      <Plus className="w-4 h-4 mr-2" />
-                      <TextoEditable id="btn-crear-lista" original="Crear Lista de Faena" tag="span" />
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
+              <div className="flex flex-col items-center justify-center py-20 px-6">
+                <div className="w-24 h-24 rounded-full bg-amber-50 flex items-center justify-center mb-6">
+                  <ClipboardList className="w-12 h-12 text-amber-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-stone-700 mb-2">
+                  <TextoEditable id="msg-no-hay-lista-activa" original="No hay lista de faena activa" tag="span" />
+                </h3>
+                <p className="text-stone-400 mb-6 max-w-md text-center">
+                  <TextoEditable id="msg-cree-lista-gestionar" original="Cree una nueva lista para comenzar a gestionar la faena del día" tag="span" />
+                </p>
+                {operador.nivel !== 'OPERADOR' && (
+                  <Button onClick={() => setNuevaListaOpen(true)} className="bg-amber-500 hover:bg-amber-600">
+                    <Plus className="w-4 h-4 mr-2" />
+                    <TextoEditable id="btn-crear-lista" original="Crear Lista de Faena" tag="span" />
+                  </Button>
+                )}
+              </div>
             ) : (
               <>
                 {/* Info de la lista */}
@@ -572,23 +605,44 @@ export function ListaFaenaModule({ operador }: { operador: Operador }) {
                                 <TableHead><TextoEditable id="th-usuario-faena" original="Usuario Faena" tag="span" /></TableHead>
                                 <TableHead className="text-center"><TextoEditable id="th-cantidad" original="Cantidad" tag="span" /></TableHead>
                                 <TableHead><TextoEditable id="th-corral" original="Corral" tag="span" /></TableHead>
+                                <TableHead className="text-center"><TextoEditable id="th-estado-tropa" original="Estado" tag="span" /></TableHead>
                                 {listaActual.estado === 'ABIERTA' && <TableHead className="text-center"><TextoEditable id="th-acciones" original="Acciones" tag="span" /></TableHead>}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {listaActual.tropas.map((t, i) => (
-                                <TableRow key={`${t.tropa.id}-${t.corralId || 'sin-corral'}`}>
+                              {listaActual.tropas.map((t, i) => {
+                                const tropaEspecie = t.tropa.especie?.toUpperCase().trim()
+                                const borderColor = tropaEspecie === 'EQUINO' ? 'border-l-4 border-l-stone-400' : 'border-l-4 border-l-amber-500'
+                                return (
+                                <TableRow key={`${t.tropa.id}-${t.corralId || 'sin-corral'}`} className={borderColor}>
                                   <TableCell className="text-center font-bold text-stone-500">
                                     {i + 1}
                                   </TableCell>
-                                  <TableCell className="font-mono font-bold">{t.tropa.codigo}</TableCell>
-                                  <TableCell>{t.tropa.usuarioFaena?.nombre || '-'}</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      {getEspecieIcon(t.tropa.especie)}
+                                      <span className="font-mono font-bold">{t.tropa.codigo}</span>
+                                      {getEspecieBadge(t.tropa.especie)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="font-medium">{t.tropa.usuarioFaena?.nombre || '-'}</TableCell>
                                   <TableCell className="text-center">
-                                    <Badge variant="outline" className="text-lg font-bold">
+                                    <Badge className="bg-stone-800 text-white text-lg font-bold px-3 py-0.5">
                                       {t.cantidad}
                                     </Badge>
                                   </TableCell>
-                                  <TableCell>{t.corral?.nombre || '-'}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline" className="text-xs">
+                                      {t.corral?.nombre || '-'}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                    {listaActual.estado === 'ABIERTA' ? (
+                                      <Badge className="bg-green-100 text-green-700 border-green-200">En Faena</Badge>
+                                    ) : (
+                                      <Badge className="bg-blue-100 text-blue-700 border-blue-200">Faenada</Badge>
+                                    )}
+                                  </TableCell>
                                   {listaActual.estado === 'ABIERTA' && (
                                     <TableCell className="text-center">
                                       <div className="flex items-center justify-center gap-1">
@@ -624,13 +678,18 @@ export function ListaFaenaModule({ operador }: { operador: Operador }) {
                                     </TableCell>
                                   )}
                                 </TableRow>
-                              ))}
+                                )
+                              })}
                             </TableBody>
                           </Table>
                         ) : (
-                          <p className="text-stone-400">
-                            <TextoEditable id="msg-no-hay-tropas" original="No hay tropas asignadas" tag="span" />
-                          </p>
+                          <div className="flex flex-col items-center justify-center py-10 px-6">
+                            <div className="w-20 h-20 rounded-full bg-stone-100 flex items-center justify-center mb-4">
+                              <ClipboardList className="w-10 h-10 text-stone-400" />
+                            </div>
+                            <p className="text-lg font-medium text-stone-500 mb-1">No hay tropas en la lista de faena</p>
+                            <p className="text-sm text-stone-400 max-w-sm text-center">Agregue tropas desde Movimiento de Hacienda o Pesaje Camiones</p>
+                          </div>
                         )}
                       </div>
 
@@ -650,17 +709,23 @@ export function ListaFaenaModule({ operador }: { operador: Operador }) {
                                   )
                                   const inputId = `cant-${stock.tropaId}-${stock.corralId || 'sin-corral'}`
                                   return (
-                                    <div key={inputId} className="p-3 border rounded-lg bg-white">
-                                      <div className="flex items-center justify-between mb-2">
-                                        <span className="font-mono font-bold">{stock.tropaCodigo}</span>
-                                        <Badge variant="outline">{stock.tropaEspecie}</Badge>
+                                    <div key={inputId} className={`p-3 border rounded-lg bg-white ${getStockBorderColor(stock)} transition-all`}>
+                                      <div className="flex items-center justify-between mb-2 gap-2">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          {getEspecieIcon(stock.tropaEspecie)}
+                                          <span className="font-mono font-bold truncate">{stock.tropaCodigo}</span>
+                                        </div>
+                                        {getTropaStatusBadge(stock.enListaAbierta, stock.disponibles, stock.faenados)}
                                       </div>
-                                      <p className="text-sm text-stone-500 mb-1">
+                                      <p className="text-sm font-medium text-stone-700 mb-1">
                                         {stock.usuarioFaena?.nombre || '-'}
                                       </p>
                                       <div className="flex items-center gap-2 mb-2">
                                         <Badge variant="outline" className="text-xs">
                                           <TextoEditable id="label-corral2" original="Corral" tag="span" />: {stock.corralNombre || 'Sin asignar'}
+                                        </Badge>
+                                        <Badge className="bg-stone-800 text-white text-xs font-bold">
+                                          {stock.disponibles} uds.
                                         </Badge>
                                       </div>
                                       <div className="flex items-center gap-2 text-xs mb-2">
