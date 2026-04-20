@@ -12,6 +12,10 @@ import {
 } from 'lucide-react'
 import { ReporteFaena } from './reporte-faena'
 import { ReporteCostos } from './reporte-costos'
+import { ReporteRendimientos } from './reporte-rendimientos'
+import { ReporteInsumos } from './reporte-insumos'
+import { ReporteCuentasCorrientes } from './reporte-cuentas-corrientes'
+import { ReporteCajas } from './reporte-cajas'
 
 interface Operador {
   id: string
@@ -38,7 +42,7 @@ const reportesMenu = [
     descripcion: 'Histórico y comparativo de rindes',
     icon: TrendingUp,
     color: 'bg-green-500',
-    badge: 'Nuevo'
+    badge: null
   },
   {
     id: 'insumos',
@@ -62,7 +66,7 @@ const reportesMenu = [
     descripcion: 'Saldos y antigüedad de deudas',
     icon: Building2,
     color: 'bg-cyan-500',
-    badge: '3 pendientes'
+    badge: null
   },
   {
     id: 'cajas',
@@ -81,8 +85,16 @@ export function ReportesGerenciales({ operador }: ReportesGerencialesProps) {
     switch (activeReport) {
       case 'faena':
         return <ReporteFaena operador={operador} />
+      case 'rendimientos':
+        return <ReporteRendimientos operador={operador} />
+      case 'insumos':
+        return <ReporteInsumos operador={operador} />
       case 'costos':
         return <ReporteCostos operador={operador} />
+      case 'cuentas':
+        return <ReporteCuentasCorrientes operador={operador} />
+      case 'cajas':
+        return <ReporteCajas operador={operador} />
       default:
         return null
     }
