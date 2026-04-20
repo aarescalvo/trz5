@@ -73,7 +73,7 @@ export function HistorialPreciosModule({ operador }: Props) {
   
   // Filtros
   const [filtros, setFiltros] = useState({
-    tipo: '',
+    tipo: 'all',
     entidad: '',
     fechaDesde: '',
     fechaHasta: '',
@@ -98,7 +98,7 @@ export function HistorialPreciosModule({ operador }: Props) {
     try {
       // Fetch historial
       const paramsHistorial = new URLSearchParams()
-      if (filtros.tipo) paramsHistorial.append('tipo', filtros.tipo)
+      if (filtros.tipo && filtros.tipo !== 'all') paramsHistorial.append('tipo', filtros.tipo)
       if (filtros.fechaDesde) paramsHistorial.append('fechaDesde', filtros.fechaDesde)
       if (filtros.fechaHasta) paramsHistorial.append('fechaHasta', filtros.fechaHasta)
       if (filtros.busqueda) paramsHistorial.append('busqueda', filtros.busqueda)
@@ -217,7 +217,7 @@ export function HistorialPreciosModule({ operador }: Props) {
               <SelectValue placeholder="Tipo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               {TIPOS_ENTIDAD.map(t => (
                 <SelectItem key={t.id} value={t.id}>{t.nombre}</SelectItem>
               ))}

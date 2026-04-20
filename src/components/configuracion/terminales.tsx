@@ -70,8 +70,8 @@ export function Terminales({ operador }: { operador: Operador }) {
   const [formData, setFormData] = useState({
     nombre: '',
     ubicacion: 'BALANZA_CAMION',
-    balanzaId: '',
-    impresoraId: '',
+    balanzaId: 'all',
+    impresoraId: 'all',
     activa: true,
     observaciones: ''
   })
@@ -109,8 +109,8 @@ export function Terminales({ operador }: { operador: Operador }) {
     setFormData({
       nombre: '',
       ubicacion: 'BALANZA_CAMION',
-      balanzaId: '',
-      impresoraId: '',
+      balanzaId: 'all',
+      impresoraId: 'all',
       activa: true,
       observaciones: ''
     })
@@ -127,8 +127,8 @@ export function Terminales({ operador }: { operador: Operador }) {
     setFormData({
       nombre: terminal.nombre,
       ubicacion: terminal.ubicacion,
-      balanzaId: terminal.balanzaId || '',
-      impresoraId: terminal.impresoraId || '',
+      balanzaId: terminal.balanzaId || 'all',
+      impresoraId: terminal.impresoraId || 'all',
       activa: terminal.activa,
       observaciones: terminal.observaciones || ''
     })
@@ -145,9 +145,14 @@ export function Terminales({ operador }: { operador: Operador }) {
     try {
       const url = '/api/terminales'
       const method = editingTerminal ? 'PUT' : 'POST'
+      const cleanedData = {
+        ...formData,
+        balanzaId: formData.balanzaId === 'all' ? null : formData.balanzaId,
+        impresoraId: formData.impresoraId === 'all' ? null : formData.impresoraId,
+      }
       const body = editingTerminal 
-        ? { ...formData, id: editingTerminal.id }
-        : formData
+        ? { ...cleanedData, id: editingTerminal.id }
+        : cleanedData
 
       const res = await fetch(url, {
         method,
@@ -366,7 +371,7 @@ export function Terminales({ operador }: { operador: Operador }) {
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin asignar</SelectItem>
+                    <SelectItem value="all">Sin asignar</SelectItem>
                     {getBalanzasPorUbicacion(formData.ubicacion).map((b: Balanza) => (
                       <SelectItem key={b.id} value={b.id}>{b.nombre}</SelectItem>
                     ))}
@@ -391,7 +396,7 @@ export function Terminales({ operador }: { operador: Operador }) {
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin asignar</SelectItem>
+                    <SelectItem value="all">Sin asignar</SelectItem>
                     {(getImpresorasPorUbicacion(formData.ubicacion).length > 0 ? getImpresorasPorUbicacion(formData.ubicacion) : impresoras).map((i: Impresora) => (
                       <SelectItem key={i.id} value={i.id}>{i.nombre}</SelectItem>
                     ))}

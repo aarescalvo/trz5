@@ -75,7 +75,7 @@ export function CodigosArticulo() {
   const [codigos, setCodigos] = useState<CodigoArticulo[]>([])
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState('')
-  const [filtroCategoria, setFiltroCategoria] = useState('')
+  const [filtroCategoria, setFiltroCategoria] = useState('all')
   const [filtroEspecie, setFiltroEspecie] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editando, setEditando] = useState<CodigoArticulo | null>(null)
@@ -102,7 +102,7 @@ export function CodigosArticulo() {
       setLoading(true)
       const params = new URLSearchParams()
       if (busqueda) params.append('busqueda', busqueda)
-      if (filtroCategoria) params.append('categoria', filtroCategoria)
+      if (filtroCategoria && filtroCategoria !== 'all') params.append('categoria', filtroCategoria)
       if (filtroEspecie) params.append('especie', filtroEspecie)
 
       const response = await fetch(`/api/codigos-articulo?${params}`)
@@ -283,7 +283,7 @@ export function CodigosArticulo() {
               <SelectValue placeholder="Categoría" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas</SelectItem>
+              <SelectItem value="all">Todas</SelectItem>
               {CATEGORIAS.map(c => (
                 <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
               ))}

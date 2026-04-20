@@ -75,7 +75,7 @@ export function SubproductosConfig({ operador }: { operador: Operador }) {
     codigo: '',
     nombre: '',
     categoria: 'MENUDENCIA',
-    especie: '',
+    especie: 'all',
     requiereFrio: true,
     temperaturaMax: '',
     unidadMedida: 'KG',
@@ -110,7 +110,7 @@ export function SubproductosConfig({ operador }: { operador: Operador }) {
       codigo: '',
       nombre: '',
       categoria: 'MENUDENCIA',
-      especie: '',
+      especie: 'all',
       requiereFrio: true,
       temperaturaMax: '',
       unidadMedida: 'KG',
@@ -135,7 +135,7 @@ export function SubproductosConfig({ operador }: { operador: Operador }) {
       codigo: subproducto.codigo,
       nombre: subproducto.nombre,
       categoria: subproducto.categoria,
-      especie: subproducto.especie || '',
+      especie: subproducto.especie || 'all',
       requiereFrio: subproducto.requiereFrio,
       temperaturaMax: subproducto.temperaturaMax?.toString() || '',
       unidadMedida: subproducto.unidadMedida,
@@ -159,9 +159,13 @@ export function SubproductosConfig({ operador }: { operador: Operador }) {
     try {
       const url = '/api/subproductos-config'
       const method = editingSubproducto ? 'PUT' : 'POST'
+      const cleanedData = {
+        ...formData,
+        especie: formData.especie === 'all' ? null : formData.especie,
+      }
       const body = editingSubproducto 
-        ? { ...formData, id: editingSubproducto.id }
-        : formData
+        ? { ...cleanedData, id: editingSubproducto.id }
+        : cleanedData
 
       const res = await fetch(url, {
         method,
@@ -434,7 +438,7 @@ export function SubproductosConfig({ operador }: { operador: Operador }) {
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas</SelectItem>
+                    <SelectItem value="all">Todas</SelectItem>
                     {ESPECIES.map(e => (
                       <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>
                     ))}

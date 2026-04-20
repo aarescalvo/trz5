@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,13 +9,15 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from 'sonner'
-import { Calendar, Download, Beef, Loader2, FileSpreadsheet } from 'lucide-react'
+import { Calendar, Download, Beef, Loader2, FileSpreadsheet, Eye } from 'lucide-react'
 import { exportReport } from '@/lib/reportes-api'
 import { ExportButton } from '@/components/ui/export-button'
 import { ColumnSelector, type ColumnDef } from '@/components/ui/column-selector'
 import { DataTablePagination } from '@/components/ui/data-table-pagination'
 import { usePagination } from '@/hooks/use-pagination'
 import { PDFExporter } from '@/lib/export-pdf'
+import { ReportPreview } from '@/components/ui/report-preview'
+import { ReportFavorites } from '@/components/ui/report-favorites'
 
 interface FaenaData {
   fecha: string
@@ -51,9 +53,11 @@ const FAENA_COLUMNS: ColumnDef[] = [
 export function ReporteFaena() {
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
   const [especie, setEspecie] = useState<string>('todas')
+  const [operadorId, setOperadorId] = useState('')
   const [datos, setDatos] = useState<FaenaData[]>([])
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
     FAENA_COLUMNS.filter((c) => c.visible !== false).map((c) => c.key),
@@ -84,6 +88,16 @@ export function ReporteFaena() {
     
     setFechaHasta(today.toISOString().split('T')[0])
     setFechaDesde(monthAgo.toISOString().split('T')[0])
+
+    // Fetch current operador
+    fetch('/api/auth')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data?.id) {
+          setOperadorId(data.data.id)
+        }
+      })
+      .catch(() => {})
   }, [])
 
   const handleBuscar = async () => {
@@ -134,6 +148,12 @@ export function ReporteFaena() {
       setExporting(false)
     }
   }
+
+  const handleLoadFilters = useCallback((filters: Record<string, unknown>) => {
+    if (filters.fechaDesde) setFechaDesde(String(filters.fechaDesde))
+    if (filters.fechaHasta) setFechaHasta(String(filters.fechaHasta))
+    if (filters.especie) setEspecie(String(filters.especie))
+  }, [])
 
   const handleExportarPDF = () => {
     if (datos.length === 0) {
@@ -204,6 +224,16 @@ export function ReporteFaena() {
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Beef className="w-4 h-4" />}
                 <span className="ml-2">Buscar</span>
               </Button>
+              <Button
+                variant="outline"
+                size="default"
+                onClick={() => setPreviewOpen(true)}
+                disabled={datos.length === 0}
+                title="Vista Previa"
+              >
+                <Eye className="w-4 h-4" />
+                <span className="ml-2 hidden sm:inline">Vista Previa</span>
+              </Button>
               <ExportButton
                 onExportExcel={handleExportar}
                 onExportPDF={handleExportarPDF}
@@ -216,6 +246,14 @@ export function ReporteFaena() {
                 columns={FAENA_COLUMNS}
                 onColumnsChange={setVisibleColumns}
               />
+              {operadorId && (
+                <ReportFavorites
+                  reportType="faena"
+                  currentFilters={{ fechaDesde, fechaHasta, especie }}
+                  onLoadFilters={handleLoadFilters}
+                  operadorId={operadorId}
+                />
+              )}
             </div>
           </div>
         </CardContent>
@@ -359,6 +397,23 @@ export function ReporteFaena() {
           )}
         </CardContent>
       </Card>
+
+      {/* Report Preview Dialog */}
+      <ReportPreview
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        title="Reporte de Faena - Vista Previa"
+        columns={FAENA_COLUMNS.map(c => ({ key: c.key, label: c.label }))}
+        data={datos as unknown as Record<string, any>[]}
+        onExportPDF={() => {
+          handleExportarPDF()
+          setPreviewOpen(false)
+        }}
+        onExportExcel={() => {
+          handleExportar()
+          setPreviewOpen(false)
+        }}
+      />
     </div>
   )
 }

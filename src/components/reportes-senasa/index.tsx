@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import {
-  FileText, Download, Send, AlertCircle, CheckCircle, Clock, FileBarChart, RefreshCw, Eye, Trash2
+  FileText, Download, Send, AlertCircle, CheckCircle, Clock, FileBarChart, RefreshCw, Eye, Trash2, Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { TextoEditable, EditableBlock, useEditor } from '@/components/ui/editable-screen'
+import { generateSenasaPDF, type SenasaReportData } from '@/lib/senasa-pdf-generator'
 
 interface Operador { id: string; nombre: string; rol: string }
 
@@ -55,6 +56,7 @@ export function ReportesSenasaModule({ operador }: { operador: Operador }) {
   const [observaciones, setObservaciones] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [detalleOpen, setDetalleOpen] = useState<ReporteSenasa | null>(null)
+  const [descargandoId, setDescargandoId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchReportes()
@@ -127,12 +129,42 @@ export function ReportesSenasaModule({ operador }: { operador: Operador }) {
     if (reporte.archivoUrl) {
       window.open(reporte.archivoUrl, '_blank')
       toast.success('Descargando archivo...')
-    } else {
-      toast.info('Generando archivo PDF...')
-      // Simular generación de PDF
-      setTimeout(() => {
-        toast.success('Archivo generado: reporte_senasa_' + reporte.id + '.pdf')
-      }, 1500)
+      return
+    }
+
+    setDescargandoId(reporte.id)
+    toast.info('Generando PDF para SENASA...')
+
+    try {
+      const reportData: SenasaReportData = {
+        tipo: reporte.tipoReporte,
+        periodo: reporte.periodo,
+        datos: [],
+        establecimiento: {
+          nombre: 'Solemar Alimentaria',
+          numero: '12345',
+          cuit: '30-12345678-9',
+          direccion: 'Ruta 2 Km 45, San Cayetano, Buenos Aires',
+        },
+      }
+
+      const blob = await generateSenasaPDF(reportData)
+
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `reporte_senasa_${reporte.tipoReporte.toLowerCase()}_${reporte.id}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast.success('PDF de SENASA generado correctamente')
+    } catch (error) {
+      console.error('Error generando PDF SENASA:', error)
+      toast.error('Error al generar el PDF de SENASA')
+    } finally {
+      setDescargandoId(null)
     }
   }
 
@@ -348,8 +380,12 @@ export function ReportesSenasaModule({ operador }: { operador: Operador }) {
                           <Button variant="ghost" size="sm" onClick={() => setDetalleOpen(reporte)} title="Ver detalle">
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDescargar(reporte)} title="Descargar">
-                            <Download className="w-4 h-4 text-stone-500" />
+                          <Button variant="ghost" size="sm" onClick={() => handleDescargar(reporte)} title="Descargar PDF" disabled={descargandoId === reporte.id}>
+                            {descargandoId === reporte.id ? (
+                              <Loader2 className="w-4 h-4 text-stone-500 animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4 text-stone-500" />
+                            )}
                           </Button>
                           {(reporte.estado === 'PENDIENTE' || reporte.estado === 'ERROR') && (
                             <Button variant="ghost" size="sm" onClick={() => handleReenviar(reporte)} title="Reenviar a SENASA">

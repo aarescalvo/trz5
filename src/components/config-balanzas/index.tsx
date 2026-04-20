@@ -263,7 +263,7 @@ export function ConfigBalanzasModule({ operador }: Props) {
         codigo: puestoForm.codigo || null,
         sector: puestoForm.sector || null,
         ubicacion: puestoForm.ubicacion || null,
-        balanzaId: puestoForm.balanzaId || null,
+        balanzaId: (puestoForm.balanzaId && puestoForm.balanzaId !== 'all') ? puestoForm.balanzaId : null,
         impresoraIp: puestoForm.impresoraIp || null,
         impresoraPuerto: parseInt(puestoForm.impresoraPuerto) || 9100,
         impresoraModelo: puestoForm.impresoraModelo || null,
@@ -694,7 +694,7 @@ export function ConfigBalanzasModule({ operador }: Props) {
                 <Select value={puestoForm.balanzaId} onValueChange={(v) => setPuestoForm({...puestoForm, balanzaId: v})}>
                   <SelectTrigger><SelectValue placeholder="Sin balanza" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin balanza</SelectItem>
+                    <SelectItem value="all">Sin balanza</SelectItem>
                     {balanzas.filter(b => b.activa).map(b => (
                       <SelectItem key={b.id} value={b.id}>{b.nombre}</SelectItem>
                     ))}

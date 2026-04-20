@@ -212,6 +212,7 @@ const ROUTE_PERMISSIONS: Record<string, string> = {
   '/api/dashboard-financiero': 'puedeDashboardFinanciero',
   '/api/depositos': 'puedeStock',
   '/api/valores-indicador': 'puedeReportes',
+  '/api/filtros-reporte': 'puedeReportes',
 }
 
 function isPublicRoute(pathname: string): boolean {

@@ -403,14 +403,14 @@ export function AuditoriaOperadorModule({ operador }: Props) {
         {/* Filtros */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
           <Select 
-            value={filtros.operadorId || ''} 
-            onValueChange={(v) => setFiltros(prev => ({ ...prev, operadorId: v || undefined }))}
+            value={filtros.operadorId || 'all'} 
+            onValueChange={(v) => setFiltros(prev => ({ ...prev, operadorId: v === 'all' ? undefined : v }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Operador" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               {operadores.map(op => (
                 <SelectItem key={op.id} value={op.id}>{op.nombre}</SelectItem>
               ))}
@@ -418,14 +418,14 @@ export function AuditoriaOperadorModule({ operador }: Props) {
           </Select>
 
           <Select 
-            value={filtros.modulo || ''} 
-            onValueChange={(v) => setFiltros(prev => ({ ...prev, modulo: v || undefined }))}
+            value={filtros.modulo || 'all'} 
+            onValueChange={(v) => setFiltros(prev => ({ ...prev, modulo: v === 'all' ? undefined : v }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Módulo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               {MODULOS.map(m => (
                 <SelectItem key={m.id} value={m.id}>{m.nombre}</SelectItem>
               ))}
@@ -433,14 +433,14 @@ export function AuditoriaOperadorModule({ operador }: Props) {
           </Select>
 
           <Select 
-            value={filtros.accion || ''} 
-            onValueChange={(v) => setFiltros(prev => ({ ...prev, accion: v || undefined }))}
+            value={filtros.accion || 'all'} 
+            onValueChange={(v) => setFiltros(prev => ({ ...prev, accion: v === 'all' ? undefined : v }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Acción" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas</SelectItem>
+              <SelectItem value="all">Todas</SelectItem>
               <SelectItem value="CREATE">Crear</SelectItem>
               <SelectItem value="UPDATE">Actualizar</SelectItem>
               <SelectItem value="DELETE">Eliminar</SelectItem>

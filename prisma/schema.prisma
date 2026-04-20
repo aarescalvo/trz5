@@ -234,6 +234,7 @@ model Operador {
   c2Subproductos      C2SubproductoPesaje[]
   c2Expediciones      C2ExpedicionOrden[]
   preferenciasUI      PreferenciasUI?
+  filtrosReportes     FiltroReporte[]
 }
 
 enum RolOperador {
@@ -3470,4 +3471,21 @@ model PreferenciasUI {
   operador          Operador @relation(fields: [operadorId], references: [id], onDelete: Cascade)
 
   @@index([operadorId])
+}
+
+// ==================== FILTROS DE REPORTE (FAVORITOS) ====================
+
+model FiltroReporte {
+  id            String   @id @default(cuid())
+  operadorId    String
+  operador      Operador @relation(fields: [operadorId], references: [id], onDelete: Cascade)
+  
+  reportType    String   // 'faena' | 'stock' | 'tropas' | etc.
+  nombre        String   // User-given name: "Faena mensual bovino"
+  filtros       String   // JSON: { fechaDesde: "...", especie: "BOVINO", ... }
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([operadorId])
+  @@index([reportType])
 }

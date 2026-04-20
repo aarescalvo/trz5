@@ -64,8 +64,8 @@ export function StockInsumos({ operador }: Props) {
   const [insumos, setInsumos] = useState<Insumo[]>([])
   const [depositos, setDepositos] = useState<Deposito[]>([])
   const [loading, setLoading] = useState(true)
-  const [filtroInsumo, setFiltroInsumo] = useState<string>('')
-  const [filtroDeposito, setFiltroDeposito] = useState<string>('')
+  const [filtroInsumo, setFiltroInsumo] = useState<string>('all')
+  const [filtroDeposito, setFiltroDeposito] = useState<string>('all')
   const [soloBajoMinimo, setSoloBajoMinimo] = useState(false)
 
   useEffect(() => {
@@ -102,8 +102,8 @@ export function StockInsumos({ operador }: Props) {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      if (filtroInsumo) params.append('insumoId', filtroInsumo)
-      if (filtroDeposito) params.append('depositoId', filtroDeposito)
+      if (filtroInsumo && filtroInsumo !== 'all') params.append('insumoId', filtroInsumo)
+      if (filtroDeposito && filtroDeposito !== 'all') params.append('depositoId', filtroDeposito)
       if (soloBajoMinimo) params.append('bajoMinimo', 'true')
 
       const res = await fetch(`/api/stock-insumos?${params.toString()}`)
@@ -165,7 +165,7 @@ export function StockInsumos({ operador }: Props) {
                 <SelectValue placeholder="Todos los insumos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 {insumos.map((ins) => (
                   <SelectItem key={ins.id} value={ins.id}>
                     {ins.codigo ? `${ins.codigo} - ` : ''}{ins.nombre}
@@ -181,7 +181,7 @@ export function StockInsumos({ operador }: Props) {
                 <SelectValue placeholder="Todos los depósitos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 {depositos.map((dep) => (
                   <SelectItem key={dep.id} value={dep.id}>
                     {dep.codigo ? `${dep.codigo} - ` : ''}{dep.nombre}

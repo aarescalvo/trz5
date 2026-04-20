@@ -93,7 +93,7 @@ export function MenudenciasTropaModule({ operador }: { operador: Operador }) {
   const [saving, setSaving] = useState(false)
   
   // Estados de filtros
-  const [filtroTropa, setFiltroTropa] = useState('')
+  const [filtroTropa, setFiltroTropa] = useState('all')
   const [filtroFecha, setFiltroFecha] = useState('')
   const [searchTropa, setSearchTropa] = useState('')
   
@@ -157,7 +157,7 @@ export function MenudenciasTropaModule({ operador }: { operador: Operador }) {
   // Filtrar historial
   const historialFiltrado = useCallback(() => {
     let result = registros
-    if (filtroTropa) {
+    if (filtroTropa && filtroTropa !== 'all') {
       result = result.filter(r => r.tropaCodigo === filtroTropa)
     }
     if (filtroFecha) {
@@ -743,7 +743,7 @@ export function MenudenciasTropaModule({ operador }: { operador: Operador }) {
                       <SelectValue placeholder="Todas las tropas" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas las tropas</SelectItem>
+                      <SelectItem value="all">Todas las tropas</SelectItem>
                       {tropas.map((t) => (
                         <SelectItem key={t.id} value={t.codigo}>{t.codigo}</SelectItem>
                       ))}
@@ -762,7 +762,7 @@ export function MenudenciasTropaModule({ operador }: { operador: Operador }) {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => { setFiltroTropa(''); setFiltroFecha(''); }}
+                    onClick={() => { setFiltroTropa('all'); setFiltroFecha(''); }}
                   >
                     Limpiar filtros
                   </Button>

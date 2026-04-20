@@ -87,9 +87,9 @@ export function ObservacionesUsuario({ operador }: { operador: Operador }) {
   const [loading, setLoading] = useState(true)
   
   // Filtros
-  const [filtroCliente, setFiltroCliente] = useState<string>('')
-  const [filtroTipo, setFiltroTipo] = useState<string>('')
-  const [filtroResuelto, setFiltroResuelto] = useState<string>('')
+  const [filtroCliente, setFiltroCliente] = useState<string>('all')
+  const [filtroTipo, setFiltroTipo] = useState<string>('all')
+  const [filtroResuelto, setFiltroResuelto] = useState<string>('all')
   const [busqueda, setBusqueda] = useState('')
   
   // Diálogos
@@ -124,9 +124,9 @@ export function ObservacionesUsuario({ operador }: { operador: Operador }) {
       
       // Construir query params
       const params = new URLSearchParams()
-      if (filtroCliente) params.append('clienteId', filtroCliente)
-      if (filtroTipo) params.append('tipo', filtroTipo)
-      if (filtroResuelto) params.append('resuelto', filtroResuelto)
+      if (filtroCliente && filtroCliente !== 'all') params.append('clienteId', filtroCliente)
+      if (filtroTipo && filtroTipo !== 'all') params.append('tipo', filtroTipo)
+      if (filtroResuelto && filtroResuelto !== 'all') params.append('resuelto', filtroResuelto)
       
       // Cargar observaciones
       const resObs = await fetch(`/api/observaciones-usuario?${params.toString()}`)
@@ -350,7 +350,7 @@ export function ObservacionesUsuario({ operador }: { operador: Operador }) {
                 <SelectValue placeholder="Todos los clientes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los clientes</SelectItem>
+                <SelectItem value="all">Todos los clientes</SelectItem>
                 {clientes.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.nombre}
@@ -367,7 +367,7 @@ export function ObservacionesUsuario({ operador }: { operador: Operador }) {
                 <SelectValue placeholder="Todos los tipos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los tipos</SelectItem>
+                <SelectItem value="all">Todos los tipos</SelectItem>
                 {TIPOS_OBSERVACION.map((t) => (
                   <SelectItem key={t.value} value={t.value}>
                     {t.label}
@@ -384,7 +384,7 @@ export function ObservacionesUsuario({ operador }: { operador: Operador }) {
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="false">Pendientes</SelectItem>
                 <SelectItem value="true">Resueltos</SelectItem>
               </SelectContent>

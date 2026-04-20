@@ -61,7 +61,7 @@ export function ConfigTiposProductoModule({ operador }: { operador: Operador }) 
     codigo: '',
     nombre: '',
     tipo: 'OTRO',
-    especie: '',
+    especie: 'all',
     requiereFrio: true,
     diasConservacion: '',
     temperaturaMax: '',
@@ -108,7 +108,7 @@ export function ConfigTiposProductoModule({ operador }: { operador: Operador }) 
       codigo: '',
       nombre: '',
       tipo: 'OTRO',
-      especie: '',
+      especie: 'all',
       requiereFrio: true,
       diasConservacion: '',
       temperaturaMax: '',
@@ -124,7 +124,7 @@ export function ConfigTiposProductoModule({ operador }: { operador: Operador }) 
       codigo: tipo.codigo,
       nombre: tipo.nombre,
       tipo: tipo.tipo,
-      especie: tipo.especie || '',
+      especie: tipo.especie || 'all',
       requiereFrio: tipo.requiereFrio,
       diasConservacion: tipo.diasConservacion?.toString() || '',
       temperaturaMax: tipo.temperaturaMax?.toString() || '',
@@ -195,7 +195,7 @@ export function ConfigTiposProductoModule({ operador }: { operador: Operador }) 
         codigo: formData.codigo.toUpperCase(),
         nombre: formData.nombre,
         tipo: formData.tipo,
-        especie: formData.especie || null,
+        especie: formData.especie === 'all' ? null : formData.especie,
         requiereFrio: formData.requiereFrio,
         diasConservacion: formData.diasConservacion ? parseInt(formData.diasConservacion) : null,
         temperaturaMax: formData.temperaturaMax ? parseFloat(formData.temperaturaMax) : null,
@@ -497,7 +497,7 @@ export function ConfigTiposProductoModule({ operador }: { operador: Operador }) 
                 <Select value={formData.especie} onValueChange={(value) => setFormData({ ...formData, especie: value })}>
                   <SelectTrigger><SelectValue placeholder="Sin especificar" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin especificar</SelectItem>
+                    <SelectItem value="all">Sin especificar</SelectItem>
                     {ESPECIES.map(e => (
                       <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>
                     ))}
