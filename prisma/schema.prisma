@@ -233,6 +233,7 @@ model Operador {
   c2MovimientosDegradacion C2MovimientoDegradacion[]
   c2Subproductos      C2SubproductoPesaje[]
   c2Expediciones      C2ExpedicionOrden[]
+  preferenciasUI      PreferenciasUI?
 }
 
 enum RolOperador {
@@ -3437,4 +3438,36 @@ enum EstadoExpedicion {
   EN_PREPARACION
   DESPACHADO
   ANULADO
+}
+
+// ==================== PREFERENCIAS UI POR USUARIO ====================
+
+model PreferenciasUI {
+  id                String   @id @default(cuid())
+  operadorId        String   @unique
+
+  // Orden y configuración de módulos (JSON)
+  moduloOrden       String?  // JSON array: ["pesajeCamiones", "romaneo", ...]
+  moduloTamano      String?  // JSON object: {"pesajeCamiones": "large", ...}
+  moduloVisible     String?  // JSON object: {"pesajeCamiones": true, ...}
+  moduloColor       String?  // JSON object: {"pesajeCamiones": "bg-amber-500", ...}
+
+  // Sidebar
+  sidebarExpandido  Boolean  @default(true)
+  gruposExpandidos  String?  // JSON array: ["faena", "stock"]
+
+  // Apariencia
+  tema              String   @default("light")    // light | dark | system
+  tamanoFuente      String   @default("normal")   // small | normal | large
+  densidad          String   @default("normal")   // compact | normal | comfortable
+
+  // Navegación
+  paginaInicio      String?  // Módulo de inicio personalizado
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  operador          Operador @relation(fields: [operadorId], references: [id], onDelete: Cascade)
+
+  @@index([operadorId])
 }
