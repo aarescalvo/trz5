@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
-
-const prisma = new PrismaClient()
 
 // GET - Listar todos los puestos de trabajo
 export async function GET(request: NextRequest) {
@@ -17,7 +15,7 @@ export async function GET(request: NextRequest) {
     if (activo !== null) where.activo = activo === 'true'
     if (sector) where.sector = sector
 
-    const puestos = await prisma.puestoTrabajo.findMany({
+    const puestos = await db.puestoTrabajo.findMany({
       where,
       include: {
         balanza: {
@@ -63,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar si ya existe un puesto con el mismo código
     if (data.codigo) {
-      const existente = await prisma.puestoTrabajo.findUnique({
+      const existente = await db.puestoTrabajo.findUnique({
         where: { codigo: data.codigo }
       })
       if (existente) {
@@ -74,7 +72,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const puesto = await prisma.puestoTrabajo.create({
+    const puesto = await db.puestoTrabajo.create({
       data: {
         nombre: data.nombre,
         codigo: data.codigo || null,
@@ -133,7 +131,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const puesto = await prisma.puestoTrabajo.update({
+    const puesto = await db.puestoTrabajo.update({
       where: { id: data.id },
       data: {
         nombre: data.nombre,
@@ -195,7 +193,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    await prisma.puestoTrabajo.delete({
+    await db.puestoTrabajo.delete({
       where: { id }
     })
 

@@ -37,7 +37,7 @@ export async function PUT(
     }
 
     // Verify that visto bueno was granted
-    if (!(flujoActual as any).vistoBueno) {
+    if (!flujoActual.vistoBueno) {
       return NextResponse.json(
         { success: false, error: 'Se requiere el visto bueno del supervisor antes de subir los datos' },
         { status: 400 }
@@ -45,7 +45,7 @@ export async function PUT(
     }
 
     // Check if data was already uploaded
-    if ((flujoActual as any).datosSubidos) {
+    if (flujoActual.datosSubidos) {
       return NextResponse.json(
         { success: false, error: 'Los datos ya fueron subidos al sistema' },
         { status: 400 }
@@ -65,8 +65,8 @@ export async function PUT(
       data: {
         fechaSubida: new Date(),
         estado: 'DATOS_SUBIDOS',
-        observaciones: observaciones ? `${(flujoActual as any).observaciones || ''}\n[Subida] ${observaciones}` : (flujoActual as any).observaciones,
-      } as any,
+        observaciones: observaciones ? `${flujoActual.observaciones || ''}\n[Subida] ${observaciones}` : flujoActual.observaciones,
+      },
       include: {
         listaFaena: {
           include: {
@@ -84,7 +84,7 @@ export async function PUT(
         },
         verificador: true,
         supervisor: true,
-      } as any
+      }
     })
 
     return NextResponse.json({ 

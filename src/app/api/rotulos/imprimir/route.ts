@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { db } from '@/lib/db'
 import net from 'net'
 import { checkPermission } from '@/lib/auth-helpers'
-
-const prisma = new PrismaClient()
 
 // POST - Imprimir rótulo (ZPL, DPL o binario)
 export async function POST(request: NextRequest) {
@@ -21,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Obtener el rótulo
-    const rotulo = await prisma.rotulo.findUnique({
+    const rotulo = await db.rotulo.findUnique({
       where: { id: rotuloId }
     })
 
@@ -137,7 +135,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const rotulo = await prisma.rotulo.findUnique({
+    const rotulo = await db.rotulo.findUnique({
       where: { id: rotuloId }
     })
 

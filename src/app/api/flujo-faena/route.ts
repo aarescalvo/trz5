@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const estado = searchParams.get('estado')
     const listaFaenaId = searchParams.get('listaFaenaId')
 
-    const where: any = {}
+    const where: Record<string, unknown> = {}
     if (estado) {
       where.estado = estado
     }
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         },
         verificador: true,
         supervisor: true,
-      } as any,
+      },
       orderBy: { fecha: 'desc' }
     })
 
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         listaFaenaId,
         estado: 'INICIADO',
         observaciones,
-      } as any,
+      },
       include: {
         listaFaena: {
           include: {
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
         },
         verificador: true,
         supervisor: true,
-      } as any,
+      },
     })
 
     return NextResponse.json({ success: true, data: flujo })
@@ -145,7 +145,7 @@ export async function PUT(request: NextRequest) {
       data: {
         estado,
         observaciones,
-      } as any,
+      },
       include: {
         listaFaena: {
           include: {
@@ -163,7 +163,7 @@ export async function PUT(request: NextRequest) {
         },
         verificador: true,
         supervisor: true,
-      } as any,
+      },
     })
 
     return NextResponse.json({ success: true, data: flujo })
@@ -208,10 +208,10 @@ export async function DELETE(request: NextRequest) {
       where: { id },
       data: {
         estado: 'ANULADO',
-      } as any,
+      },
       include: {
         listaFaena: true,
-      } as any,
+      },
     })
 
     return NextResponse.json({ success: true, data: flujo })

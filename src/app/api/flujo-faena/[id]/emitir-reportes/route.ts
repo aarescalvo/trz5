@@ -42,7 +42,7 @@ export async function PUT(
     }
 
     // Verify that data was uploaded
-    if (!(flujoActual as any).datosSubidos) {
+    if (!flujoActual.datosSubidos) {
       return NextResponse.json(
         { success: false, error: 'Los datos deben ser subidos antes de emitir reportes' },
         { status: 400 }
@@ -50,7 +50,7 @@ export async function PUT(
     }
 
     // Check if reports were already issued
-    if ((flujoActual as any).reportesEmitidos) {
+    if (flujoActual.reportesEmitidos) {
       return NextResponse.json(
         { success: false, error: 'Los reportes ya fueron emitidos' },
         { status: 400 }
@@ -83,9 +83,9 @@ export async function PUT(
         fechaReportes: new Date(),
         estado: 'REPORTES_EMITIDOS',
         observaciones: observaciones 
-          ? `${(flujoActual as any).observaciones || ''}\n[Reportes] ${observaciones}` 
-          : (flujoActual as any).observaciones,
-      } as any,
+          ? `${flujoActual.observaciones || ''}\n[Reportes] ${observaciones}` 
+          : flujoActual.observaciones,
+      },
       include: {
         listaFaena: {
           include: {
@@ -103,7 +103,7 @@ export async function PUT(
         },
         verificador: true,
         supervisor: true,
-      } as any
+      }
     })
 
     return NextResponse.json({ 

@@ -48,7 +48,7 @@ export async function PUT(
     }
 
     // Check if data was verified first
-    if (!(flujoActual as any).datosVerificados) {
+    if (!flujoActual.datosVerificados) {
       return NextResponse.json(
         { success: false, error: 'Los datos deben ser verificados antes de dar el visto bueno' },
         { status: 400 }
@@ -56,7 +56,7 @@ export async function PUT(
     }
 
     // Check if already has visto bueno
-    if ((flujoActual as any).vistoBueno) {
+    if (flujoActual.vistoBueno) {
       return NextResponse.json(
         { success: false, error: 'Ya se otorgó el visto bueno para este flujo' },
         { status: 400 }
@@ -82,8 +82,8 @@ export async function PUT(
         supervisorId,
         fechaVistoBueno: aprobado ? new Date() : null,
         comentarioVistoBueno,
-        estado: nuevoEstado as any,
-      } as any,
+        estado: nuevoEstado,
+      },
       include: {
         listaFaena: {
           include: {
@@ -101,7 +101,7 @@ export async function PUT(
         },
         verificador: true,
         supervisor: true,
-      } as any
+      }
     })
 
     return NextResponse.json({ 

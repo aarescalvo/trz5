@@ -41,7 +41,7 @@ export async function PUT(
     }
 
     // Verify that reports were emitted
-    if (!(flujoActual as any).reportesEmitidos) {
+    if (!flujoActual.reportesEmitidos) {
       return NextResponse.json(
         { success: false, error: 'Los reportes deben ser emitidos antes de enviar romaneos' },
         { status: 400 }
@@ -49,7 +49,7 @@ export async function PUT(
     }
 
     // Check if romaneos were already sent
-    if ((flujoActual as any).romaneosEnviados) {
+    if (flujoActual.romaneosEnviados) {
       return NextResponse.json(
         { success: false, error: 'Los romaneos ya fueron enviados' },
         { status: 400 }
@@ -96,9 +96,9 @@ export async function PUT(
         fechaEnvioRomaneos: new Date(),
         estado: 'ROMANEOS_ENVIADOS',
         observaciones: observaciones 
-          ? `${(flujoActual as any).observaciones || ''}\n[Romaneos] ${observaciones}` 
-          : (flujoActual as any).observaciones,
-      } as any,
+          ? `${flujoActual.observaciones || ''}\n[Romaneos] ${observaciones}` 
+          : flujoActual.observaciones,
+      },
       include: {
         listaFaena: {
           include: {
@@ -116,7 +116,7 @@ export async function PUT(
         },
         verificador: true,
         supervisor: true,
-      } as any
+      }
     })
 
     return NextResponse.json({ 

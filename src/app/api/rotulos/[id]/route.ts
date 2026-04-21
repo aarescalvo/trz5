@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
-
-const prisma = new PrismaClient()
 
 // GET - Obtener un rótulo específico
 export async function GET(
@@ -14,7 +12,7 @@ export async function GET(
   try {
     const { id } = await params
 
-    const rotulo = await prisma.rotulo.findUnique({
+    const rotulo = await db.rotulo.findUnique({
       where: { id }
     })
 
@@ -47,7 +45,7 @@ export async function PUT(
     const data = await request.json()
 
     // Verificar que el rótulo existe
-    const existente = await prisma.rotulo.findUnique({
+    const existente = await db.rotulo.findUnique({
       where: { id }
     })
 
@@ -60,7 +58,7 @@ export async function PUT(
 
     // Si está cambiando el código, verificar que no exista otro
     if (data.codigo && data.codigo !== existente.codigo) {
-      const otroConCodigo = await prisma.rotulo.findUnique({
+      const otroConCodigo = await db.rotulo.findUnique({
         where: { codigo: data.codigo }
       })
       if (otroConCodigo) {
@@ -73,7 +71,7 @@ export async function PUT(
 
     // Si es default, quitar default de otros del mismo tipo
     if (data.esDefault) {
-      await prisma.rotulo.updateMany({
+      await db.rotulo.updateMany({
         where: { 
           tipo: data.tipo || existente.tipo, 
           esDefault: true,
@@ -83,7 +81,7 @@ export async function PUT(
       })
     }
 
-    const rotulo = await prisma.rotulo.update({
+    const rotulo = await db.rotulo.update({
       where: { id },
       data: {
         nombre: data.nombre,
@@ -124,7 +122,7 @@ export async function DELETE(
   try {
     const { id } = await params
 
-    const rotulo = await prisma.rotulo.findUnique({
+    const rotulo = await db.rotulo.findUnique({
       where: { id }
     })
 
@@ -135,7 +133,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.rotulo.delete({
+    await db.rotulo.delete({
       where: { id }
     })
 

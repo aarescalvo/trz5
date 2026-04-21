@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
-
-const prisma = new PrismaClient()
 
 // POST - Procesar ZPL con datos dinámicos para impresión
 export async function POST(request: NextRequest) {
@@ -20,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Obtener el rótulo
-    const rotulo = await prisma.rotulo.findUnique({
+    const rotulo = await db.rotulo.findUnique({
       where: { id: rotuloId }
     })
 
@@ -74,7 +72,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Obtener el rótulo
-    const rotulo = await prisma.rotulo.findUnique({
+    const rotulo = await db.rotulo.findUnique({
       where: { id: rotuloId }
     })
 

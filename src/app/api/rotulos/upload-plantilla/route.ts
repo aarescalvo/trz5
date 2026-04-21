@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient, TipoRotulo } from '@prisma/client'
+import { TipoRotulo } from '@prisma/client'
+import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
-
-const prisma = new PrismaClient()
 
 // POST - Subir plantilla (ZPL, DPL o archivo binario .lbl/.nlbl)
 export async function POST(request: NextRequest) {
@@ -40,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar si ya existe
-    const existente = await prisma.rotulo.findUnique({
+    const existente = await db.rotulo.findUnique({
       where: { codigo }
     })
 
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Si se establece categoría, verificar si ya hay un default para esa categoría
     let esDefault = false
     if (categoria) {
-      const existentesEnCategoria = await prisma.rotulo.findFirst({
+      const existentesEnCategoria = await db.rotulo.findFirst({
         where: { categoria, esDefault: true }
       })
       // Si no hay ningún default, este será el default
@@ -62,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear el rótulo
-    const rotulo = await prisma.rotulo.create({
+    const rotulo = await db.rotulo.create({
       data: {
         nombre,
         codigo,

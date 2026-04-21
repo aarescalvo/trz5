@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
-
-const prisma = new PrismaClient()
 
 // GET - Listar todas las balanzas
 export async function GET(request: NextRequest) {
@@ -15,7 +13,7 @@ export async function GET(request: NextRequest) {
     const where: any = {}
     if (activa !== null) where.activa = activa === 'true'
 
-    const balanzas = await prisma.balanza.findMany({
+    const balanzas = await db.balanza.findMany({
       where,
       include: {
         puestos: {
@@ -56,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar si ya existe una balanza con el mismo código
     if (data.codigo) {
-      const existente = await prisma.balanza.findUnique({
+      const existente = await db.balanza.findUnique({
         where: { codigo: data.codigo }
       })
       if (existente) {
@@ -67,7 +65,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const balanza = await prisma.balanza.create({
+    const balanza = await db.balanza.create({
       data: {
         nombre: data.nombre,
         codigo: data.codigo || null,
@@ -118,7 +116,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const balanza = await prisma.balanza.update({
+    const balanza = await db.balanza.update({
       where: { id: data.id },
       data: {
         nombre: data.nombre,
@@ -173,7 +171,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar si tiene puestos asignados
-    const puestosAsignados = await prisma.puestoTrabajo.count({
+    const puestosAsignados = await db.puestoTrabajo.count({
       where: { balanzaId: id }
     })
 
@@ -184,7 +182,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    await prisma.balanza.delete({
+    await db.balanza.delete({
       where: { id }
     })
 

@@ -6,10 +6,8 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
-
-const prisma = new PrismaClient()
 
 export async function POST(
   request: NextRequest,
@@ -31,7 +29,7 @@ export async function POST(
 
     const key = sesionKey || `${modulo}-${operadorId || 'anon'}`
 
-    const borrador = await prisma.borrador.upsert({
+    const borrador = await db.borrador.upsert({
       where: {
         modulo_sesionKey: {
           modulo,
@@ -82,7 +80,7 @@ export async function GET(
 
     const key = sesionKey || `${modulo}-${operadorId || 'anon'}`
 
-    const borrador = await prisma.borrador.findFirst({
+    const borrador = await db.borrador.findFirst({
       where: {
         modulo,
         sesionKey: key,
@@ -137,13 +135,13 @@ export async function DELETE(
     const { operadorId, sesionKey, borradorId } = body
 
     if (borradorId) {
-      await prisma.borrador.update({
+      await db.borrador.update({
         where: { id: borradorId },
         data: { estado: 'DESCARTADO' },
       })
     } else {
       const key = sesionKey || `${modulo}-${operadorId || 'anon'}`
-      await prisma.borrador.updateMany({
+      await db.borrador.updateMany({
         where: {
           modulo,
           sesionKey: key,

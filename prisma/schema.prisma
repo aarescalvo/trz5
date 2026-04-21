@@ -4561,12 +4561,28 @@ model FlujoFaena {
   estado        String     @default("INICIADO")
   fecha         DateTime   @default(now())
   observaciones String?
+
+  // Flags de progreso del flujo de faena
+  datosVerificados Boolean @default(false)
+  vistoBueno       Boolean @default(false)
+  datosSubidos     Boolean @default(false)
+  reportesEmitidos Boolean @default(false)
+  romaneosEnviados Boolean @default(false)
+
+  // Timestamps de cada etapa
+  fechaVerificacion    DateTime?
+  fechaVistoBueno      DateTime?
+  comentarioVistoBueno String?
+  fechaSubida          DateTime?
+  fechaReportes        DateTime?
+  fechaEnvioRomaneos   DateTime?
+
   verificadorId String?
-  verificador   Operador?  @relation("FlujoVerificador", fields: [verificadorId], references: [id])
+  verificador   Operador? @relation("FlujoVerificador", fields: [verificadorId], references: [id])
   supervisorId  String?
-  supervisor    Operador?  @relation("FlujoSupervisor", fields: [supervisorId], references: [id])
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  supervisor    Operador? @relation("FlujoSupervisor", fields: [supervisorId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([estado])
   @@index([fecha])

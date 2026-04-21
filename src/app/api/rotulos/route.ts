@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient, TipoRotulo } from '@prisma/client'
+import { TipoRotulo } from '@prisma/client'
+import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
-
-const prisma = new PrismaClient()
 
 // GET - Listar todos los rótulos
 export async function GET(request: NextRequest) {
@@ -23,7 +22,7 @@ export async function GET(request: NextRequest) {
     if (esDefault !== null) where.esDefault = esDefault === 'true'
     if (categoria) where.categoria = categoria
 
-    const rotulos = await prisma.rotulo.findMany({
+    const rotulos = await db.rotulo.findMany({
       where,
       orderBy: [
         { esDefault: 'desc' },
@@ -49,7 +48,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json()
 
     // Verificar si ya existe un rótulo con el mismo código
-    const existente = await prisma.rotulo.findUnique({
+    const existente = await db.rotulo.findUnique({
       where: { codigo: data.codigo }
     })
 
@@ -62,13 +61,13 @@ export async function POST(request: NextRequest) {
 
     // Si es default, quitar default de otros del mismo tipo
     if (data.esDefault) {
-      await prisma.rotulo.updateMany({
+      await db.rotulo.updateMany({
         where: { tipo: data.tipo, esDefault: true },
         data: { esDefault: false }
       })
     }
 
-    const rotulo = await prisma.rotulo.create({
+    const rotulo = await db.rotulo.create({
       data: {
         nombre: data.nombre,
         codigo: data.codigo,

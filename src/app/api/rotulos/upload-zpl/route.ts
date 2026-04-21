@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient, TipoRotulo } from '@prisma/client'
+import { TipoRotulo } from '@prisma/client'
+import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
-
-const prisma = new PrismaClient()
 
 // POST - Subir archivo ZPL y crear rótulo
 export async function POST(request: NextRequest) {
@@ -32,7 +31,7 @@ export async function POST(request: NextRequest) {
     const variablesDetectadas = detectarVariablesZPL(contenidoZPL)
 
     // Verificar si ya existe un rótulo con el mismo código
-    const existente = await prisma.rotulo.findUnique({
+    const existente = await db.rotulo.findUnique({
       where: { codigo }
     })
 
@@ -44,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear el rótulo con plantilla ZPL
-    const rotulo = await prisma.rotulo.create({
+    const rotulo = await db.rotulo.create({
       data: {
         nombre,
         codigo,

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient, TipoRotulo } from '@prisma/client'
+import { TipoRotulo } from '@prisma/client'
+import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
-
-const prisma = new PrismaClient()
 
 // ==================== PLANTILLAS ZPL (ZEBRA) ====================
 
@@ -278,12 +277,12 @@ export async function POST(request: NextRequest) {
 
     for (const rotulo of rotulos) {
       try {
-        const existente = await prisma.rotulo.findUnique({
+        const existente = await db.rotulo.findUnique({
           where: { codigo: rotulo.codigo }
         })
 
         if (existente) {
-          await (prisma as any).rotulo.update({
+          await (db as any).rotulo.update({
             where: { codigo: rotulo.codigo },
             data: {
               contenido: rotulo.contenido,
@@ -292,7 +291,7 @@ export async function POST(request: NextRequest) {
           })
           actualizados++
         } else {
-          await (prisma as any).rotulo.create({ data: rotulo })
+          await db.rotulo.create({ data: rotulo as any })
           creados++
         }
       } catch (e) {
@@ -327,14 +326,14 @@ export async function GET(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeConfiguracion')
   if (authError) return authError
   try {
-    const total = await prisma.rotulo.count()
-    const activos = await prisma.rotulo.count({ where: { activo: true } })
-    const defaults = await prisma.rotulo.count({ where: { esDefault: true } })
+    const total = await db.rotulo.count()
+    const activos = await db.rotulo.count({ where: { activo: true } })
+    const defaults = await db.rotulo.count({ where: { esDefault: true } })
 
-    const zebra = await prisma.rotulo.count({ where: { tipoImpresora: 'ZEBRA' } })
-    const datamax = await prisma.rotulo.count({ where: { tipoImpresora: 'DATAMAX' } })
+    const zebra = await db.rotulo.count({ where: { tipoImpresora: 'ZEBRA' } })
+    const datamax = await db.rotulo.count({ where: { tipoImpresora: 'DATAMAX' } })
 
-    const lista = await prisma.rotulo.findMany({
+    const lista = await db.rotulo.findMany({
       select: { codigo: true, nombre: true, tipo: true, categoria: true, tipoImpresora: true, modeloImpresora: true },
       orderBy: { codigo: 'asc' }
     })

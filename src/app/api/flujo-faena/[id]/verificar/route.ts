@@ -41,7 +41,7 @@ export async function PUT(
     }
 
     // Check if already verified
-    if ((flujoActual as any).datosVerificados) {
+    if (flujoActual.datosVerificados) {
       return NextResponse.json(
         { success: false, error: 'Los datos ya fueron verificados' },
         { status: 400 }
@@ -63,8 +63,8 @@ export async function PUT(
         verificadorId,
         fechaVerificacion: new Date(),
         estado: 'PENDIENTE_VISTO_BUENO',
-        observaciones: observaciones ? `${(flujoActual as any).observaciones || ''}\n[Verificación] ${observaciones}` : (flujoActual as any).observaciones,
-      } as any,
+        observaciones: observaciones ? `${flujoActual.observaciones || ''}\n[Verificación] ${observaciones}` : flujoActual.observaciones,
+      },
       include: {
         listaFaena: {
           include: {
@@ -82,7 +82,7 @@ export async function PUT(
         },
         verificador: true,
         supervisor: true,
-      } as any
+      }
     })
 
     return NextResponse.json({ 

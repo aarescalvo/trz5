@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient, TipoRotulo } from '@prisma/client'
+import { TipoRotulo } from '@prisma/client'
+import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
-
-const prisma = new PrismaClient()
 
 // Generar ID único
 const generarId = () => Math.random().toString(36).substr(2, 9)
@@ -42,7 +41,7 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
   try {
     // Verificar si ya existen rótulos
-    const existentes = await prisma.rotulo.count()
+    const existentes = await db.rotulo.count()
     if (existentes > 0) {
       return NextResponse.json({ 
         message: 'Ya existen rótulos en la base de datos',
@@ -139,7 +138,7 @@ export async function POST(request: NextRequest) {
     ]
 
     for (const rotulo of rotulosDefault) {
-      await (prisma as any).rotulo.create({ data: rotulo })
+      await db.rotulo.create({ data: rotulo as any })
     }
 
     return NextResponse.json({ 
