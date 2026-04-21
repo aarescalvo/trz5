@@ -58,7 +58,7 @@ install/
 powershell -c "irm bun.sh/install.ps1 | iex"
 
 # 2. Cerrar y reabrir PowerShell, luego:
-cd C:\Produccion4Z
+cd C:\TRZ5
 bun install
 copy .env.example .env
 # Editar .env con datos de PostgreSQL
@@ -180,8 +180,8 @@ Para instrucciones detalladas paso a paso, solucion de problemas y configuracion
 
 ## Soporte
 
-- **Repositorio:** https://github.com/aarescalvo/produccion4z
-- **Issues:** https://github.com/aarescalvo/produccion4z/issues
+- **Repositorio:** https://github.com/aarescalvo/trz5
+- **Issues:** https://github.com/aarescalvo/trz5/issues
 
 ---
 

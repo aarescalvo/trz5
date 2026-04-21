@@ -21,31 +21,31 @@ Este documento detalla el proceso para migrar el sistema de SQLite a PostgreSQL,
 
 ```bash
 # 1. Detener el servidor
-pm2 stop frigorifico  # o el proceso que esté corriendo
+pm2 stop trz5  # o el proceso que esté corriendo
 
 # 2. Crear carpeta de backup
-mkdir -p /opt/frigorifico/backups/pre-postgresql
+mkdir -p /opt/trz5/backups/pre-postgresql
 
 # 3. Copiar base de datos SQLite
-cp /opt/frigorifico/prisma/dev.db /opt/frigorifico/backups/pre-postgresql/dev.db.backup
+cp /opt/trz5/prisma/dev.db /opt/trz5/backups/pre-postgresql/dev.db.backup
 
 # 4. Copiar toda la carpeta del proyecto como backup
-tar -czvf /opt/frigorifico/backups/pre-postgresql/frigorifico-sqlite-v2.2.0.tar.gz \
-  /opt/frigorifico \
+tar -czvf /opt/trz5/backups/pre-postgresql/trz5-sqlite-v2.2.0.tar.gz \
+  /opt/trz5 \
   --exclude='node_modules' \
   --exclude='.next'
 
 # 5. Verificar backup
-ls -la /opt/frigorifico/backups/pre-postgresql/
+ls -la /opt/trz5/backups/pre-postgresql/
 
 # 6. Guardar versión de trabajo actual
-echo "v2.2.0-sqlite-$(date +%Y%m%d)" > /opt/frigorifico/backups/pre-postgresql/VERSION
+echo "v2.2.0-sqlite-$(date +%Y%m%d)" > /opt/trz5/backups/pre-postgresql/VERSION
 ```
 
 ### Desde GitHub (alternativa):
 ```bash
 # Clonar la última versión SQLite
-git clone https://github.com/aarescalvo/1532.git frigorifico-sqlite-v2.2.0
+git clone https://github.com/aarescalvo/trz5.git trz5-sqlite-v2.2.0
 ```
 
 ---
@@ -108,12 +108,12 @@ postgres=# \q
 ```bash
 # Crear contenedor PostgreSQL
 docker run -d \
-  --name frigorifico-postgres \
-  -e POSTGRES_USER=frigorifico \
+  --name trz5-postgres \
+  -e POSTGRES_USER=trz5 \
   -e POSTGRES_PASSWORD=tu_contraseña_segura \
-  -e POSTGRES_DB=frigorifico \
+  -e POSTGRES_DB=trz5 \
   -p 5432:5432 \
-  -v frigorifico-pgdata:/var/lib/postgresql/data \
+  -v trz5-pgdata:/var/lib/postgresql/data \
   postgres:16
 
 # Verificar
@@ -129,16 +129,16 @@ docker ps | grep postgres
 psql -U postgres
 
 -- Crear usuario para el sistema
-CREATE USER frigorifico WITH PASSWORD 'tu_contraseña_segura';
+CREATE USER trz5 WITH PASSWORD 'tu_contraseña_segura';
 
 -- Crear base de datos
-CREATE DATABASE frigorifico OWNER frigorifico;
+CREATE DATABASE trz5 OWNER trz5;
 
 -- Otorgar permisos
-GRANT ALL PRIVILEGES ON DATABASE frigorifico TO frigorifico;
+GRANT ALL PRIVILEGES ON DATABASE trz5 TO trz5;
 
 -- Conectar a la base de datos
-\c frigorifico
+\c trz5
 
 -- Extensión necesaria para UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -162,7 +162,7 @@ cp prisma/schema-postgres.prisma prisma/schema.prisma
 
 ```bash
 # Crear nuevo archivo .env
-DATABASE_URL="postgresql://frigorifico:tu_contraseña_segura@localhost:5432/frigorifico?schema=public"
+DATABASE_URL="postgresql://trz5:tu_contraseña_segura@localhost:5432/trz5?schema=public"
 ```
 
 ---
@@ -210,9 +210,9 @@ Error: P1000: Authentication failed
 
 ### Error 3: "Database doesn't exist"
 ```
-Error: P1003: Database `frigorifico` doesn't exist
+Error: P1003: Database `trz5` doesn't exist
 ```
-**Solución:** `CREATE DATABASE frigorifico;`
+**Solución:** `CREATE DATABASE trz5;`
 
 ### Error 4: "UUID extension not found"
 ```
@@ -220,7 +220,7 @@ Error: extension "uuid-ossp" must be installed
 ```
 **Solución:** 
 ```sql
-\c frigorifico
+\c trz5
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ```
 
@@ -236,7 +236,7 @@ Si hay errores en producción:
 1. **Detectas el error** → Me envías el mensaje completo
 2. **Corrijo archivos** → Modifico schema, scripts, etc.
 3. **Copias archivos** → Solo los modificados
-4. **Reinicias** → `pm2 restart frigorifico`
+4. **Reinicias** → `pm2 restart trz5`
 
 ### Archivos que puedo modificar remotamente:
 - `prisma/schema.prisma`
@@ -253,10 +253,10 @@ Si hay errores en producción:
 bun run db:test
 
 # 2. Verificar tablas
-psql -U frigorifico -d frigorifico -c "\dt"
+psql -U trz5 -d trz5 -c "\dt"
 
 # 3. Verificar datos
-psql -U frigorifico -d frigorifico -c "SELECT count(*) FROM Tropa"
+psql -U trz5 -d trz5 -c "SELECT count(*) FROM Tropa"
 
 # 4. Iniciar servidor
 bun run dev

@@ -1,275 +1,333 @@
-# 📦 Guía de Instalación - Sistema Frigorífico v2.5.0
+# Guia de Instalacion - Sistema de Gestion Frigorifica v3.17.0
 
 ## Requisitos del Sistema
 
 ### Para Desarrollo
-- **Node.js**: v20.x LTS o superior
-- **Bun**: v1.x (recomendado) o npm/yarn
-- **Sistema Operativo**: Windows 10/11, macOS, Linux
+- **Bun**: v1.1+ (recomendado como runtime y gestor de paquetes)
+- **Git**: Para clonar el repositorio
+- **Sistema Operativo**: Windows 10/11, macOS 10.15+, Linux (Ubuntu 20.04+)
+- **RAM**: 4 GB minimo (8 GB recomendado)
+- **Disco**: 10 GB libres
 
-### Para Producción (Servidor)
-- **CPU**: 4 núcleos mínimo
-- **RAM**: 8 GB mínimo (16 GB recomendado)
-- **Disco**: 100 GB mínimo SSD
+### Para Produccion (Servidor)
+- **CPU**: 4 nucleos minimo (Intel Core i5 o superior)
+- **RAM**: 8 GB minimo (16 GB recomendado)
+- **Disco**: 50 GB SSD minimo
+- **Red**: IP fija en la LAN
+- **Base de datos**: PostgreSQL 16+
 - **Sistema Operativo**: Windows Server 2019+ o Ubuntu Server 20.04+
 
 ---
 
-## Instalación Rápida (Desarrollo)
+## Instalacion Rapida (Desarrollo con SQLite)
 
-### 1. Clonar repositorio
+### 1. Instalar Bun
+```powershell
+# Windows (PowerShell como Administrador)
+powershell -c "irm bun.sh/install.ps1 | iex"
+
+# macOS / Linux
+curl -fsSL https://bun.sh/install | bash
+```
+Cierre y vuelva a abrir la terminal despues de instalar.
+
+### 2. Clonar repositorio
 ```bash
-git clone https://github.com/aarescalvo/1532.git
-cd 1532
+git clone https://github.com/aarescalvo/trz5.git
+cd trz5
 ```
 
-### 2. Instalar dependencias
+### 3. Instalar dependencias
 ```bash
 bun install
 ```
+Si hay errores, intente: `bun install --force`
 
-### 3. Configurar base de datos
+### 4. Configurar base de datos (SQLite por defecto)
 ```bash
-# Crear archivo .env
+# El archivo .env ya incluye DATABASE_URL="file:./dev.db" para SQLite
 cp .env.example .env
 
-# Sincronizar base de datos
+# Generar cliente Prisma y crear tablas
+bun run db:generate
 bun run db:push
 
-# Cargar datos de prueba
+# Cargar datos iniciales (operadores, etc.)
 bun run db:seed
 ```
 
-### 4. Iniciar servidor
+### 5. Iniciar servidor de desarrollo
 ```bash
 bun run dev
 ```
 
-### 5. Acceder al sistema
+### 6. Acceder al sistema
 Abrir navegador en: `http://localhost:3000`
 
-**Credenciales de prueba:**
-- Usuario: `admin`
-- Contraseña: `admin123`
+**Credenciales por defecto:**
+
+| Usuario | Password | PIN | Rol |
+|---------|----------|-----|-----|
+| admin | admin123 | 1234 | Administrador |
+| supervisor | super123 | 2222 | Supervisor |
+| balanza | balanza123 | 1111 | Operador |
+
+**IMPORTANTE:** Cambie estas credenciales en produccion desde Configuracion > Operadores.
 
 ---
 
-## Instalación en Producción (Windows Server)
+## Instalacion en Produccion (PostgreSQL)
 
-### Opción A: Instalación Automática
+### Opcion A: Windows (PC de Produccion)
 
-1. Descargar `install-auto.bat` del repositorio
-2. Ejecutar como Administrador
-3. Seguir las instrucciones en pantalla
-4. El instalador configura todo automáticamente:
-   - Node.js
-   - PostgreSQL
-   - Base de datos
-   - Servicio de Windows
-   - Firewall
+#### Paso 1: Instalar PostgreSQL 16
+1. Descargar desde https://www.postgresql.org/download/windows/
+2. Ejecutar instalador
+3. Puerto: 5432 (por defecto)
+4. Elegir contrasena segura para superuser (postgres)
 
-### Opción B: Instalación Manual
-
-#### Paso 1: Instalar Node.js
-```powershell
-# Descargar desde https://nodejs.org/
-# Versión LTS recomendada: v20.x
-```
-
-#### Paso 2: Instalar PostgreSQL
-```powershell
-# Descargar desde https://www.postgresql.org/download/windows/
-# Versión recomendada: PostgreSQL 16
-
-# Durante instalación:
-# - Contraseña superuser: [elegir contraseña segura]
-# - Puerto: 5432 (por defecto)
-```
-
-#### Paso 3: Crear base de datos
+#### Paso 2: Crear base de datos
 ```sql
--- Conectar a PostgreSQL
-psql -U postgres
-
--- Crear base de datos y usuario
-CREATE DATABASE solemar_frigorifico;
-CREATE USER solemar_user WITH ENCRYPTED PASSWORD 'tu_password_seguro';
-GRANT ALL PRIVILEGES ON DATABASE solemar_frigorifico TO solemar_user;
+-- Abrir pgAdmin o psql y ejecutar:
+CREATE DATABASE trz5;
 ```
 
-#### Paso 4: Configurar aplicación
-```bash
+#### Paso 3: Clonar y configurar
+```powershell
 # Clonar repositorio
-git clone https://github.com/aarescalvo/1532.git C:\SolemarFrigorifico
-cd C:\SolemarFrigorifico
+git clone https://github.com/aarescalvo/trz5.git C:\TRZ5
+cd C:\TRZ5
 
 # Instalar dependencias
 bun install
 
-# Crear archivo .env
-# Editar con los datos de tu base de datos:
-DATABASE_URL="postgresql://solemar_user:tu_password@localhost:5432/solemar_frigorifico"
+# Configurar .env
+copy .env.example .env
+notepad .env
+```
 
-# Sincronizar base de datos
+Editar `.env` con:
+```
+DATABASE_URL="postgresql://postgres:TU_PASSWORD@localhost:5432/trz5"
+```
+
+#### Paso 4: Inicializar base de datos
+```powershell
+bun run db:generate
 bun run db:push
-
-# Cargar datos iniciales
 bun run db:seed
 ```
 
-#### Paso 5: Crear servicio de Windows
+#### Paso 5: Compilar e iniciar
 ```powershell
-# Instalar NSSM (Non-Sucking Service Manager)
+bun run build
+npx next start
+```
+
+#### Paso 6: Configurar como servicio (opcional con NSSM)
+```powershell
+# Instalar NSSM
 choco install nssm
 
 # Crear servicio
-nssm install SolemarFrigorifico "C:\Program Files\nodejs\node.exe" "C:\SolemarFrigorifico\node_modules\next\dist\bin\next" "start"
-
-# Configurar servicio
-nssm set SolemarFrigorifico AppDirectory "C:\SolemarFrigorifico"
-nssm set SolemarFrigorifico DisplayName "Sistema Frigorífico Solemar"
-nssm set SolemarFrigorifico Start SERVICE_AUTO_START
-
-# Iniciar servicio
-nssm start SolemarFrigorifico
+nssm install TRZ5 "C:\Program Files\nodejs\node.exe" "C:\TRZ5\node_modules\next\dist\bin\next" "start"
+nssm set TRZ5 AppDirectory "C:\TRZ5"
+nssm set TRZ5 DisplayName "Sistema Frigorifico TRZ5"
+nssm set TRZ5 Start SERVICE_AUTO_START
+nssm start TRZ5
 ```
 
-#### Paso 6: Configurar Firewall
-```powershell
-# Abrir puerto 3000
-netsh advfirewall firewall add rule name="Solemar Frigorifico" dir=in action=allow protocol=TCP localport=3000
+### Opcion B: Linux (Ubuntu Server)
+
+#### Paso 1: Instalar dependencias
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y postgresql-16 git
+
+# Instalar Bun
+curl -fsSL https://bun.sh/install | bash
+source ~/.bashrc
+```
+
+#### Paso 2: Crear base de datos
+```bash
+sudo -u postgres psql
+```
+```sql
+CREATE DATABASE trz5;
+CREATE USER trz5_user WITH ENCRYPTED PASSWORD 'tu_password_seguro';
+GRANT ALL PRIVILEGES ON DATABASE trz5 TO trz5_user;
+\q
+```
+
+#### Paso 3: Clonar y configurar
+```bash
+git clone https://github.com/aarescalvo/trz5.git /opt/trz5
+cd /opt/trz5
+bun install
+```
+
+Editar `.env`:
+```
+DATABASE_URL="postgresql://trz5_user:tu_password_seguro@localhost:5432/trz5"
+```
+
+#### Paso 4: Inicializar
+```bash
+bun run db:generate
+bun run db:push
+bun run db:seed
+bun run build
+```
+
+#### Paso 5: Configurar servicio systemd
+```bash
+sudo nano /etc/systemd/system/trz5.service
+```
+```ini
+[Unit]
+Description=Sistema Frigorifico TRZ5
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=/opt/trz5
+ExecStart=/home/$USER/.bun/bin/bun run start
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable trz5
+sudo systemctl start trz5
+sudo systemctl status trz5
 ```
 
 ---
 
-## Configuración de Red Multi-PC
+## Acceso Multi-PC (Red Local)
 
-### Acceso desde otras PCs
+Las computadoras de la red acceden al sistema via navegador:
 
 1. **Obtener IP del servidor:**
 ```powershell
+# Windows
 ipconfig
-# Anotar la dirección IPv4 (ej: 192.168.1.100)
+# Anotar la IPv4 (ej: 192.168.1.100)
 ```
 
-2. **Configurar en PCs cliente:**
-   - Abrir navegador
-   - Acceder a: `http://192.168.1.100:3000`
-   - Crear acceso directo en escritorio
+2. **Desde PCs cliente**, abrir navegador en: `http://192.168.1.100:3000`
 
-### Configuración avanzada
+3. **Firewall** (si no responde):
+```powershell
+# Windows - abrir puerto 3000
+netsh advfirewall firewall add rule name="TRZ5" dir=in action=allow protocol=TCP localport=3000
+```
+```bash
+# Linux
+sudo ufw allow 3000/tcp
+```
 
-Ver archivo `NETWORK-CONFIG.md` para:
-- Configuración de IP estática
-- Configuración de dominio local
-- Certificados SSL
-- Proxy inverso con Nginx
+---
+
+## Scripts .bat Disponibles (Windows)
+
+| Script | Funcion |
+|--------|---------|
+| `iniciar-servidor.bat` | Inicia el servidor con doble click |
+| `detener-servidor.bat` | Detiene procesos bun/node |
+| `iniciar-servidor-silencioso.bat` | Inicia sin ventana visible |
+| `detener-servidor-silencioso.bat` | Detiene sin ventana visible |
+| `actualizar-sistema.bat` | Descarga actualizaciones desde GitHub |
+| `reiniciar-actualizado.bat` | Detiene + Actualiza + Inicia |
+| `backup-sistema.bat` | Crea backup de PostgreSQL con pg_dump |
+| `backup-database.bat` | Backup completo de base de datos |
+| `backup-version.bat` | Backup con version en nombre |
+| `restaurar-backup.bat` | Restaurar backup desde archivo |
+| `restore-backup.bat` | Restaurar backup alternativo |
+| `configurar-postgres.bat` | Asistente de configuracion PostgreSQL |
 
 ---
 
 ## Actualizaciones
 
-### Desde GitHub
+### Desde terminal
 ```bash
-cd C:\SolemarFrigorifico
+cd C:\TRZ5
 git pull origin master
 bun install
+bun run db:generate
 bun run db:push
+bun run build
+# Reiniciar servidor
 ```
 
-### Desde la interfaz web
-1. Acceder como Administrador
-2. Ir a Configuración → Admin Sistema
-3. Pestaña "Actualizaciones"
-4. Click en "Verificar actualizaciones"
-5. Click en "Actualizar"
+### Con scripts .bat
+1. Doble click en `actualizar-sistema.bat` (o `reiniciar-actualizado.bat`)
+2. El script descarga cambios, actualiza dependencias y reinicia
 
 ---
 
 ## Backups
 
-### Manual
+### Backup manual (PostgreSQL)
 ```bash
-# SQLite
-cp prisma/dev.db backups/backup_$(date +%Y%m%d).db
-
-# PostgreSQL
-pg_dump -U solemar_user solemar_frigorifico > backup_$(date +%Y%m%d).sql
+pg_dump -U postgres -d trz5 -F c -f backup_YYYYMMDD.backup
 ```
 
-### Automático
-Configurar en: Configuración → Backups Automáticos
+### Restaurar backup
+```bash
+pg_restore -U postgres -d trz5 backup_YYYYMMDD.backup
+```
 
-- Frecuencia: Diario
-- Hora: 03:00 AM (mínimo tráfico)
-- Retención: 30 días
+### Backup con scripts .bat
+- Doble click en `backup-sistema.bat`
+- Los backups se guardan en la carpeta `backups/`
+- Formato: `backup_YYYY-MM-DD_HH-MM_vX.X.X.sql`
+
+### API de backup (desde el sistema)
+El sistema incluye API accesible solo para administradores:
+- `GET /api/sistema/backup` - Listar backups
+- `POST /api/sistema/backup` - Crear backup manual
+- `PUT /api/sistema/backup` - Restaurar backup
 
 ---
 
-## Solución de Problemas
+## Solucion de Problemas
 
-### El servidor no inicia
-```bash
-# Verificar logs
-type C:\SolemarFrigorifico\dev.log
-
-# Verificar puerto
-netstat -ano | findstr :3000
-
-# Reiniciar servicio
-nssm restart SolemarFrigorifico
-```
-
-### Error de conexión a base de datos
-```bash
-# Verificar que PostgreSQL esté corriendo
-# Windows Services → postgresql-x64-16
-
-# Verificar conexión
-psql -U solemar_user -d solemar_frigorifico -h localhost
-```
-
-### Error "Cannot find module"
-```bash
-# Reinstalar dependencias
-rm -rf node_modules
-bun install
-```
+| Problema | Solucion |
+|----------|----------|
+| "bun no se reconoce" | Cierre y reabra la terminal/PowerShell |
+| "Cannot find module" | `rm -rf node_modules && bun install` |
+| "Port 3000 already in use" | Cerrar otro programa en puerto 3000 |
+| Pantalla en blanco | `rm -rf .next && bun run dev` (dev) o `bun run build` (prod) |
+| Error de conexion a BD | Verificar que PostgreSQL este corriendo y `.env` sea correcto |
+| "prisma generate" falla | Verificar DATABASE_URL en `.env` y que PostgreSQL este accesible |
+| Lint con errores | `bun run lint` para ver detalles |
 
 ---
 
-## Soporte
+## Comandos Disponibles
 
-- **Repositorio**: https://github.com/aarescalvo/1532
-- **Issues**: https://github.com/aarescalvo/1532/issues
-- **Documentación**: Ver carpeta `/docs`
+| Comando | Descripcion |
+|---------|-------------|
+| `bun run dev` | Servidor de desarrollo (puerto 3000) |
+| `bun run build` | Compilar para produccion |
+| `bun run start` | Servidor de produccion (standalone) |
+| `bun run db:generate` | Generar cliente Prisma |
+| `bun run db:push` | Sincronizar esquema con BD |
+| `bun run db:seed` | Cargar datos iniciales |
+| `bun run lint` | Verificar codigo con ESLint |
 
 ---
 
-## Changelog
+## Repositorio
 
-### v2.5.0 (Actual)
-- Arquitectura modular por dominios
-- Patrón Repository y Service
-- Bus de eventos desacoplado
-- Tipos compartidos centralizados
-- Mejor escalabilidad
-
-### v2.4.0
-- Módulo Trazabilidad
-- Reportes Avanzados con gráficos
-- Backups Automáticos programables
-
-### v2.3.0
-- Personalización de menús (drag & drop)
-- Tamaños de módulos configurables
-
-### v2.2.0
-- Rate Limiting en autenticación
-- Validación con Zod
-- Componentes de loading
-
-### v2.1.0
-- Panel de administración
-- Sistema de versiones
-- Exportación de datos
+- **GitHub**: https://github.com/aarescalvo/trz5
+- **Branch**: master
+- **Issues**: https://github.com/aarescalvo/trz5/issues

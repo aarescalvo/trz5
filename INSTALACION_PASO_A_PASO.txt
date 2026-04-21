@@ -1,51 +1,57 @@
 ================================================================================
-                    SISTEMA DE GESTIÓN FRIGORÍFICA - SOLEMAR ALIMENTARIA
-                         GUÍA DE INSTALACIÓN PASO A PASO
+                    SISTEMA DE GESTION FRIGORIFICA - TRZ5 v3.17.0
+                         GUIA DE INSTALACION PASO A PASO
 ================================================================================
 
-Este documento explica detalladamente cómo instalar el sistema desde cero.
+Este documento explica detalladamente como instalar el sistema desde cero,
+tanto en desarrollo como en produccion.
 
 ================================================================================
                               REQUISITOS PREVIOS
 ================================================================================
 
-Antes de comenzar, asegúrese de tener:
+Antes de comenzar, asegurese de tener:
 
 1. UNA COMPUTADORA CON:
    - Windows 10/11, macOS 10.15+, o Linux (Ubuntu 20.04+)
    - Al menos 4 GB de RAM (8 GB recomendado)
    - 10 GB de espacio libre en disco
-   - Conexión a internet
+   - Conexiin a internet
+
+2. PARA PRODUCCION NECESITA ADEMAS:
+   - PostgreSQL 16+ instalado
+   - IP fija en la red local
+   - 8 GB RAM (16 GB recomendado)
 
 ================================================================================
                           PASO 1: INSTALAR BUN
 ================================================================================
 
-Bun es el motor que ejecuta el sistema. Sin él, nada funcionará.
+Bun es el motor que ejecuta el sistema. Sin el, nada funcionara.
 
 EN WINDOWS:
 ----------
 1. Abra PowerShell como Administrador
-   - Haga clic derecho en el botón Inicio
+   - Haga clic derecho en el boton Inicio
    - Seleccione "Windows PowerShell (Admin)" o "Terminal (Admin)"
 
 2. Ejecute este comando:
    powershell -c "irm bun.sh/install.ps1 | iex"
 
-3. Espere a que termine la instalación (1-2 minutos)
+3. Espere a que termine la instalacion (1-2 minutos)
 
 4. Cierre y vuelva a abrir PowerShell para que los cambios surtan efecto
 
 EN MACOS:
 ---------
-1. Abra la aplicación "Terminal" (está en Aplicaciones > Utilidades)
+1. Abra la aplicacion "Terminal" (esta en Aplicaciones > Utilidades)
 
 2. Ejecute este comando:
    curl -fsSL https://bun.sh/install | bash
 
 3. Espere a que termine (1-2 minutos)
 
-4. Ejecute este comando para actualizar:
+4. Ejecute para actualizar:
    source ~/.bashrc
    (O cierre y vuelva a abrir Terminal)
 
@@ -59,11 +65,16 @@ EN LINUX (UBUNTU):
 3. Actualice con:
    source ~/.bashrc
 
+VERIFICACION:
+-------------
+Para verificar que Bun se instalo correctamente, ejecute:
+   bun --version
+
 ================================================================================
                        PASO 2: DESCARGAR EL PROYECTO
 ================================================================================
 
-OPCIÓN A: CLONAR DESDE GITHUB (RECOMENDADO)
+OPCION A: CLONAR DESDE GITHUB (RECOMENDADO)
 -------------------------------------------
 1. Abra una terminal/PowerShell
 
@@ -72,23 +83,23 @@ OPCIÓN A: CLONAR DESDE GITHUB (RECOMENDADO)
    cd ~      (Mac/Linux)
 
 3. Clone el proyecto:
-   git clone https://github.com/aarescalvo/localzai.git solemar
+   git clone https://github.com/aarescalvo/trz5.git
 
 4. Entre a la carpeta:
-   cd solemar
+   cd trz5
 
-OPCIÓN B: DESCARGAR ZIP
+OPCION B: DESCARGAR ZIP
 -----------------------
-1. Vaya a: https://github.com/aarescalvo/localzai
+1. Vaya a: https://github.com/aarescalvo/trz5
 
-2. Haga clic en el botón verde "Code"
+2. Haga clic en el boton verde "Code"
 
 3. Seleccione "Download ZIP"
 
-4. Descomprima el archivo en una carpeta llamada "solemar"
+4. Descomprima el archivo
 
 5. Abra terminal/PowerShell y vaya a esa carpeta:
-   cd ruta/a/la/carpeta/solemar
+   cd ruta/a/la/carpeta/trz5
 
 ================================================================================
                        PASO 3: INSTALAR DEPENDENCIAS
@@ -96,44 +107,86 @@ OPCIÓN B: DESCARGAR ZIP
 
 Este paso descarga todos los componentes necesarios.
 
-1. Asegúrese de estar en la carpeta del proyecto (paso anterior)
+1. Asegurese de estar en la carpeta del proyecto (paso anterior)
 
 2. Ejecute:
    bun install
 
 3. Espere a que termine (2-5 minutos dependiendo de su internet)
 
-NOTA: Si ve algún error, intente ejecutar nuevamente:
+NOTA: Si ve algun error, intente ejecutar nuevamente:
    bun install --force
 
 ================================================================================
                        PASO 4: CONFIGURAR BASE DE DATOS
 ================================================================================
 
-Este paso crea la estructura de datos y carga los usuarios iniciales.
+--- DESARROLLO (SQLite) ---
 
-1. Cree las tablas ejecutando:
+1. Configure el archivo .env:
+   copy .env.example .env    (Windows)
+   cp .env.example .env      (Mac/Linux)
+
+2. Cree las tablas ejecutando:
+   bun run db:generate
    bun run db:push
 
-2. Cargue los datos iniciales:
+3. Cargue los datos iniciales:
    bun run db:seed
 
-3. Si todo salió bien, verá un mensaje de confirmación
+--- PRODUCCION (PostgreSQL) ---
+
+1. Instale PostgreSQL 16 desde https://www.postgresql.org/download/
+
+2. Cree la base de datos:
+   - Abra pgAdmin o SQL Shell (psql)
+   - Ejecute: CREATE DATABASE trz5;
+
+3. Configure .env:
+   copy .env.example .env    (Windows)
+   cp .env.example .env      (Mac/Linux)
+
+4. Edite .env con sus datos de PostgreSQL:
+   DATABASE_URL="postgresql://postgres:TU_PASSWORD@localhost:5432/trz5"
+
+5. Genere cliente Prisma y cree tablas:
+   bun run db:generate
+   bun run db:push
+
+6. Cargue datos iniciales:
+   bun run db:seed
 
 ================================================================================
                        PASO 5: INICIAR EL SISTEMA
 ================================================================================
 
-¡El sistema está listo para usarse!
+El sistema esta listo para usarse!
 
+MODO DESARROLLO:
+---------------
 1. Ejecute:
    bun run dev
 
 2. Espere a ver el mensaje:
-   ✓ Ready in XXXms
+   - Ready in XXXms on http://localhost:3000
 
 3. Abra su navegador web y vaya a:
    http://localhost:3000
+
+MODO PRODUCCION:
+----------------
+1. Compile el sistema:
+   bun run build
+
+2. Inicie el servidor:
+   npx next start
+
+3. Abra navegador en: http://localhost:3000
+
+NOTA WINDOWS: Puede usar los scripts .bat incluidos:
+   - Doble click en "iniciar-servidor.bat" para desarrollo
+   - Para produccion: "detener-servidor.bat", luego ejecutar
+     "bun run build" y "npx next start"
 
 ================================================================================
                        CREDENCIALES DE ACCESO
@@ -141,95 +194,43 @@ Este paso crea la estructura de datos y carga los usuarios iniciales.
 
 Use estas credenciales para ingresar:
 
-┌─────────────┬────────────┬──────┬───────────────┐
-│  Usuario    │ Contraseña │ PIN  │     Rol       │
-├─────────────┼────────────┼──────┼───────────────┤
-│  admin      │ admin123   │ 1234 │ Administrador │
-│  supervisor │ super123   │ 2222 │ Supervisor    │
-│  balanza    │ balanza123 │ 1111 │ Operador      │
-└─────────────┴────────────┴──────┴───────────────┘
++-------------+------------+------+---------------+
+|  Usuario    | Contrasena | PIN  |     Rol       |
++-------------+------------+------+---------------+
+|  admin      | admin123   | 1234 | Administrador |
+|  supervisor | super123   | 2222 | Supervisor    |
+|  balanza    | balanza123 | 1111 | Operador      |
++-------------+------------+------+---------------+
 
-⚠️ IMPORTANTE: Cambie estas contraseñas en Producción:
+IMPORTANTE: Cambie estas contrasenas en Produccion:
    1. Ingrese como admin
-   2. Vaya a Configuración → Operadores
-   3. Cambie la contraseña de cada usuario
+   2. Vaya a Configuracion > Operadores
+   3. Cambie la contrasena de cada usuario
 
 ================================================================================
-                       CAMBIAR IDIOMA
+                       ACCESO DESDE OTRAS PCs
 ================================================================================
 
-El sistema soporta 3 idiomas:
+Para que otras computadoras de la red accedan al sistema:
 
-┌────────────────────────┬─────────┬────────┐
-│       Idioma           │ Código  │ Bandera│
-├────────────────────────┼─────────┼────────┤
-│ Español (Latinoamérica)│ es-Latam│   🌎   │
-│ English                │   en    │   🇬🇧  │
-│ Italiano               │   it    │   🇮🇹  │
-└────────────────────────┴─────────┴────────┘
+1. Conozca la IP del servidor:
+   ipconfig          (Windows - buscar "IPv4")
+   ifconfig          (Mac/Linux)
 
-Para cambiar el idioma:
-1. Haga clic en el botón de idioma en el menú lateral
-2. Seleccione el idioma deseado
-3. El sistema recordará su preferencia
+2. Desde las PCs cliente, abrir navegador:
+   http://192.168.1.100:3000   (reemplazar por la IP real)
 
-================================================================================
-                       SOLUCIÓN DE PROBLEMAS
-================================================================================
-
-PROBLEMA: "bun no se reconoce como comando"
-SOLUCIÓN: Cierre y vuelva a abrir la terminal/PowerShell
-
-PROBLEMA: "Cannot find module"
-SOLUCIÓN: Ejecute:
-   rm -rf node_modules
-   bun install
-
-PROBLEMA: "Database is locked"
-SOLUCIÓN: 
-   1. Detenga el servidor (Ctrl+C)
-   2. Elimine el archivo db/custom.db-journal
-   3. Reinicie con: bun run dev
-
-PROBLEMA: "Port 3000 already in use"
-SOLUCIÓN: Otro programa está usando el puerto.
-   - Windows: Abra el Administrador de Tareas y cierre otros programas
-   - Mac/Linux: Ejecute: lsof -i :3000 y luego kill -9 <PID>
-
-PROBLEMA: Pantalla en blanco
-SOLUCIÓN: 
-   rm -rf .next
-   bun run dev
-
-================================================================================
-                       RESPALDOS Y BACKUP
-================================================================================
-
-BACKUP MANUAL:
---------------
-1. Detenga el servidor
-2. Copie el archivo: db/custom.db a una ubicación segura
-3. Puede renombrarlo con la fecha: backup_2026-03-08.db
-
-RESTAURAR BACKUP:
------------------
-1. Detenga el servidor
-2. Copie su archivo de backup a: db/custom.db
-3. Reinicie el servidor
-
-BACKUP AUTOMÁTICO (desde el sistema):
-------------------------------------
-1. Ingrese como admin
-2. Vaya a Configuración → Respaldo
-3. Configure backup diario y nube (Google Drive, Dropbox, etc.)
+3. Si no responde, abrir el puerto en el firewall:
+   netsh advfirewall firewall add rule name="TRZ5" dir=in action=allow protocol=TCP localport=3000
+   (Windows PowerShell como Administrador)
 
 ================================================================================
                        ACTUALIZACIONES
 ================================================================================
 
-Para actualizar a la última versión:
+Para actualizar a la ultima version:
 
-1. Detenga el servidor (Ctrl+C)
+1. Detenga el servidor (Ctrl+C en la terminal)
 
 2. Descargue los cambios:
    git pull origin master
@@ -238,46 +239,102 @@ Para actualizar a la última versión:
    bun install
 
 4. Actualice base de datos:
+   bun run db:generate
    bun run db:push
 
-5. Reinicie el sistema:
-   bun run dev
+5. Recargue datos iniciales (solo si es necesario):
+   bun run db:seed
+
+6. Reinicie el sistema:
+   bun run dev          (desarrollo)
+   bun run build && npx next start   (produccion)
+
+EN WINDOWS CON SCRIPTS:
+   - Doble click en "actualizar-sistema.bat"
+   - O doble click en "reiniciar-actualizado.bat" (para + reinicio automatico)
 
 ================================================================================
-                       SOPORTE TÉCNICO
+                       RESPALDOS Y BACKUP
 ================================================================================
 
-Si tiene problemas:
+BACKUP MANUAL (PostgreSQL):
+---------------------------
+1. Desde terminal:
+   pg_dump -U postgres -d trz5 -F c -f backup_20260422.backup
 
-1. Repositorio: https://github.com/aarescalvo/localzai
-2. Issues: https://github.com/aarescalvo/localzai/issues
-3. Documentación adicional:
-   - INSTALL.md - Instalación detallada
-   - DEPLOY.md - Despliegue en producción
-   - MANUAL.md - Manual de usuario
-   - FLUJOS.md - Flujos de trabajo
+2. Para restaurar:
+   pg_restore -U postgres -d trz5 backup_20260422.backup
+
+CON SCRIPT .BAT (Windows):
+-------------------------
+- Doble click en "backup-sistema.bat"
+- Los backups se guardan en la carpeta backups/
+- Formato: backup_YYYY-MM-DD_HH-MM_vX.X.X.sql
+
+DESDE EL SISTEMA (navegador):
+-----------------------------
+1. Ingrese como admin
+2. Vaya a Configuracion > Sistema > Backup
+3. Puede crear y restaurar backups desde alli
 
 ================================================================================
-                       INFORMACIÓN ADICIONAL
+                       SOLUCION DE PROBLEMAS
 ================================================================================
+
+PROBLEMA: "bun no se reconoce como comando"
+SOLUCION: Cierre y vuelva a abrir la terminal/PowerShell
+
+PROBLEMA: "Cannot find module"
+SOLUCION: Ejecute:
+   rm -rf node_modules      (Mac/Linux)
+   rmdir /s /q node_modules (Windows)
+   bun install
+
+PROBLEMA: "Port 3000 already in use"
+SOLUCION: Otro programa usa el puerto 3000.
+   - Windows: netstat -ano | findstr :3000, luego taskkill /PID <numero>
+   - Mac/Linux: lsof -i :3000, luego kill -9 <PID>
+
+PROBLEMA: Pantalla en blanco
+SOLUCION:
+   rm -rf .next      (Mac/Linux)
+   rmdir /s /q .next (Windows)
+   bun run dev       (desarrollo) o bun run build (produccion)
+
+PROBLEMA: Error de conexion a base de datos
+SOLUCION:
+   1. Verificar que PostgreSQL este corriendo
+   2. Verificar que el archivo .env tenga DATABASE_URL correcto
+   3. Probar conexion: psql -U postgres -d trz5
+
+================================================================================
+                       INFORMACION DEL SISTEMA
+================================================================================
+
+VERSION: 3.17.0
+REPOSITORIO: https://github.com/aarescalvo/trz5
+RAMA: master
 
 ESTRUCTURA DE CARPETAS:
 -----------------------
-solemar/
-├── db/              # Base de datos SQLite
-├── prisma/          # Esquema de la base de datos
-├── public/          # Archivos estáticos (logo, etc.)
-├── src/
-│   ├── app/         # Páginas y APIs
-│   ├── components/  # Componentes de interfaz
-│   └── lib/         # Utilidades
-└── messages/        # Traducciones (es-Latam, en, it)
+trz5/
++-- prisma/              # Esquema de base de datos (87+ modelos)
++-- src/
+|   +-- app/             # Paginas y APIs (~314 endpoints)
+|   +-- components/      # Componentes de interfaz
+|   +-- lib/             # Utilidades (db, auth, cache, logger, etc.)
+|   +-- stores/          # Estado global (Zustand)
+|   +-- modules/         # Modulos de dominio (facturacion, trazabilidad)
+|   +-- types/           # Tipos TypeScript
++-- public/              # Archivos estaticos (logo, etc.)
++-- docs/                # Documentacion adicional
++-- backups/             # Backups de base de datos
++-- scripts/             # Scripts de utilidad
 
 PUERTO DEL SERVIDOR:
 -------------------
 El sistema usa el puerto 3000 por defecto.
-Si necesita cambiarlo, edite package.json:
-   "dev": "next dev -p 3001 ..."
+Para cambiarlo, edite la seccion "dev" en package.json.
 
 ================================================================================
                            FIN DEL DOCUMENTO

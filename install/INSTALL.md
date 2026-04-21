@@ -1,4 +1,4 @@
-# GUIA DE INSTALACION - SISTEMA FRIGORIFICO PRODUCCION4Z
+# GUIA DE INSTALACION - SISTEMA FRIGORIFICO TRZ5
 
 ## Version 3.14.1 - CICLO I + CICLO II + Facturacion
 
@@ -59,10 +59,10 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 # 2. Cerrar y reabrir PowerShell
 
 # 3. Clonar repositorio
-git clone https://github.com/aarescalvo/produccion4z.git C:\Produccion4Z
+git clone https://github.com/aarescalvo/trz5.git C:\TRZ5
 
 # 4. Instalar dependencias
-cd C:\Produccion4Z
+cd C:\TRZ5
 bun install
 
 # 5. Configurar base de datos
@@ -88,8 +88,8 @@ curl -fsSL https://bun.sh/install | bash
 source ~/.bashrc
 
 # 2. Clonar e instalar
-git clone https://github.com/aarescalvo/produccion4z.git /opt/produccion4z
-cd /opt/produccion4z
+git clone https://github.com/aarescalvo/trz5.git /opt/trz5
+cd /opt/trz5
 bun install
 
 # 3. Configurar .env con PostgreSQL
@@ -162,19 +162,19 @@ $env:Path += ";$env:USERPROFILE\.bun\bin"
 # Opcion A: Desde SQL Shell (psql)
 # Abrir "SQL Shell (psql)" desde el menu Inicio
 # Conectar con: postgres / tu_password / localhost / 5432 / postgres
-CREATE DATABASE produccion4z;
+CREATE DATABASE trz5;
 \q
 
 # Opcion B: Desde PowerShell
-psql -U postgres -c "CREATE DATABASE produccion4z;"
+psql -U postgres -c "CREATE DATABASE trz5;"
 ```
 
 ### Paso 5: Clonar el Repositorio
 
 ```powershell
 cd C:\
-git clone https://github.com/aarescalvo/produccion4z.git C:\Produccion4Z
-cd C:\Produccion4Z
+git clone https://github.com/aarescalvo/trz5.git C:\TRZ5
+cd C:\TRZ5
 ```
 
 ### Paso 6: Instalar Dependencias
@@ -203,7 +203,7 @@ notepad .env
 Contenido del `.env`:
 ```env
 # Base de datos PostgreSQL
-DATABASE_URL="postgresql://postgres:TU_PASSWORD@localhost:5432/produccion4z"
+DATABASE_URL="postgresql://postgres:TU_PASSWORD@localhost:5432/trz5"
 
 # Autenticacion
 NEXTAUTH_SECRET="generar-un-texto-aleatorio-seguro-aqui"
@@ -236,7 +236,7 @@ Get-Service -Name postgresql*
 Start-Service postgresql-x64-16
 
 # Verificar que la base de datos existe
-psql -U postgres -c "\l" | findstr produccion4z
+psql -U postgres -c "\l" | findstr trz5
 ```
 
 ### Paso 9: Compilar el Proyecto
@@ -276,17 +276,17 @@ Para que el sistema inicie automaticamente con Windows:
 # Descargar NSSM
 Invoke-WebRequest -Uri "https://nssm.cc/release/nssm-2.24.zip" -OutFile "nssm.zip"
 Expand-Archive "nssm.zip" -DestinationPath "C:\temp"
-Copy-Item "C:\temp\nssm-2.24\win64\nssm.exe" "C:\Produccion4Z\"
+Copy-Item "C:\temp\nssm-2.24\win64\nssm.exe" "C:\TRZ5\"
 
 # Crear servicio
-C:\Produccion4Z\nssm.exe install Produccion4Z "C:\Users\$env:USERNAME\.bun\bin\bun.exe" ".next\standalone\server.js"
-C:\Produccion4Z\nssm.exe set Produccion4Z AppDirectory "C:\Produccion4Z"
-C:\Produccion4Z\nssm.exe set Produccion4Z AppStdout "C:\Produccion4Z\logs\app.log"
-C:\Produccion4Z\nssm.exe set Produccion4Z AppStderr "C:\Produccion4Z\logs\error.log"
-C:\Produccion4Z\nssm.exe set Produccion4Z Start SERVICE_AUTO_START
+C:\TRZ5\nssm.exe install TRZ5 "C:\Users\$env:USERNAME\.bun\bin\bun.exe" ".next\standalone\server.js"
+C:\TRZ5\nssm.exe set TRZ5 AppDirectory "C:\TRZ5"
+C:\TRZ5\nssm.exe set TRZ5 AppStdout "C:\TRZ5\logs\app.log"
+C:\TRZ5\nssm.exe set TRZ5 AppStderr "C:\TRZ5\logs\error.log"
+C:\TRZ5\nssm.exe set TRZ5 Start SERVICE_AUTO_START
 
 # Iniciar servicio
-Start-Service Produccion4Z
+Start-Service TRZ5
 ```
 
 **Opcion B: Usando los scripts .bat incluidos**
@@ -297,7 +297,7 @@ Doble click en `iniciar-servidor.bat` para iniciar, `detener-servidor.bat` para 
 
 ```powershell
 # Crear regla de firewall para el puerto 3000
-New-NetFirewallRule -DisplayName "Produccion4Z - Puerto 3000" `
+New-NetFirewallRule -DisplayName "TRZ5 - Puerto 3000" `
     -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow
 ```
 
@@ -329,7 +329,7 @@ sudo systemctl start postgresql
 
 # Crear usuario y base de datos
 sudo -u postgres createuser -s $USER
-sudo -u postgres createdb produccion4z
+sudo -u postgres createdb trz5
 
 # Para acceder sin contrasena local (peer auth):
 sudo -u postgres psql -c "ALTER USER $USER WITH PASSWORD 'tu_password';"
@@ -338,8 +338,8 @@ sudo -u postgres psql -c "ALTER USER $USER WITH PASSWORD 'tu_password';"
 ### Paso 4: Clonar e Instalar
 
 ```bash
-git clone https://github.com/aarescalvo/produccion4z.git /opt/produccion4z
-cd /opt/produccion4z
+git clone https://github.com/aarescalvo/trz5.git /opt/trz5
+cd /opt/trz5
 bun install
 ```
 
@@ -351,7 +351,7 @@ nano .env
 ```
 
 ```env
-DATABASE_URL="postgresql://tu_usuario:tu_password@localhost:5432/produccion4z"
+DATABASE_URL="postgresql://tu_usuario:tu_password@localhost:5432/trz5"
 NEXTAUTH_SECRET="generar-un-texto-aleatorio-seguro"
 NEXTAUTH_URL="http://localhost:3000"
 NODE_ENV="production"
@@ -374,25 +374,25 @@ bun run build
 ### Paso 8: Crear Servicio del Sistema
 
 ```bash
-sudo nano /etc/systemd/system/produccion4z.service
+sudo nano /etc/systemd/system/trz5.service
 ```
 
 Contenido:
 ```ini
 [Unit]
-Description=Sistema Frigorifico Produccion4Z
+Description=Sistema Frigorifico TRZ5
 After=network.target postgresql.service
 
 [Service]
 Type=simple
-User=produccion4z
-WorkingDirectory=/opt/produccion4z
+User=trz5
+WorkingDirectory=/opt/trz5
 Environment="NODE_ENV=production"
-ExecStart=/home/produccion4z/.bun/bin/bun .next/standalone/server.js
+ExecStart=/home/trz5/.bun/bin/bun .next/standalone/server.js
 Restart=always
 RestartSec=10
-StandardOutput=append:/var/log/produccion4z/app.log
-StandardError=append:/var/log/produccion4z/error.log
+StandardOutput=append:/var/log/trz5/app.log
+StandardError=append:/var/log/trz5/error.log
 
 [Install]
 WantedBy=multi-user.target
@@ -400,9 +400,9 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable produccion4z
-sudo systemctl start produccion4z
-sudo systemctl status produccion4z
+sudo systemctl enable trz5
+sudo systemctl start trz5
+sudo systemctl status trz5
 ```
 
 ### Paso 9: Configurar Firewall
@@ -416,7 +416,7 @@ sudo ufw reload
 
 ```bash
 sudo apt install -y nginx
-sudo nano /etc/nginx/sites-available/produccion4z
+sudo nano /etc/nginx/sites-available/trz5
 ```
 
 ```nginx
@@ -436,7 +436,7 @@ server {
 ```
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/produccion4z /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/trz5 /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
@@ -475,23 +475,23 @@ log_disconnections = on
 
 ```bash
 # Crear script de backup
-cat > /opt/produccion4z/backup.sh << 'EOF'
+cat > /opt/trz5/backup.sh << 'EOF'
 #!/bin/bash
-BACKUP_DIR="/var/backups/produccion4z"
+BACKUP_DIR="/var/backups/trz5"
 mkdir -p $BACKUP_DIR
-pg_dump -U $USER -d produccion4z -F c -f $BACKUP_DIR/backup_$(date +%Y%m%d_%H%M).backup
+pg_dump -U $USER -d trz5 -F c -f $BACKUP_DIR/backup_$(date +%Y%m%d_%H%M).backup
 # Mantener solo ultimos 30 backups
 ls -t $BACKUP_DIR/*.backup | tail -n +31 | xargs -r rm
 EOF
 
-chmod +x /opt/produccion4z/backup.sh
+chmod +x /opt/trz5/backup.sh
 ```
 
 ```bash
 # Programar con cron (diario a las 2 AM)
 crontab -e
 # Agregar:
-0 2 * * * /opt/produccion4z/backup.sh
+0 2 * * * /opt/trz5/backup.sh
 ```
 
 ---
@@ -548,7 +548,7 @@ Ir a **Configuracion > Balanzas** para configurar:
 ### Windows
 
 ```powershell
-cd C:\Produccion4Z
+cd C:\TRZ5
 git pull origin master
 bun install
 bun run db:generate
@@ -560,13 +560,13 @@ bun run build
 ### Linux
 
 ```bash
-cd /opt/produccion4z
+cd /opt/trz5
 git pull origin master
 bun install
 bun run db:generate
 bun run db:push
 bun run build
-sudo systemctl restart produccion4z
+sudo systemctl restart trz5
 ```
 
 ---
@@ -577,12 +577,12 @@ sudo systemctl restart produccion4z
 
 **Windows:**
 ```powershell
-pg_dump -U postgres -d produccion4z -F c -f C:\backups\backup_20260417.backup
+pg_dump -U postgres -d trz5 -F c -f C:\backups\backup_20260417.backup
 ```
 
 **Linux:**
 ```bash
-pg_dump -U $USER -d produccion4z -F c -f /var/backups/produccion4z_$(date +%Y%m%d).backup
+pg_dump -U $USER -d trz5 -F c -f /var/backups/trz5_$(date +%Y%m%d).backup
 ```
 
 ### Restaurar Backup
@@ -590,14 +590,14 @@ pg_dump -U $USER -d produccion4z -F c -f /var/backups/produccion4z_$(date +%Y%m%
 **Windows:**
 ```powershell
 # Detener el sistema primero
-pg_restore -U postgres -d produccion4z -c C:\backups\backup_20260417.backup
+pg_restore -U postgres -d trz5 -c C:\backups\backup_20260417.backup
 ```
 
 **Linux:**
 ```bash
-sudo systemctl stop produccion4z
-pg_restore -U $USER -d produccion4z -c /var/backups/produccion4z_20260417.backup
-sudo systemctl start produccion4z
+sudo systemctl stop trz5
+pg_restore -U $USER -d trz5 -c /var/backups/trz5_20260417.backup
+sudo systemctl start trz5
 ```
 
 ### Backup desde la API
@@ -668,7 +668,7 @@ notepad .env
 
 ### Error: `Cannot find module`
 ```powershell
-cd C:\Produccion4Z
+cd C:\TRZ5
 bun install
 bun run db:generate
 bun run build
@@ -690,7 +690,7 @@ bun run build
 ### Error: `Database connection timeout`
 ```powershell
 # Verificar que PostgreSQL acepta conexiones
-psql -U postgres -d produccion4z -c "SELECT 1;"
+psql -U postgres -d trz5 -c "SELECT 1;"
 
 # Verificar pg_hba.conf para conexiones locales
 # En Windows: C:\Program Files\PostgreSQL\16\data\pg_hba.conf
@@ -698,16 +698,16 @@ psql -U postgres -d produccion4z -c "SELECT 1;"
 
 ### Error: `Permission denied` (Linux)
 ```bash
-sudo chown -R $(whoami):$(whoami) /opt/produccion4z
-sudo chown -R $(whoami):$(whoami) /var/log/produccion4z
+sudo chown -R $(whoami):$(whoami) /opt/trz5
+sudo chown -R $(whoami):$(whoami) /var/log/trz5
 ```
 
 ---
 
 ## SOPORTE TECNICO
 
-- **Repositorio:** https://github.com/aarescalvo/produccion4z
-- **Issues:** https://github.com/aarescalvo/produccion4z/issues
+- **Repositorio:** https://github.com/aarescalvo/trz5
+- **Issues:** https://github.com/aarescalvo/trz5/issues
 
 ---
 

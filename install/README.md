@@ -2,7 +2,7 @@
 
 Sistema integral de gestion para frigorificos desarrollado en Next.js 16 + TypeScript + Bun. Incluye Ciclo I (recepcion y faena), Ciclo II (desposte, empaque y expedicion), facturacion completa y reportes.
 
-**Version:** 3.14.1 | **Repositorio:** https://github.com/aarescalvo/produccion4z
+**Version:** 3.14.1 | **Repositorio:** https://github.com/aarescalvo/trz5
 
 ---
 
@@ -28,14 +28,14 @@ Sistema integral de gestion para frigorificos desarrollado en Next.js 16 + TypeS
 5. **Crear la base de datos:**
    ```powershell
    # Abrir psql (SQL Shell) y ejecutar:
-   CREATE DATABASE produccion4z;
+   CREATE DATABASE trz5;
    ```
 
 6. **Clonar e instalar el sistema:**
    ```powershell
    cd C:\
-   git clone https://github.com/aarescalvo/produccion4z.git C:\Produccion4Z
-   cd C:\Produccion4Z
+   git clone https://github.com/aarescalvo/trz5.git C:\TRZ5
+   cd C:\TRZ5
    bun install
    ```
 
@@ -47,7 +47,7 @@ Sistema integral de gestion para frigorificos desarrollado en Next.js 16 + TypeS
    
    Contenido del `.env`:
    ```env
-   DATABASE_URL="postgresql://postgres:TU_PASSWORD@localhost:5432/produccion4z"
+   DATABASE_URL="postgresql://postgres:TU_PASSWORD@localhost:5432/trz5"
    NEXTAUTH_SECRET="cualquier-texto-seguro-aqui"
    NEXTAUTH_URL="http://localhost:3000"
    ```
@@ -69,13 +69,13 @@ Sistema integral de gestion para frigorificos desarrollado en Next.js 16 + TypeS
 
 #### Opcion B: Instalador Automatico
 
-1. Descargar desde GitHub: https://github.com/aarescalvo/produccion4z
-2. Extraer el contenido del ZIP en `C:\Produccion4Z`
+1. Descargar desde GitHub: https://github.com/aarescalvo/trz5
+2. Extraer el contenido del ZIP en `C:\TRZ5`
 3. Abrir PowerShell como **Administrador**
 4. Ejecutar:
    ```powershell
    Set-ExecutionPolicy Bypass -Scope Process -Force
-   cd C:\Produccion4Z\install
+   cd C:\TRZ5\install
    .\install-windows.ps1
    ```
 5. Abrir navegador en `http://localhost:3000`
@@ -90,11 +90,11 @@ source ~/.bashrc
 # 2. Instalar PostgreSQL (Ubuntu/Debian)
 sudo apt install -y postgresql postgresql-contrib
 sudo -u postgres createuser -s $USER
-sudo -u postgres createdb produccion4z
+sudo -u postgres createdb trz5
 
 # 3. Clonar e instalar
-git clone https://github.com/aarescalvo/produccion4z.git
-cd produccion4z
+git clone https://github.com/aarescalvo/trz5.git
+cd trz5
 bun install
 
 # 4. Configurar .env
@@ -241,7 +241,7 @@ bun run start
 
 ```powershell
 # Windows
-cd C:\Produccion4Z
+cd C:\TRZ5
 git pull origin master
 bun install
 bun run db:generate
@@ -252,13 +252,13 @@ bun run build
 
 ```bash
 # Linux
-cd /opt/produccion4z
+cd /opt/trz5
 git pull origin master
 bun install
 bun run db:generate
 bun run db:push
 bun run build
-sudo systemctl restart produccion4z
+sudo systemctl restart trz5
 ```
 
 ---
@@ -267,15 +267,15 @@ sudo systemctl restart produccion4z
 
 ```powershell
 # Windows - Backup manual con pg_dump
-pg_dump -U postgres -d produccion4z -F c -f C:\backups\backup_20260417.backup
+pg_dump -U postgres -d trz5 -F c -f C:\backups\backup_20260417.backup
 
 # Windows - Restaurar
-pg_restore -U postgres -d produccion4z C:\backups\backup_20260417.backup
+pg_restore -U postgres -d trz5 C:\backups\backup_20260417.backup
 ```
 
 ```bash
 # Linux - Backup manual
-pg_dump -U $USER -d produccion4z -F c -f /var/backups/produccion4z_$(date +%Y%m%d).backup
+pg_dump -U $USER -d trz5 -F c -f /var/backups/trz5_$(date +%Y%m%d).backup
 ```
 
 Tambien disponible desde la API del sistema (solo admin):
@@ -303,7 +303,7 @@ taskkill /PID [numero] /F
 
 ### Error: "Cannot find module"
 ```powershell
-cd C:\Produccion4Z
+cd C:\TRZ5
 bun install
 bun run db:generate
 bun run build
@@ -324,8 +324,8 @@ bun run db:push
 
 ## Soporte
 
-- **Repositorio:** https://github.com/aarescalvo/produccion4z
-- **Issues:** https://github.com/aarescalvo/produccion4z/issues
+- **Repositorio:** https://github.com/aarescalvo/trz5
+- **Issues:** https://github.com/aarescalvo/trz5/issues
 
 ---
 

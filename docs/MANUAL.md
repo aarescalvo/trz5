@@ -215,7 +215,7 @@ En Configuración → Auditoría se registran todas las acciones.
 
 ## 📞 Soporte Técnico
 
-- **GitHub Issues**: https://github.com/aarescalvo/localzai/issues
+- **GitHub Issues**: https://github.com/aarescalvo/trz5/issues
 - **Administrador del sistema**: Consultar internamente
 
 ---

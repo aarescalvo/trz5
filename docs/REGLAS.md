@@ -1,11 +1,10 @@
-# 🚨 REGLAS OBLIGATORIAS - SISTEMA TRAZASOLE
+# 🚨 REGLAS OBLIGATORIAS - SISTEMA TRZ5
 
 ## 📦 Repositorios GitHub
 
 | Repositorio | Uso | Base de Datos | Remote |
 |-------------|-----|---------------|--------|
-| `1532` | Desarrollo | SQLite | `origin` |
-| `trazasole` | Producción | PostgreSQL | `trazasole` |
+| `trz5` | Desarrollo / Producción | PostgreSQL | `origin` |
 
 ## 🔄 AL FINALIZAR CADA SESIÓN
 
@@ -29,13 +28,13 @@ git add -A
 git commit -m "vX.Y.Z - Descripción del cambio"
 
 # PUSH A AMBOS REPOSITORIOS (OBLIGATORIO)
-git push origin master          # 1532 (desarrollo)
-git push trazasole master       # trazasole (producción)
+git push origin master          # trz5 (desarrollo)
+git push trz5 master       # trz5 (producción)
 ```
 
 ### 4. Verificar en GitHub
-- https://github.com/aarescalvo/1532
-- https://github.com/aarescalvo/trazasole
+- https://github.com/aarescalvo/trz5
+- https://github.com/aarescalvo/trz5
 
 ---
 
@@ -43,14 +42,14 @@ git push trazasole master       # trazasole (producción)
 
 ```bash
 # Configurar remotos (solo una vez)
-git remote add origin https://github.com/aarescalvo/1532.git
-git remote add trazasole https://github.com/aarescalvo/trazasole.git
+git remote add origin https://github.com/aarescalvo/trz5.git
+git remote add trz5 https://github.com/aarescalvo/trz5.git
 
 # Verificar remotos
 git remote -v
 
 # Push a ambos (EJECUTAR SIEMPRE)
-git push origin master && git push trazasole master
+git push origin master && git push trz5 master
 ```
 
 ---
@@ -63,8 +62,8 @@ git push origin master && git push trazasole master
 | 2 | ¿Worklog actualizado? | Editar `worklog.md` |
 | 3 | ¿Lint sin errores? | `bun run lint` |
 | 4 | ¿Commit con versión? | `git commit -m "vX.Y.Z - ..."` |
-| 5 | ¿Push a 1532? | `git push origin master` |
-| 6 | ¿Push a trazasole? | `git push trazasole master` |
+| 5 | ¿Push a trz5? | `git push origin master` |
+| 6 | ¿Push a trz5? | `git push trz5 master` |
 | 7 | ¿Verificar en GitHub? | Ambos repos actualizados |
 
 ---

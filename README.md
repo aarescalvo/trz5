@@ -2,7 +2,7 @@
 
 Sistema integral para la gestion de faena, romaneo, desposte y procesamiento de carne bovina y equina. Desarrollado para frigorificos con operacion completa de Ciclo I (recepcion y faena) y Ciclo II (desposte, empaque y expedicion).
 
-**Version:** 3.14.1 | **Ultima actualizacion:** Abril 2026
+**Version:** 3.17.0 | **Ultima actualizacion:** Abril 2026
 
 ---
 
@@ -137,8 +137,8 @@ Sistema integral para la gestion de faena, romaneo, desposte y procesamiento de 
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/aarescalvo/produccion4z.git
-cd produccion4z
+git clone https://github.com/aarescalvo/trz5.git
+cd trz5
 
 # 2. Instalar dependencias
 bun install
@@ -146,7 +146,7 @@ bun install
 # 3. Configurar variables de entorno
 cp .env.example .env
 # Editar .env con los datos de tu PostgreSQL:
-# DATABASE_URL="postgresql://usuario:password@localhost:5432/produccion4z"
+# DATABASE_URL="postgresql://usuario:password@localhost:5432/trz5"
 
 # 4. Generar cliente Prisma y crear tablas
 bun run db:generate
@@ -164,8 +164,8 @@ npx next start
 
 ```bash
 # 1. Clonar e instalar
-git clone https://github.com/aarescalvo/produccion4z.git
-cd produccion4z
+git clone https://github.com/aarescalvo/trz5.git
+cd trz5
 bun install
 
 # 2. Configurar .env (SQLite por defecto)
@@ -214,10 +214,10 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 # Descargar de https://git-scm.com
 
 # 5. Clonar repositorio
-git clone https://github.com/aarescalvo/produccion4z.git C:\Produccion4Z
+git clone https://github.com/aarescalvo/trz5.git C:\TRZ5
 
 # 6. Entrar al directorio
-cd C:\Produccion4Z
+cd C:\TRZ5
 
 # 7. Instalar dependencias
 bun install
@@ -371,10 +371,10 @@ npx next start
 
 ```bash
 # Backup manual
-pg_dump -U usuario -d produccion4z -F c -f backup_$(date +%Y%m%d).backup
+pg_dump -U usuario -d trz5 -F c -f backup_$(date +%Y%m%d).backup
 
 # Restaurar
-pg_restore -U usuario -d produccion4z backup_20260417.backup
+pg_restore -U usuario -d trz5 backup_20260417.backup
 ```
 
 ### Desde la API del sistema

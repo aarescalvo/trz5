@@ -74,3 +74,15 @@ simulacion_resultados.md
 # Seed/simulation API routes (security)
 src/app/api/seed-simulacion/
 src/app/api/seed-tropas/
+
+# Backups (large files, should not be in repo)
+backups/
+*.tar.gz
+*.zip
+
+# Upload files (user uploads, large files)
+upload/
+
+# Analysis/temp files from audits
+*-analysis.txt
+test_results.txt

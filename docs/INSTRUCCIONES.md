@@ -40,8 +40,8 @@
 
 ```powershell
 # 1. Clonar repositorio
-git clone https://github.com/aarescalvo/trazasole.git
-cd trazasole
+git clone https://github.com/aarescalvo/trz5.git
+cd trz5
 
 # 2. Instalar Bun si no está instalado
 # Ver: https://bun.sh
@@ -56,7 +56,7 @@ notepad .env
 ### Contenido del archivo .env (PostgreSQL)
 
 ```env
-DATABASE_URL="postgresql://postgres:1810@localhost:5432/trazasole?schema=public"
+DATABASE_URL="postgresql://postgres:1810@localhost:5432/trz5?schema=public"
 ```
 
 ### Continuar instalación
@@ -246,7 +246,7 @@ setlocal enabledelayedexpansion
 set PG_BIN=C:\Program Files\PostgreSQL\16\bin
 set PG_USER=postgres
 set PG_PASS=1810
-set PG_DB=trazasole
+set PG_DB=trz5
 set BACKUP_DIR=backups
 
 :: Crear carpeta de backups si no existe
@@ -323,7 +323,7 @@ taskkill /F /IM node.exe
 **Solución:**
 ```powershell
 # Ir a la carpeta del proyecto
-cd C:\trazasole
+cd C:\TRZ5
 
 # Luego ejecutar el script
 .\iniciar-servidor.bat
@@ -462,10 +462,10 @@ git commit -m "v3.1.7 - Descripción del cambio"
 git push origin master
 
 # Subir a producción
-git push trazasole master
+git push trz5 master
 
 # Subir a AMBOS (recomendado)
-git push origin master && git push trazasole master
+git push origin master && git push trz5 master
 ```
 
 ---
@@ -474,15 +474,14 @@ git push origin master && git push trazasole master
 
 | Repositorio | Uso | Base de Datos | URL |
 |-------------|-----|---------------|-----|
-| `1532` | Desarrollo | SQLite | https://github.com/aarescalvo/1532 |
-| `trazasole` | Producción | PostgreSQL | https://github.com/aarescalvo/trazasole |
+| `trz5` | Desarrollo / Producción | PostgreSQL | https://github.com/aarescalvo/trz5 |
 
 ### Configurar remotos
 
 ```powershell
 # Agregar ambos remotos
-git remote add origin https://github.com/aarescalvo/1532.git
-git remote add trazasole https://github.com/aarescalvo/trazasole.git
+git remote add origin https://github.com/aarescalvo/trz5.git
+git remote add trz5 https://github.com/aarescalvo/trz5.git
 
 # Verificar remotos
 git remote -v

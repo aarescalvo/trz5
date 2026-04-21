@@ -4531,3 +4531,79 @@ Stage Summary:
 - **APIs mejoradas** con filtros y campos nuevos ✅
 - **0 errores TypeScript** ✅
 - **Subido a GitHub** ✅
+
+---
+Task ID: AUDIT-FINAL-1
+Agent: main
+Task: Actualizar instructivos de instalacion y limpieza general post-auditoria
+
+Work Log:
+
+#### 1. Diagnostico de Pendientes
+- Escaneo completo del codebase para items restantes
+- Ruta `borrador/odulo]` verificada: FALSO POSITIVO - ya esta bien nombrada como `[modulo]`
+- 163 `as any` en src/ (calidad de codigo, no bloqueante)
+- 22 `new PrismaClient()` en scripts/seed (aceptable, son standalone)
+- 12 `modules-pending/` stubs (decision del usuario)
+- 3 TODOs de hardware (requieren hardware fisico)
+
+#### 2. Actualizacion de Documentacion (10 archivos)
+
+**README.md:**
+- Repo actualizado: `aarescalvo/produccion4z` → `aarescalvo/trz5`
+- DB name actualizado: `produccion4z` → `trz5`
+- Paths Windows actualizados: `C:\Produccion4Z` → `C:\TRZ5`
+
+**docs/INSTALL.md:**
+- Reescrito completamente para v3.17.0
+- Incluye instalacion para desarrollo (SQLite) y produccion (PostgreSQL)
+- Instruccion detallada para Windows y Linux
+- Scripts .bat documentados
+- Seccion de backups ampliada
+
+**INSTALACION_PASO_A_PASO.txt:**
+- Reescrito completamente para v3.17.0
+- Repo actualizado a `aarescalvo/trz5`
+- Instrucciones para desarrollo y produccion
+- Seccion multi-PC, actualizaciones y backups
+
+**docs/DEPLOY.md:**
+- Reescrito completamente para v3.17.0
+- Instrucciones Windows (NSSM) y Linux (systemd + Nginx)
+- Backups automaticos con cron
+- Checklist de seguridad
+
+**Otros 7 docs actualizados (refs a repos viejos):**
+- `install/README.md` - 23 reemplazos
+- `install/README_INSTALL.md` - 4 reemplazos
+- `install/INSTALL.md` - 33+ reemplazos
+- `docs/migracion/INSTRUCTIVO-MIGRACION-POSTGRESQL.md` - 25+ reemplazos
+- `docs/INSTRUCCIONES.md` - 12 reemplazos
+- `docs/REGLAS.md` - 15 reemplazos
+- `docs/MANUAL.md` - 1 reemplazo
+
+#### 3. Limpieza del Repositorio
+
+**Archivos de analisis eliminados del raiz (6):**
+- console-analysis.txt (10KB)
+- dead-code-analysis.txt (20KB)
+- deps-analysis.txt (10KB)
+- todos-analysis.txt (7KB)
+- xlsx-migration-plan.txt (22KB)
+- test_results.txt (1KB)
+
+**Archivos grandes removidos del tracking de git (~27 MB):**
+- `backups/` (13 MB - backup SQL + proyecto completo)
+- `proyecto-trazabilidad.zip` (8 MB)
+- `upload/` (6 MB - Excel, PDF, imagenes)
+
+**.gitignore actualizado:**
+- Agregado `backups/`, `*.tar.gz`, `*.zip`
+- Agregado `upload/`
+- Agregado `*-analysis.txt`, `test_results.txt`
+
+Stage Summary:
+- **10 archivos de documentacion actualizados** a v3.17.0 y repo correcto
+- **~27 MB removidos del tracking de git** (backups, zip, uploads)
+- **6 archivos temporales eliminados**
+- **.gitignore mejorado** para evitar subir archivos grandes
