@@ -1,4 +1,6 @@
 import { db } from './db'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.moneda')
 
 // Tipos
 export interface MonedaInfo {
@@ -406,7 +408,7 @@ export async function seedMonedasDefault(): Promise<void> {
       ],
     })
 
-    console.log('Monedas por defecto creadas: ARS, USD, EUR')
+    log.info('Monedas por defecto creadas: ARS, USD, EUR')
   }
 }
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.lista-faena.garrones.route')
 
 // GET - Obtener garrones ordenados con tropa asignada
 // Cada garrón tiene una tropa asignada según el orden de la lista de faena
@@ -8,7 +10,7 @@ export async function GET(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeListaFaena')
   if (authError) return authError
   try {
-    console.log('[garrones-lista] Buscando lista de faena activa...')
+    log.info('[garrones-lista] Buscando lista de faena activa...')
 
     // Buscar la lista de faena más reciente con tropas asignadas
     const listaFaena = await db.listaFaena.findFirst({
@@ -119,7 +121,7 @@ export async function GET(request: NextRequest) {
     const proximoPendiente = garrones.find(g => !g.asignado)
     const proximoGarron = proximoPendiente?.garron || garrones.length + 1
 
-    console.log('[garrones-lista] Total garrones:', garrones.length, 'Asignados:', totalAsignados, 'Próximo:', proximoGarron)
+    log.info(`'[garrones-lista] Total garrones:' garrones.length 'Asignados:' totalAsignados 'Próximo:' proximoGarron`)
 
     return NextResponse.json({
       success: true,

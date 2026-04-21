@@ -1,6 +1,8 @@
 // Hook para manejo de estado offline/online
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.useOffline')
 
 interface OfflineState {
   isOnline: boolean
@@ -25,7 +27,7 @@ export function useOffline(): UseOfflineReturn {
   // Detectar cambios de conexión
   useEffect(() => {
     const handleOnline = () => {
-      console.log('[Offline] Conexión recuperada')
+      log.info('[Offline] Conexión recuperada')
       setState(prev => ({ ...prev, isOnline: true }))
       toast.success('Conexión recuperada', {
         description: 'Sincronizando datos pendientes...'
@@ -35,7 +37,7 @@ export function useOffline(): UseOfflineReturn {
     }
 
     const handleOffline = () => {
-      console.log('[Offline] Sin conexión')
+      log.info('[Offline] Sin conexión')
       setState(prev => ({ ...prev, isOnline: false }))
       toast.warning('Sin conexión', {
         description: 'Los datos se guardarán localmente'
@@ -82,7 +84,7 @@ export function useOffline(): UseOfflineReturn {
         return
       }
 
-      console.log(`[Offline] Sincronizando ${pendientes.length} romaneos pendientes`)
+      log.info(`[Offline] Sincronizando ${pendientes.length} romaneos pendientes`)
 
       // Enviar cada romaneo pendiente al servidor
       for (const romaneo of pendientes) {
@@ -95,7 +97,7 @@ export function useOffline(): UseOfflineReturn {
 
           if (response.ok) {
             await markRomaneoSincronizado(romaneo.id)
-            console.log('[Offline] Romaneo sincronizado:', romaneo.id)
+            log.info(`[Offline] Romaneo sincronizado: ${romaneo.id}`)
           } else {
             console.error('[Offline] Error al sincronizar romaneo:', romaneo.id)
           }

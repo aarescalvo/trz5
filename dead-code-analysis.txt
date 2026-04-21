@@ -1,0 +1,290 @@
+================================================================================
+DEAD CODE ANALYSIS - produccion4z
+Generated: Systematic import reference scan across src/
+Method: For each file, searched for actual import statements referencing it
+         across all .ts/.tsx files in src/ (excluding self-references).
+================================================================================
+
+=== DEAD ZUSTAND STORES ===
+(12 stores + 1 barrel file never imported anywhere outside stores/)
+
+src/stores/movimientoCamarasStore.ts  - Only re-exported from barrel (stores/index.ts), which itself is never imported
+src/stores/ciclo2Stores.ts            - Only re-exported from barrel; exports useCuarteoStore, useIngresoDespostadaStore, useMovimientosDespostadaStore, useCortesDespostadaStore, useEmpaqueStore
+src/stores/romaneoStore.ts            - Only re-exported from barrel; exports useRomaneoStore
+src/stores/pesajeCamionesStore.ts     - Only re-exported from barrel; exports usePesajeCamionesStore
+src/stores/vbRomaneoStore.ts          - Only re-exported from barrel; exports useVBRomaneoStore
+src/stores/subproductosStores.ts      - Only re-exported from barrel; exports useMenudenciasStore, useCuerosStore, useRenderingStore, useFacturacionStore
+src/stores/listaFaenaStore.ts         - Only re-exported from barrel; exports useListaFaenaStore
+src/stores/expedicionStore.ts         - Only re-exported from barrel; exports useExpedicionStore
+src/stores/pesajeIndividualStore.ts   - Only re-exported from barrel; exports usePesajeIndividualStore
+src/stores/movimientoHaciendaStore.ts - Only re-exported from barrel; exports useMovimientoHaciendaStore
+src/stores/ingresoCajonStore.ts       - Only re-exported from barrel; exports useIngresoCajonStore
+src/stores/index.ts                   - Barrel file re-exporting all stores; never imported by any component, module, or page
+
+ALIVE stores (2):
+  src/stores/appStore.ts      - Imported by ResilienceProvider.tsx, hooks/useUnsavedChanges.ts
+  src/stores/offlineStore.ts  - Imported by ResilienceProvider.tsx, resilientFetch.ts, app/page.tsx, hooks/useOfflineInit.ts
+
+NOTE: The barrel file (stores/index.ts) re-exports all 12 dead stores, but
+      since nothing imports the barrel, the stores are unreachable. The 2 alive
+      stores are imported directly by their full path.
+
+=== DEAD COMPONENTS ===
+
+--- Top-level dead components ---
+src/components/DraftRecoveryBanner.tsx        - Never imported anywhere
+src/components/email-config.tsx              - Never imported anywhere
+src/components/menu-editor.tsx               - Never imported anywhere
+src/components/reportes-avanzados.tsx        - Only referenced by modules/reportes/index.ts barrel (which is never imported)
+src/components/vista-previa-rotulo.tsx       - Never imported anywhere
+src/components/rindes-tropa.tsx              - Shadowed by rindes-tropa/index.tsx (both export RindesTropaModule; page.tsx imports from the directory)
+
+--- Dead module files (only referenced from never-imported module barrels) ---
+src/components/dashboard-financiero/index.tsx   - Only from modules/administracion/index.ts barrel (dead)
+src/components/autorizaciones-reporte/index.tsx  - Only from modules/administracion/index.ts barrel (dead)
+src/components/integracion-balanzas/index.tsx   - Only from modules/administracion/index.ts barrel (dead)
+src/components/config-impresoras/index.tsx       - Only from modules/configuracion/index.ts barrel (dead)
+src/components/config-terminales/index.tsx       - Only from modules/configuracion/index.ts barrel (dead)
+src/components/config-backups.tsx               - Only from modules/configuracion/index.ts barrel (dead)
+src/components/trazabilidad-module.tsx          - Only from modules/trazabilidad/index.ts barrel (dead)
+src/components/cumplimiento-regulatorio/ccir.tsx           - Only from modules/cumplimiento/index.ts barrel (dead)
+src/components/cumplimiento-regulatorio/declaracion-jurada.tsx - Only from modules/cumplimiento/index.ts barrel (dead)
+src/components/cumplimiento-regulatorio/index.tsx           - Never imported directly
+
+--- Dead component directories (entire directories never imported) ---
+src/components/alertas-vencimiento/index.tsx    - Never imported
+src/components/asignacion-garrones/index.tsx   - Never imported
+src/components/auditoria-module.tsx            - Never imported (auditoria/index.tsx is alive via configuracion/auditoria.tsx)
+src/components/balances/balances-faena.tsx     - Never imported
+src/components/balances/indicadores.tsx        - Never imported
+src/components/balances/rendimientos-historico.tsx - Never imported
+src/components/balances/index.tsx              - Never imported
+src/components/barcode/barcode-generator.tsx   - Never imported
+src/components/barcode/barcode-preview.tsx     - Never imported
+src/components/barcode/barcode-print.tsx       - Never imported
+src/components/barcode/index.ts                - Never imported
+src/components/cierre-faena/index.tsx          - Never imported
+src/components/conciliacion/conciliacion-automatica.tsx - Never imported
+src/components/conciliacion/importar-extracto.tsx      - Never imported
+src/components/conciliacion/index.tsx                  - Never imported
+src/components/conciliacion/resolucion-diferencias.tsx  - Never imported
+src/components/despacho/index.tsx              - Never imported (different from alive despachos/)
+src/components/empaque/index.tsx               - Alive via produccion-unificada/index.tsx cross-import
+src/components/fifo/index.tsx                  - Never imported
+src/components/fifo-stock/index.tsx            - Never imported
+src/components/flujo-faena/flujo-faena-detail.tsx      - Never imported
+src/components/flujo-faena/flujo-faena-list.tsx        - Never imported
+src/components/flujo-faena/flujo-faena-timeline.tsx    - Never imported
+src/components/flujo-faena/supervisor-approval-dialog.tsx - Never imported
+src/components/ordenes-compra/detalle-orden.tsx - Never imported
+src/components/ordenes-compra/nueva-orden.tsx   - Never imported
+src/components/ordenes-compra/recepcion.tsx     - Never imported
+src/components/ordenes-compra/seguimiento.tsx   - Never imported
+src/components/ordenes-compra/index.tsx         - Never imported
+src/components/pagos/pagos-proveedores.tsx      - Never imported
+src/components/pagos/cobranzas-clientes.tsx     - Never imported
+src/components/pagos/conciliaciones.tsx         - Never imported
+src/components/pagos/cuentas-corrientes.tsx    - Never imported
+src/components/pagos/index.tsx                 - Never imported
+src/components/config-plantillas/index.tsx     - Never imported
+src/components/configuracion-rotulos/index.tsx - Never imported (different from alive config-rotulos/)
+src/components/dashboard-ejecutivo/alertas-panel.tsx    - Never imported
+src/components/dashboard-ejecutivo/graficos-produccion.tsx - Never imported
+src/components/dashboard-ejecutivo/kpi-cards.tsx        - Never imported
+src/components/dashboard-ejecutivo/index.tsx    - Never imported
+src/components/dashboard/configurable-dashboard.tsx     - Never imported
+src/components/historial-actividad/index.tsx   - Never imported
+src/components/ingreso-faena/index.tsx          - Never imported
+src/components/ingreso-terceros/index.tsx       - Never imported
+src/components/menudencias-tropa/index.tsx      - Never imported
+src/components/movimientos-camara/index.tsx     - Never imported
+src/components/reportes-gerenciales/reporte-insumos.tsx        - Never imported
+src/components/reportes-gerenciales/reporte-rendimientos.tsx    - Never imported
+src/components/reportes-gerenciales/reporte-faena.tsx          - Never imported
+src/components/reportes-gerenciales/reporte-costos.tsx         - Never imported
+src/components/reportes-gerenciales/reporte-cuentas-corrientes.tsx - Never imported
+src/components/reportes-gerenciales/reporte-cajas.tsx          - Never imported
+src/components/reportes-gerenciales/index.tsx                  - Never imported
+src/components/sigica/sigica-envios-list.tsx    - Never imported
+src/components/sigica/sigica-config.tsx        - Never imported
+src/components/sigica/sigica-status-card.tsx   - Never imported
+src/components/sigica/enviar-romaneos-dialog.tsx - Never imported
+src/components/stock-cuartos/index.tsx          - Never imported
+src/components/stock/fifo-sugerencias.tsx       - Never imported
+src/components/rendimientos-despostada/index.tsx - Never imported
+src/components/grasa-dressing/index.tsx        - Never imported
+src/components/vb-faena/index.tsx              - Never imported
+src/components/providers/language-selector.tsx  - Never imported
+src/components/providers/locale-provider.tsx    - Never imported
+src/components/puente-web/puente-web-status.tsx - Never imported
+src/components/pwa/service-worker-registration.tsx - Never imported
+src/components/placeholders/placeholder-module.tsx - Never imported
+
+--- Dead sub-files within alive component directories ---
+src/components/pesaje-camiones/index.tsx          - Not imported (module uses pesaje-camiones-module.tsx directly)
+src/components/pesaje-camiones/types.ts           - Not imported by anything
+src/components/pesaje-camiones/usePesajeCamiones.ts - Not imported by anything
+src/components/pesaje-individual/index.tsx        - Not imported (module uses pesaje-individual-module.tsx directly)
+src/components/pesaje-individual/ConfirmarTiposDialog.tsx - Not imported
+src/components/pesaje-individual/TiposProgress.tsx      - Not imported
+src/components/pesaje-individual/constants.ts            - Not imported
+src/components/pesaje-individual/types.ts                - Not imported
+src/components/pesaje-individual/usePesajeIndividual.ts  - Not imported
+src/components/pesaje-individual/rotuloPrint.ts          - Not imported
+src/components/movimiento-hacienda/constants.ts  - Not imported
+src/components/movimiento-hacienda/types.ts      - Not imported
+src/components/config-rotulos/editor-drag-drop.tsx - Not imported
+src/components/config-rotulos/importador-zpl.tsx    - Not imported
+src/components/config-rotulos/preview-zpl.tsx       - Not imported
+
+--- Dead reportes sub-components (standalone reports never imported by reportes/index.tsx) ---
+src/components/reportes/reporte-faena.tsx          - Not imported; reportes/index.tsx has inline faena report
+src/components/reportes/reporte-stock.tsx          - Not imported
+src/components/reportes/reporte-tropas.tsx         - Not imported
+src/components/reportes/reporte-rendimiento.tsx    - Not imported
+src/components/reportes/reporte-pesajes.tsx        - Not imported
+src/components/reportes/reportes-documentos.tsx    - Not imported by reportes/index.tsx
+
+--- Dead configuracion sub-components (not imported by configuracion/index.tsx) ---
+src/components/configuracion/articulos.tsx          - Not imported by configuracion/index.tsx
+src/components/configuracion/balanzas.tsx            - Not imported
+src/components/configuracion/cajas.tsx               - Not imported
+src/components/configuracion/categorias-insumos.tsx - Not imported
+src/components/configuracion/cheques.tsx             - Not imported
+src/components/configuracion/clientes.tsx            - Imported by configuracion/index.tsx -> ALIVE
+src/components/configuracion/codigo-barras-config.tsx - Not imported
+src/components/configuracion/codigos-articulo.tsx    - Not imported
+src/components/configuracion/condiciones-embalaje.tsx - Not imported
+src/components/configuracion/corrales.tsx            - Imported by configuracion/index.tsx -> ALIVE
+src/components/configuracion/cotizaciones-config.tsx - Not imported
+src/components/configuracion/cuentas-bancarias.tsx  - Not imported
+src/components/configuracion/depositos.tsx           - Not imported
+src/components/configuracion/formas-pago.tsx         - Not imported
+src/components/configuracion/icons.tsx               - Not imported
+src/components/configuracion/impresoras.tsx          - Not imported
+src/components/configuracion/insumos-config.tsx      - Not imported
+src/components/configuracion/insumos.tsx             - Not imported
+src/components/configuracion/monedas-config.tsx      - Not imported
+src/components/configuracion/movimientos-caja.tsx    - Not imported
+src/components/configuracion/movimientos-insumos.tsx - Not imported
+src/components/configuracion/observaciones-usuario.tsx - Not imported
+src/components/configuracion/operadores.tsx         - Imported by configuracion/index.tsx -> ALIVE
+src/components/configuracion/personalizacion-ui.tsx - Not imported
+src/components/configuracion/precios-servicio.tsx   - Imported by configuracion/index.tsx -> ALIVE
+src/components/configuracion/productores.tsx        - Not imported
+src/components/configuracion/productos.tsx          - Imported by configuracion/index.tsx -> ALIVE
+src/components/configuracion/proveedores.tsx        - Not imported
+src/components/configuracion/razas.tsx              - Not imported
+src/components/configuracion/seguridad.tsx          - Not imported
+src/components/configuracion/stock-insumos.tsx       - Not imported
+src/components/configuracion/subproductos-config.tsx - Not imported
+src/components/configuracion/subproductos.tsx       - Not imported
+src/components/configuracion/terminales.tsx         - Not imported
+src/components/configuracion/tipificadores.tsx      - Imported by configuracion/index.tsx -> ALIVE
+src/components/configuracion/tipos-producto.tsx     - Not imported
+src/components/configuracion/tipos-servicio.tsx     - Imported by configuracion/index.tsx -> ALIVE
+src/components/configuracion/tipos-trabajo.tsx      - Not imported
+src/components/configuracion/transportistas.tsx     - Imported by configuracion/index.tsx -> ALIVE
+src/components/configuracion/usuarios-faena.tsx     - Not imported
+src/components/configuracion/usuarios.tsx           - Not imported
+src/components/configuracion/afip-config.tsx        - Not imported
+src/components/configuracion/backup-config.tsx      - Not imported
+src/components/configuracion/arqueos-caja.tsx       - Not imported
+src/components/configuracion/auditoria.tsx          - Not imported by configuracion/index.tsx (imports auditoria/index.tsx instead)
+
+NOTE on configuracion/auditoria.tsx: It imports auditoria/index.tsx, making
+      auditoria/index.tsx alive through that reference. But configuracion/auditoria.tsx
+      itself is not used by configuracion/index.tsx, so it's dead.
+
+=== DEAD LIB FILES ===
+
+src/lib/actividad.ts               - Activity logging functions (registrarActividad, registrarLogin, etc.); never imported
+src/lib/afip-config.ts              - AFIP constants/config (AFIP_URLS, TIPOS_COMPROBANTE, etc.); never imported
+src/lib/afip-index.ts               - AFIP barrel file re-exporting afip-config, afip-wsaa, afip-wsfe, afip-certificates; never imported
+src/lib/audit-middleware.ts         - Audit logging functions (logAudit, auditCreate, auditUpdate, etc.); never imported
+src/lib/db-write.ts                 - Re-exports db from lib/db.ts; never imported (everything uses lib/db.ts directly)
+src/lib/offline-db.ts               - Standalone offline IndexedDB helper; superseded by lib/offline/index.ts
+src/lib/offline-romaneo-db.ts       - IndexedDB helper for offline romaneo sync; never imported
+src/lib/pdf/planilla-01.ts          - Planilla 01 PDF generation; never imported (pesaje-individual/planilla01Print.ts used instead)
+src/lib/print-dpl.ts                - DPL/ZPL label printing service; never imported
+src/lib/resilientFetch.ts           - Fetch wrapper with offline queuing; never imported (offlineStore used directly)
+src/lib/security-notifications.ts  - Security alert functions (notifyNewIpLogin, isIpBlocked, etc.); never imported
+src/lib/useOffline.tsx              - Duplicate useOffline hook at lib root (lib/offline/useOffline.ts is the alive version)
+src/lib/validations.ts              - Zod validation schemas (LoginSchema, TropaCreateSchema, etc.); never imported
+
+ALIVE lib files:
+  src/lib/db.ts                     - Heavily used across API routes
+  src/lib/utils.ts                  - Core utility (cn, formatters)
+  src/lib/audit.ts                  - Audit functions used by API routes
+  src/lib/auth-helpers.ts           - Auth utilities used by API routes
+  src/lib/security.ts               - Security utilities used by API routes
+  src/lib/jwt.ts                    - JWT handling used by API routes
+  src/lib/cache.ts                  - Cache utilities
+  src/lib/moneda.ts                 - Currency formatting
+  src/lib/afip.ts                   - AFIP integration used by API routes
+  src/lib/afip-wsaa.ts              - AFIP WSAA auth
+  src/lib/afip-wsfe.ts              - AFIP WSFE invoicing
+  src/lib/afip-certificates.ts      - AFIP certificate management
+  src/lib/barcode.ts                - Barcode generation
+  src/lib/codigo-ean128.ts          - EAN-128 barcode
+  src/lib/export-pdf.ts             - PDF export
+  src/lib/export-pdf-charts.ts      - PDF with charts
+  src/lib/export-excel.ts           - Excel export
+  src/lib/chart-to-image.ts         - Chart to image conversion
+  src/lib/reportes-export.ts        - Report export utilities
+  src/lib/reportes-api.ts           - Report API helper
+  src/lib/sigica.ts                 - SIGICA integration
+  src/lib/puente-web.ts             - Puente Web integration
+  src/lib/backup.ts                 - Backup utilities
+  src/lib/backup-scheduler.ts       - Backup scheduler
+  src/lib/rate-limit.ts             - Rate limiting
+  src/lib/logger.ts                 - Logging utility
+  src/lib/senasa-pdf-generator.ts   - SENASA PDF generation
+  src/lib/pdf/romaneo-tropa.ts      - Romaneo PDF generation (imported by API route)
+  src/lib/offline/index.ts          - Offline manager (imported by ResilienceProvider)
+  src/lib/offline/components.tsx    - Offline UI components (imported by ResilienceProvider)
+  src/lib/offline/useOffline.ts     - useOffline hook (imported by offline/components.tsx)
+  src/lib/crypto.ts                 - Crypto utilities
+
+--- Dead module barrel files (re-export components but never imported) ---
+src/modules/index.ts                           - Top-level module barrel; never imported
+src/modules/administracion/index.ts           - Never imported
+src/modules/calidad/index.ts                   - Never imported
+src/modules/ciclo2/index.ts                    - Never imported
+src/modules/configuracion/index.ts             - Never imported
+src/modules/cumplimiento/index.ts              - Never imported
+src/modules/facturacion/index.ts               - Never imported
+src/modules/faena/index.ts                     - Never imported
+src/modules/pesaje/index.ts                    - Never imported
+src/modules/reportes/index.ts                  - Never imported
+src/modules/stock/index.ts                     - Never imported
+src/modules/subproductos/index.ts              - Never imported
+src/modules/trazabilidad/index.ts              - Never imported
+src/modules/tropas/index.ts                    - Never imported
+
+NOTE: Module barrel files were intended as an abstraction layer but components
+      are imported directly by page.tsx and layout.tsx, making all barrels dead.
+
+=== SUMMARY ===
+Dead Stores:                12 + 1 barrel = 13 files
+Dead Components:            ~110+ files across ~35 directories
+Dead Lib Files:             13 files
+Dead Module Barrels:        14 files
+Total dead files found:     ~150 files
+
+=== NEXT ACTIONS ===
+1. HIGH PRIORITY: Remove the 12 dead Zustand stores + barrel (13 files)
+   These are the clearest dead code with no external references.
+   
+2. MEDIUM PRIORITY: Remove dead component directories
+   Start with entirely dead directories (balances, barcode, conciliacion,
+   flujo-faena, ordenes-compra, pagos, sigica, etc.)
+   
+3. LOW PRIORITY: Review dead lib files carefully
+   Some (like validations.ts, actividad.ts, audit-middleware.ts) may have been
+   intended for future use. Verify with team before removing.
+   
+4. CLEANUP: Remove dead module barrel files (modules/*/index.ts + modules/index.ts)
+   These add confusion since they re-export alive components but are never used.
+
+================================================================================

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.admin.migrar-estados.route')
 
 // GET - Ver estado de tropas y animales
 export async function GET(request: NextRequest) {
@@ -81,7 +83,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log(`[MIGRAR-ESTADOS] Encontradas ${tropasConPesajeCompleto.length} tropas con pesaje completo`)
+    log.info(`[MIGRAR-ESTADOS] Encontradas ${tropasConPesajeCompleto.length} tropas con pesaje completo`)
 
     let totalAnimalesActualizados = 0
     const tropasActualizadas: string[] = []
@@ -104,7 +106,7 @@ export async function POST(request: NextRequest) {
 
       totalAnimalesActualizados += result.count
       tropasActualizadas.push(`${tropa.codigo} (${result.count} animales)`)
-      console.log(`[MIGRAR-ESTADOS] Tropa ${tropa.codigo}: ${result.count} animales actualizados`)
+      log.info(`[MIGRAR-ESTADOS] Tropa ${tropa.codigo}: ${result.count} animales actualizados`)
     }
 
     return NextResponse.json({

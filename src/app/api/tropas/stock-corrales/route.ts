@@ -3,6 +3,8 @@ import { db } from '@/lib/db'
 
 // GET - Obtener stock de animales por tropa y corral
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.tropas.stock-corrales.route')
 export async function GET(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeMovimientoHacienda')
   if (authError) return authError
@@ -16,7 +18,7 @@ export async function GET(request: NextRequest) {
       ? estadoParam.split(',').map(e => e.trim()).filter(e => e)
       : ['RECIBIDO', 'PESADO']
 
-    console.log('[stock-corrales] Buscando animales con estados:', estados)
+    log.info(`'[stock-corrales] Buscando animales con estados:' estados`)
 
     // Obtener todos los animales agrupados por tropa y corral
     const animales = await db.animal.findMany({
@@ -34,7 +36,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    console.log('[stock-corrales] Animales encontrados:', animales.length)
+    log.info(`'[stock-corrales] Animales encontrados:' animales.length`)
 
     // Agrupar por tropa + corral con estructura que coincide con la interfaz del componente
     const stockPorTropaCorral = new Map<string, {
@@ -141,7 +143,7 @@ export async function GET(request: NextRequest) {
       return (a.corralNombre || '').localeCompare(b.corralNombre || '')
     })
 
-    console.log('[stock-corrales] Resultados con disponibilidad:', resultado.length)
+    log.info(`'[stock-corrales] Resultados con disponibilidad:' resultado.length`)
 
     return NextResponse.json({
       success: true,

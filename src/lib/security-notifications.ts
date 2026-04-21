@@ -1,4 +1,6 @@
 import { db } from '@/lib/db'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.security-notifications')
 
 // ==================== NOTIFICACIONES DE SEGURIDAD ====================
 
@@ -40,7 +42,7 @@ export async function createSecurityNotification(notification: SecurityNotificat
     // 2. Enviar notificación push
     // 3. Mostrar en un panel de alertas en tiempo real
     
-    console.log(`[SECURITY ALERT] ${notification.tipo}: ${notification.detalles}`)
+    log.info(`[SECURITY ALERT] ${notification.tipo}: ${notification.detalles}`)
   } catch (error) {
     console.error('Error creando notificación de seguridad:', error)
   }

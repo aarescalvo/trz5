@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.lista-faena.tropas.route')
 
 // POST - Add tropa to lista de faena (with transaction for multi-user safety)
 export async function POST(request: NextRequest) {
@@ -170,7 +172,7 @@ export async function DELETE(request: NextRequest) {
     const corralId = searchParams.get('corralId')
     const forzar = searchParams.get('forzar') === 'true'
 
-    console.log('[DELETE tropa] listaFaenaId:', listaFaenaId, 'tropaId:', tropaId, 'corralId:', corralId)
+    log.info(`'[DELETE tropa] listaFaenaId:' listaFaenaId 'tropaId:' tropaId 'corralId:' corralId`)
 
     if (!listaFaenaId || !tropaId) {
       return NextResponse.json(

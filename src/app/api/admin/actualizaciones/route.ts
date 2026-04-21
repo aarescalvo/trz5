@@ -4,6 +4,8 @@ import * as path from 'path'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.admin.actualizaciones.route')
 
 const execAsync = promisify(exec)
 
@@ -131,7 +133,7 @@ export async function POST(request: NextRequest) {
       timeout: 300000, // 5 minutos máximo
       cwd: process.cwd()
     }).then(({ stdout, stderr }) => {
-      console.log('Actualización completada:', stdout)
+      log.info(`'Actualización completada:' stdout`)
       if (stderr) console.error('Warnings:', stderr)
     }).catch(err => {
       console.error('Error en actualización:', err)

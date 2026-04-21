@@ -3,6 +3,8 @@ import { db } from '@/lib/db'
 
 // GET - Buscar animal por número dentro de una tropa específica
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.animales.buscar.route')
 export async function GET(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeMovimientoHacienda')
   if (authError) return authError
@@ -27,7 +29,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
 
-    console.log('[buscar-animal] Buscando animal:', numero, 'en tropa:', tropaId || 'cualquiera')
+    log.info(`'[buscar-animal] Buscando animal:' numero 'en tropa:' tropaId || 'cualquiera'`)
 
     // Construir filtro de búsqueda
     const where: Record<string, unknown> = {
@@ -70,7 +72,7 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    console.log('[buscar-animal] Animal encontrado:', animal.codigo)
+    log.info(`'[buscar-animal] Animal encontrado:' animal.codigo`)
 
     return NextResponse.json({
       success: true,

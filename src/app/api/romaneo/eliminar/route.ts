@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.romaneo.eliminar.route')
 
 // DELETE - Eliminar última media pesada
 export async function DELETE(request: NextRequest) {
@@ -10,8 +12,8 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json()
     const { garron, lado } = body
 
-    console.log('=== INICIO ELIMINACIÓN ===')
-    console.log('Datos recibidos:', { garron, lado })
+    log.info('=== INICIO ELIMINACIÓN ===')
+    log.info('Datos recibidos:', { garron, lado } as Record<string, unknown>)
 
     if (!garron || !lado) {
       return NextResponse.json(
@@ -151,7 +153,7 @@ export async function DELETE(request: NextRequest) {
       return { media, romaneo, asignacion }
     })
 
-    console.log('=== FIN ELIMINACIÓN EXITOSA ===')
+    log.info('=== FIN ELIMINACIÓN EXITOSA ===')
 
     return NextResponse.json({
       success: true,

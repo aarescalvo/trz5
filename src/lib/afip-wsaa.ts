@@ -7,6 +7,8 @@ import { writeFileSync, unlinkSync, existsSync, mkdirSync, readFileSync } from '
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { db } from '@/lib/db'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.afip-wsaa')
 
 // URLs de AFIP según ambiente
 export const WSAA_URLS = {
@@ -188,7 +190,7 @@ async function llamarWSAA(cms: string, url: string): Promise<string> {
   </soapenv:Body>
 </soapenv:Envelope>`
 
-  console.log(`[WSAA] Llamando a ${url}...`)
+  log.info(`[WSAA] Llamando a ${url}...`)
 
   const response = await fetch(url, {
     method: 'POST',
@@ -242,7 +244,7 @@ export async function obtenerTokenAcceso(
   // Verificar cache (token válido por más de 10 minutos)
   const cached = tokenCache.get(cacheKey)
   if (cached && cached.expiration > new Date(Date.now() + 10 * 60 * 1000)) {
-    console.log(`[WSAA] Usando token en cache para ${service}`)
+    log.info(`[WSAA] Usando token en cache para ${service}`)
     return {
       token: cached.token,
       sign: cached.sign,
@@ -251,7 +253,7 @@ export async function obtenerTokenAcceso(
     }
   }
 
-  console.log(`[WSAA] Solicitando nuevo token para ${service}...`)
+  log.info(`[WSAA] Solicitando nuevo token para ${service}...`)
 
   // Generar TRA
   const tra = generarTRA(service)
@@ -289,7 +291,7 @@ export async function obtenerTokenAcceso(
     // Ignore errors updating last token date
   }
 
-  console.log(`[WSAA] Token obtenido correctamente. Vence: ${expiration.toISOString()}`)
+  log.info(`[WSAA] Token obtenido correctamente. Vence: ${expiration.toISOString()}`)
 
   return {
     token,
@@ -419,7 +421,7 @@ export async function probarConexionAFIP(): Promise<{
  */
 export function invalidarCache(): void {
   tokenCache.clear()
-  console.log('[WSAA] Cache invalidado')
+  log.info('[WSAA] Cache invalidado')
 }
 
 /**

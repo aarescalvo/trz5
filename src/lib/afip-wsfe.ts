@@ -2,6 +2,8 @@
 // Referencia: https://www.afip.gob.ar/ws/WSFEV1/WSFEV1.HTM
 
 import { obtenerTokenAcceso, getConfiguracionAFIP, WSAAConfig } from './afip-wsaa'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.afip-wsfe')
 
 // URLs de AFIP según ambiente
 export const WSFE_URLS = {
@@ -289,7 +291,7 @@ async function llamarWSFE(
   // Crear envelope SOAP
   const envelope = crearSOAPEnvelope(method, paramsWithAuth)
 
-  console.log(`[WSFE] Llamando a ${method}...`)
+  log.info(`[WSFE] Llamando a ${method}...`)
 
   try {
     const response = await fetch(url, {

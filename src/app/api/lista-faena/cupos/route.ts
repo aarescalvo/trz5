@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.lista-faena.cupos.route')
 
 // GET - Obtener cupos de la lista de faena activa
 // Devuelve información de cupos por tropa, no animales específicos
@@ -8,7 +10,7 @@ export async function GET(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeListaFaena')
   if (authError) return authError
   try {
-    console.log('[cupos-lista] Buscando lista de faena activa...')
+    log.info('[cupos-lista] Buscando lista de faena activa...')
 
     // Buscar la lista de faena más reciente con tropas asignadas
     const listaFaena = await db.listaFaena.findFirst({
@@ -37,7 +39,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    console.log('[cupos-lista] Lista encontrada:', listaFaena?.id, 'Estado:', listaFaena?.estado)
+    log.info(`'[cupos-lista] Lista encontrada:' listaFaena?.id 'Estado:' listaFaena?.estado`)
 
     if (!listaFaena || listaFaena.tropas.length === 0) {
       return NextResponse.json({
@@ -97,7 +99,7 @@ export async function GET(request: NextRequest) {
     const totalAsignados = asignaciones.length
     const totalPendientes = totalCupos - totalAsignados
 
-    console.log('[cupos-lista] Total cupos:', totalCupos, 'Asignados:', totalAsignados, 'Pendientes:', totalPendientes)
+    log.info(`'[cupos-lista] Total cupos:' totalCupos 'Asignados:' totalAsignados 'Pendientes:' totalPendientes`)
 
     return NextResponse.json({
       success: true,

@@ -1,3 +1,6 @@
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.offline-romaneo-db')
+
 // IndexedDB wrapper para almacenamiento offline
 // Usado por el módulo de Romaneo cuando no hay conexión
 
@@ -31,7 +34,7 @@ export function initDB(): Promise<IDBDatabase> {
 
     request.onsuccess = () => {
       db = request.result
-      console.log('[OfflineDB] Base de datos inicializada')
+      log.info('[OfflineDB] Base de datos inicializada')
       resolve(db)
     }
 
@@ -65,7 +68,7 @@ export function initDB(): Promise<IDBDatabase> {
         database.createObjectStore(STORES.CONFIG, { keyPath: 'key' })
       }
 
-      console.log('[OfflineDB] Stores creados')
+      log.info('[OfflineDB] Stores creados')
     }
   })
 }
@@ -99,7 +102,7 @@ export async function saveRomaneoOffline(romaneo: any): Promise<void> {
     })
 
     transaction.oncomplete = () => {
-      console.log('[OfflineDB] Romaneo guardado offline:', romaneo.id)
+      log.info(`'[OfflineDB] Romaneo guardado offline:' romaneo.id`)
       resolve()
     }
 
@@ -124,7 +127,7 @@ export async function saveMediaResOffline(mediaRes: any): Promise<void> {
     })
 
     transaction.oncomplete = () => {
-      console.log('[OfflineDB] Media res guardada offline:', mediaRes.id)
+      log.info(`'[OfflineDB] Media res guardada offline:' mediaRes.id`)
       resolve()
     }
 
@@ -317,7 +320,7 @@ export async function clearAllOfflineData(): Promise<void> {
     })
 
     transaction.oncomplete = () => {
-      console.log('[OfflineDB] Todos los datos limpiados')
+      log.info('[OfflineDB] Todos los datos limpiados')
       resolve()
     }
 

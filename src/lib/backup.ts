@@ -7,6 +7,8 @@ import { exec } from 'child_process'
 import { promisify } from 'util'
 import fs from 'fs/promises'
 import path from 'path'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.backup')
 
 const execAsync = promisify(exec)
 
@@ -209,7 +211,7 @@ export async function getBackupStats(): Promise<{
  * @param intervalMs - Intervalo en milisegundos (default: 6 horas)
  */
 export function scheduleAutoBackups(intervalMs: number = 6 * 60 * 60 * 1000): NodeJS.Timeout {
-  console.log(`[Backup] Programando backups automáticos cada ${intervalMs / 1000 / 60} minutos`)
+  log.info(`[Backup] Programando backups automáticos cada ${intervalMs / 1000 / 60} minutos`)
   
   // Backup inicial
   createBackup('auto').catch(err => 
@@ -220,7 +222,7 @@ export function scheduleAutoBackups(intervalMs: number = 6 * 60 * 60 * 1000): No
   return setInterval(async () => {
     try {
       const backup = await createBackup('auto')
-      console.log(`[Backup] Backup automático creado: ${backup.filename} (${formatBytes(backup.size)})`)
+      log.info(`[Backup] Backup automático creado: ${backup.filename} (${formatBytes(backup.size)})`)
     } catch (err) {
       console.error('[Backup] Error en backup automático:', err)
     }

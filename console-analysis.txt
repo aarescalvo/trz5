@@ -1,0 +1,216 @@
+================================================================================
+                    CONSOLE USAGE ANALYSIS REPORT
+                    Generated from: src/
+================================================================================
+
+================================================================================
+1. LOGGER API (src/lib/logger.ts)
+================================================================================
+
+The project has a production-ready structured logger at src/lib/logger.ts.
+
+Exports:
+  - createLogger(module: string, requestId?: string): Logger  (class instance)
+  - logger: { debug, info, warn, error, time }                 (quick-use global)
+  - LogEntry, LogLevel                                         (types)
+
+Usage examples:
+  import { createLogger } from '@/lib/logger'
+  const log = createLogger('MyModule')
+  log.info('Something happened', { key: 'value' })
+  log.error('Something failed', error, { context: data })
+  log.warn('Warning message')
+  log.debug('Debug info', { details })
+  const end = log.time('operation')  // ... later: end()
+
+  import { logger } from '@/lib/logger'
+  logger.info('ModuleName', 'Quick log message')
+
+Features:
+  - Log levels: DEBUG, INFO, WARN, ERROR
+  - Production: outputs JSON; Development: colored human-readable
+  - Environment-aware: DEBUG logs suppressed in production
+  - Structured metadata: timestamp, module, requestId, duration
+  - Error stack traces captured automatically
+
+Files already using the logger: 22 files
+(See Section 6 for full list)
+
+================================================================================
+2. TOTAL OCCURRENCES IN src/
+================================================================================
+
+  console.log   :     113   (in  37 files)
+  console.error :   1,204   (in 520 files)
+  console.warn  :      14   (in   7 files)
+  console.info  :       0   (in   0 files)
+  console.debug :       0   (in   0 files)
+  ──────────────────────────
+  TOTAL         :   1,331   (in 521 files)
+
+Note: console.log/error/warn inside src/lib/logger.ts itself are LEGITIMATE
+      (they are the logger's own output transport - 3 occurrences total).
+
+================================================================================
+3. CONSOLE USAGE BY DIRECTORY
+================================================================================
+
+  src/app/api/         -   73 console.log, 718 console.error,   1 console.warn
+  src/components/      -    6 console.log, 389 console.error,   0 console.warn
+  src/lib/             -   33 console.log,  49 console.error,  13 console.warn
+  src/modules/         -    0 console.log,  23 console.error,   0 console.warn
+  src/modules-pending/ -    0 console.log,  11 console.error,   0 console.warn
+  src/hooks/           -    1 console.log,   8 console.error,   0 console.warn
+  src/core/            -    0 console.log,   2 console.error,   0 console.warn
+  src/stores/          -    0 console.log,   0 console.error,   0 console.warn
+  src/app/ (non-api)   -    0 console.log,   4 console.error,   0 console.warn
+                          ─────────────────────────────────────────────────
+  GRAND TOTAL          -  113 console.log, 1204 console.error,  14 console.warn
+
+KEY INSIGHTS:
+  - app/api/ is the largest offender: 59% of all console.error calls (718/1204)
+  - components/ is 2nd: 32% of all console.error calls (389/1204)
+  - lib/ has the most console.log (33) and all 13 console.warn calls
+  - modules/ and modules-pending/ are already clean of console.log/warn
+  - stores/ is completely clean (0 occurrences of any kind)
+
+================================================================================
+4. TOP 20 FILES WITH MOST console.log STATEMENTS
+================================================================================
+
+  Rank  Count  File
+  ────  ────  ──────────────────────────────────────────────────────────────────
+    1     15  src/app/api/romaneo/pesar/route.ts
+    2     11  src/app/api/animales/mover-cantidad/route.ts
+    3      7  src/app/api/pesaje-camion/route.ts
+    4      6  src/lib/offline/index.ts
+    5      6  src/app/api/lista-faena/animales-hoy/route.ts
+    6      5  src/lib/offline-romaneo-db.ts
+    7      5  src/lib/backup-scheduler.ts
+    8      5  src/lib/afip-wsaa.ts
+    9      5  src/app/api/vb-romaneo/route.ts
+   10      4  src/lib/useOffline.tsx
+   11      4  src/app/api/tropas/mover/route.ts
+   12      4  src/app/api/romaneo/route.ts
+   13      3  src/app/api/tropas/stock-corrales/route.ts
+   14      3  src/app/api/romaneo/eliminar/route.ts
+   15      3  src/app/api/lista-faena/cupos/route.ts
+   16      3  src/lib/backup.ts
+   17      2  src/components/lista-faena/index.tsx
+   18      2  src/app/api/rotulos/imprimir-media-res/route.ts
+   19      2  src/app/api/lista-faena/garrones/route.ts
+   20      2  src/app/api/animales/buscar/route.ts
+
+  SUBTOTAL (top 20): 99 console.log (87.6% of all 113 console.log calls)
+
+================================================================================
+5. TOP 20 FILES WITH MOST console.error STATEMENTS
+================================================================================
+
+  Rank  Count  File
+  ────  ────  ──────────────────────────────────────────────────────────────────
+    1     10  src/components/romaneo/index.tsx
+    2      7  src/lib/backup-scheduler.ts
+    3      7  src/components/vb-romaneo/index.tsx
+    4      7  src/components/pesaje-individual/usePesajeIndividual.ts
+    5      7  src/components/facturacion/index.tsx
+    6      6  src/components/pesaje-individual-module.tsx
+    7      6  src/components/conciliacion/resolucion-diferencias.tsx
+    8      5  src/lib/afip-certificates.ts
+    9      5  src/components/reportes/index.tsx
+   10      5  src/components/despacho/index.tsx
+   11      5  src/components/configuracion/observaciones-usuario.tsx
+   12      5  src/components/configuracion/insumos.tsx
+   13      5  src/components/config-rotulos/index.tsx
+   14      5  src/app/api/rotulos/imprimir/route.ts
+   15      5  src/app/api/arqueos-caja/route.ts
+   16      4  src/modules/pesaje/hooks/usePesaje.ts
+   17      4  src/lib/useOffline.tsx
+   18      4  src/lib/security-notifications.ts
+   19      4  src/lib/offline/useOffline.ts
+   20      4  src/lib/chart-to-image.ts
+
+  NOTE: Many more files have 3-4 console.error calls. The distribution is very
+  wide: 520 unique files have at least one console.error.
+
+================================================================================
+6. FILES ALREADY USING @/lib/logger (22 files)
+================================================================================
+
+  API Routes (16):
+    src/app/api/auditoria/exportar/route.ts
+    src/app/api/auditoria/stats/route.ts
+    src/app/api/auth/route.ts
+    src/app/api/alertas/stock/route.ts
+    src/app/api/codigo-barras/route.ts
+    src/app/api/codigo-barras/route.ts  (duplicate check)
+    src/app/api/dashboard/route.ts
+    src/app/api/dashboard/ejecutivo/route.ts
+    src/app/api/filtros-reporte/route.ts
+    src/app/api/reportes-sif/route.ts
+    src/app/api/reportes-sigica/route.ts
+    src/app/api/reportes/cajas-producidas/route.ts
+    src/app/api/reportes/cuentas-corrientes/route.ts
+    src/app/api/reportes/exportar-server/route.ts
+    src/app/api/reportes/gerenciales/route.ts
+    src/app/api/reportes/insumos/route.ts
+    src/app/api/reportes/rendimientos-gerenciales/route.ts
+    src/app/api/sistema/backup/route.ts
+    src/app/api/sistema/status/route.ts
+    src/app/api/stock/vencimientos/route.ts
+
+  Components (2):
+    src/components/config-codigobarras/index.tsx
+    src/components/config-insumos/index.tsx
+
+  Libraries (1):
+    src/lib/auth-helpers.ts
+
+================================================================================
+7. MIGRATION PRIORITY RECOMMENDATIONS
+================================================================================
+
+  PRIORITY 1 - HIGH IMPACT (remove debug console.log from API routes):
+    - src/app/api/romaneo/pesar/route.ts        (15 console.log)
+    - src/app/api/animales/mover-cantidad/route.ts (11 console.log)
+    - src/app/api/pesaje-camion/route.ts          (7 console.log)
+    - src/app/api/lista-faena/animales-hoy/route.ts (6 console.log)
+    - src/app/api/vb-romaneo/route.ts              (5 console.log)
+    These 5 files alone account for 44 console.log calls (39%).
+
+  PRIORITY 2 - LIBRARY CLEANUP (replace with logger in lib/):
+    - src/lib/offline/index.ts          (6 log)
+    - src/lib/offline-romaneo-db.ts      (5 log)
+    - src/lib/backup-scheduler.ts        (5 log)
+    - src/lib/afip-wsaa.ts               (5 log)
+    - src/lib/useOffline.tsx             (4 log)
+    These 5 files account for 25 console.log calls (22%).
+
+  PRIORITY 3 - BULK console.error REPLACEMENT:
+    521 files have raw console.error. Consider a codemod approach:
+    - Most are in catch blocks: console.error('msg', error)
+    - Replace with: createLogger('ModuleName').error('msg', error)
+    - Focus on files with 5+ occurrences first (15 files, ~87 calls)
+
+  PRIORITY 4 - VERIFY NO REGRESSIONS:
+    After migration, ensure:
+    - Logger captures full error objects with stack traces
+    - Production JSON output is parseable by log aggregators
+    - Module names are consistent and searchable
+
+================================================================================
+8. SUMMARY
+================================================================================
+
+  Total raw console statements:        1,331
+  Files with raw console calls:          521
+  Files already using logger:             22 (4.2% adoption)
+  Remaining files to migrate:           499
+
+  Estimated effort:
+    - Top 20 console.log files:  ~2 hours (99 calls)
+    - Top 20 console.error files: ~3 hours (87+ calls, but 500+ total)
+    - Bulk migration (codemod):   ~1 day for automated find-replace
+    - Manual review & testing:    ~2 days
+
+================================================================================

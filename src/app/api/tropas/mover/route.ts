@@ -4,6 +4,8 @@ import { Especie } from '@prisma/client'
 
 // POST - Move tropa to corral with stock update
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.tropas.mover.route')
 export async function POST(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeMovimientoHacienda')
   if (authError) return authError
@@ -19,7 +21,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`[MOVER TROPA] Iniciando movimiento de tropa ${tropaId} a corral ${corralDestinoId}`)
+    log.info(`[MOVER TROPA] Iniciando movimiento de tropa ${tropaId} a corral ${corralDestinoId}`)
 
     // Get tropa with animales
     const tropa = await db.tropa.findUnique({
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest) {
           where: { id: corralOrigenId },
           data: updateDataOrigen
         })
-        console.log(`[MOVER TROPA] Stock decrementado en corral origen ${corralOrigenId}`)
+        log.info(`[MOVER TROPA] Stock decrementado en corral origen ${corralOrigenId}`)
       }
 
       // 2. Incrementar stock del corral destino
@@ -95,7 +97,7 @@ export async function POST(request: NextRequest) {
         where: { id: corralDestinoId },
         data: updateDataDestino
       })
-      console.log(`[MOVER TROPA] Stock incrementado en corral destino ${corralDestinoId}`)
+      log.info(`[MOVER TROPA] Stock incrementado en corral destino ${corralDestinoId}`)
 
       // 3. Actualizar tropa
       await tx.tropa.update({
@@ -154,7 +156,7 @@ export async function POST(request: NextRequest) {
       where: { id: corralDestinoId }
     })
 
-    console.log(`[MOVER TROPA] ✅ Movimiento completado exitosamente`)
+    log.info(`[MOVER TROPA] ✅ Movimiento completado exitosamente`)
 
     return NextResponse.json({
       success: true,

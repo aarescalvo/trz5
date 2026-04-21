@@ -1,3 +1,5 @@
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.export-pdf-charts')
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -292,7 +294,7 @@ async function drawChartImage(
       }
 
       img.onerror = () => {
-        console.warn('[export-pdf-charts] Failed to load chart image')
+        log.warn('[export-pdf-charts] Failed to load chart image')
         // Draw placeholder
         doc.setFillColor(245, 245, 245)
         doc.setDrawColor(200, 200, 200)

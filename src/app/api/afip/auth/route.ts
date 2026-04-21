@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import crypto from 'crypto'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.afip.auth.route')
 
 /**
  * API de Autenticación AFIP
@@ -172,7 +174,7 @@ export async function POST(request: NextRequest) {
       sign = mockAuth.sign
       expiration = mockAuth.expiration
       
-      console.log('[AFIP] Generando token de TESTING')
+      log.info('[AFIP] Generando token de TESTING')
     } else {
       // MODO PRODUCCIÓN: Conectar con AFIP WSAA
       if (!config.certificado || !config.clavePrivada) {
@@ -197,7 +199,7 @@ export async function POST(request: NextRequest) {
         sign = mockAuth.sign
         expiration = mockAuth.expiration
         
-        console.log('[AFIP] Token de PRODUCCIÓN generado (simulado)')
+        log.info('[AFIP] Token de PRODUCCIÓN generado (simulado)')
       } catch (error) {
         console.error('[AFIP] Error generando CMS:', error)
         return NextResponse.json(

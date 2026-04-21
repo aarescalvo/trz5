@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.romaneo.pesar.route')
 
 // POST - Registrar pesaje de media res (con transacción para multi-usuario)
 export async function POST(request: NextRequest) {
@@ -20,11 +22,11 @@ export async function POST(request: NextRequest) {
       sobrescribir = false // Nuevo parámetro para modo edición
     } = body
 
-    console.log('=== INICIO PESAJE ===')
-    console.log('Datos recibidos:', { garron, lado, peso, camaraId, denticion, tipificadorId, operadorId })
+    log.info('=== INICIO PESAJE ===')
+    log.info('Datos recibidos:', { garron, lado, peso, camaraId, denticion, tipificadorId, operadorId })
 
     if (!garron || !lado || !peso || !camaraId) {
-      console.log('Error: Faltan datos requeridos')
+      log.info('Error: Faltan datos requeridos')
       return NextResponse.json(
         { success: false, error: 'Faltan datos requeridos: garron, lado, peso, camaraId' },
         { status: 400 }
@@ -94,7 +96,7 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      console.log('Asignación encontrada:', asignacion ? `ID: ${asignacion.id}` : 'No encontrada')
+      log.info(`Asignación encontrada: ${asignacion ? `ID: ${asignacion.id}` : 'No encontrada'}`)
 
       // IMPORTANTE: Verificar si la asignación YA tiene esta media pesada
       // Si sobrescribir es true, permitimos editar medias existentes
@@ -124,7 +126,7 @@ export async function POST(request: NextRequest) {
         // Crear nuevo romaneo
         const animal = asignacion?.animal
         
-        console.log('Creando nuevo romaneo con datos:', {
+        log.info('Creando nuevo romaneo con datos:', {
           garron: parseInt(garron),
           tropaCodigo: animal?.tropa?.codigo || asignacion?.tropaCodigo,
           numeroAnimal: animal?.numero || asignacion?.animalNumero,
@@ -146,7 +148,7 @@ export async function POST(request: NextRequest) {
           include: { mediasRes: true }
         })
         
-        console.log('Romaneo creado:', romaneo.id)
+        log.info(`Romaneo creado: ${romaneo.id}`)
       }
 
       // Actualizar dentición si se proporciona
@@ -167,7 +169,7 @@ export async function POST(request: NextRequest) {
 
       // Si existe y estamos en modo sobrescribir, eliminar la media existente
       if (mediaExistente && sobrescribir) {
-        console.log('Eliminando media existente para sobrescribir:', mediaExistente.id)
+        log.info(`Eliminando media existente para sobrescribir: ${mediaExistente.id}`)
         
         // Actualizar stock (reducir el peso y cantidad anterior)
         const tropaCodigo = romaneo.tropaCodigo || 'SIN-TROPA'
@@ -194,7 +196,7 @@ export async function POST(request: NextRequest) {
           where: { id: mediaExistente.id }
         })
         
-        console.log('Media eliminada, procediendo a crear la nueva')
+        log.info('Media eliminada, procediendo a crear la nueva')
       } else if (mediaExistente && !sobrescribir) {
         throw new Error(`MEDIA_YA_EXISTE:${lado}:${garron}`)
       }
@@ -216,7 +218,7 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      console.log('MediaRes creada:', mediaRes.id)
+      log.info(`MediaRes creada: ${mediaRes.id}`)
 
       // Actualizar stock de la cámara
       const tropaCodigo = romaneo.tropaCodigo || 'SIN-TROPA'
@@ -237,7 +239,7 @@ export async function POST(request: NextRequest) {
             pesoTotal: { increment: pesoNum }
           }
         })
-        console.log('Stock actualizado:', stockExistente.id)
+        log.info(`Stock actualizado: ${stockExistente.id}`)
       } else {
         const nuevoStock = await tx.stockMediaRes.create({
           data: {
@@ -248,7 +250,7 @@ export async function POST(request: NextRequest) {
             pesoTotal: pesoNum
           }
         })
-        console.log('Stock creado:', nuevoStock.id)
+        log.info(`Stock creado: ${nuevoStock.id}`)
       }
 
       // Registrar movimiento de cámara
@@ -264,7 +266,7 @@ export async function POST(request: NextRequest) {
           observaciones: `Ingreso garrón ${garron} - ${lado}`
         }
       })
-      console.log('Movimiento de cámara registrado')
+      log.info('Movimiento de cámara registrado')
 
       // Actualizar asignación del garrón
       if (asignacion) {
@@ -286,7 +288,7 @@ export async function POST(request: NextRequest) {
         where: { romaneoId: romaneo.id }
       })
 
-      console.log('Total medias:', todasLasMedias.length)
+      log.info(`Total medias: ${todasLasMedias.length}`)
 
       // Si tiene ambas medias, actualizar romaneo con totales
       if (todasLasMedias.length === 2) {
@@ -316,14 +318,14 @@ export async function POST(request: NextRequest) {
             })
           }
           
-          console.log('Romaneo completado con ambas medias')
+          log.info('Romaneo completado con ambas medias')
         }
       }
 
       return { mediaRes, romaneo }
     })
 
-    console.log('=== FIN PESAJE EXITOSO ===')
+    log.info('=== FIN PESAJE EXITOSO ===')
 
     return NextResponse.json({
       success: true,

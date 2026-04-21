@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('hooks.useAutoSave')
 
 // ============================================================
 // HOOK: useAutoSave - Capa 2
@@ -47,7 +49,7 @@ export function useAutoSave({
       if (success) {
         onSave?.(result)
         // Toast silencioso - solo mostrar si hay un indicador visual
-        console.log(`[AutoSave] ${moduleName} - borrador guardado`)
+        log.info(`[AutoSave] ${moduleName} - borrador guardado`)
       }
     } catch (error) {
       console.error(`[AutoSave] ${moduleName} - error:`, error)

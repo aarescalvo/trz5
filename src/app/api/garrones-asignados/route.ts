@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.garrones-asignados.route')
 
 // GET - Obtener garrones asignados con su estado de pesaje
 export async function GET(request: NextRequest) {
@@ -141,7 +143,7 @@ export async function POST(request: NextRequest) {
           }
         } else {
           // No hay animal disponible, crear asignación sin animal
-          console.log('[garrones] No hay animal disponible en tropa:', tropaCodigo)
+          log.info(`'[garrones] No hay animal disponible en tropa:' tropaCodigo`)
         }
       }
       // Si se proporciona animalId directo

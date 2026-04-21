@@ -29,6 +29,8 @@ import { TipoAnimalCounterGrid } from './pesaje-camiones/TipoAnimalCounterGrid'
 import { QuickAddDialog, QuickAddButton } from './pesaje-camiones/QuickAddDialog'
 import { imprimirTicket, imprimirReporte } from './pesaje-camiones/ticketPrint'
 import { TIPOS_ANIMALES, ESPECIES, TIPOS_PESAJE } from './pesaje-camiones/constants'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('components.pesaje-camiones-module')
 
 // Tipos de animales organizados por especie (re-export para compatibilidad)
 export { TIPOS_ANIMALES, ESPECIES, TIPOS_PESAJE }
@@ -344,7 +346,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
         payload.corralId = corralId || null
       }
       
-      console.log('[PesajeCamiones] Enviando payload:', payload)
+      log.info(`'[PesajeCamiones] Enviando payload:' payload`)
       
       const res = await fetch('/api/pesaje-camion', {
         method: 'POST',

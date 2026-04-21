@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.facturacion.despacho.route')
 
 // POST - Crear factura desde despacho
 export async function POST(request: NextRequest) {
@@ -76,7 +78,7 @@ export async function POST(request: NextRequest) {
       })
 
       if (!cliente) {
-        console.log(`Cliente ${usuarioId} no encontrado, saltando...`)
+        log.info(`Cliente ${usuarioId} no encontrado, saltando...`)
         continue
       }
 

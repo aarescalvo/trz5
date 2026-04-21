@@ -10,6 +10,8 @@ import net from 'net'
 import fs from 'fs'
 import path from 'path'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.rotulos.imprimir-media-res.route')
 
 interface PrintRequest {
   tropa: string
@@ -137,14 +139,14 @@ async function cargarLogoGRF(nombreArchivo: string): Promise<string> {
     const rutaLogo = path.join(process.cwd(), 'public', 'logos', nombreArchivo)
     
     if (!fs.existsSync(rutaLogo)) {
-      console.log(`Logo no encontrado: ${nombreArchivo}, usando placeholder`)
+      log.info(`Logo no encontrado: ${nombreArchivo}, usando placeholder`)
       // Devolver un placeholder pequeño (10x10 pixels vacío)
       return '00000000000000000000'
     }
 
     // TODO: Convertir PNG a GRF usando una librería
     // Por ahora devolvemos un placeholder hasta que se implemente la conversión
-    console.log(`Logo encontrado: ${nombreArchivo}, convirtiendo a GRF...`)
+    log.info(`Logo encontrado: ${nombreArchivo}, convirtiendo a GRF...`)
     
     // Placeholder temporal - se reemplazará con la conversión real
     return '00000000000000000000'

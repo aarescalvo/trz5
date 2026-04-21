@@ -3,42 +3,44 @@ import { db } from '@/lib/db'
 
 // POST - Mover cantidad de animales de una tropa entre corrales (con transacción)
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.animales.mover-cantidad.route')
 export async function POST(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeMovimientoHacienda')
   if (authError) return authError
 
-  console.log('[MOVER-CANTIDAD] ===== INICIANDO =====')
+  log.info('[MOVER-CANTIDAD] ===== INICIANDO =====')
   
   try {
     const body = await request.json()
-    console.log('[MOVER-CANTIDAD] Body recibido:', JSON.stringify(body, null, 2))
+    log.info(`'[MOVER-CANTIDAD] Body recibido:' JSON.stringify(body, null, 2)`)
     
     const { tropaId, corralOrigenId, corralDestinoId, cantidad, operadorId, forzarCapacidad } = body
 
     // Validar datos requeridos
     if (!tropaId) {
-      console.log('[MOVER-CANTIDAD] ERROR: falta tropaId')
+      log.info('[MOVER-CANTIDAD] ERROR: falta tropaId')
       return NextResponse.json(
         { success: false, error: 'tropaId es requerido' },
         { status: 400 }
       )
     }
     if (!corralOrigenId) {
-      console.log('[MOVER-CANTIDAD] ERROR: falta corralOrigenId')
+      log.info('[MOVER-CANTIDAD] ERROR: falta corralOrigenId')
       return NextResponse.json(
         { success: false, error: 'corralOrigenId es requerido' },
         { status: 400 }
       )
     }
     if (!corralDestinoId) {
-      console.log('[MOVER-CANTIDAD] ERROR: falta corralDestinoId')
+      log.info('[MOVER-CANTIDAD] ERROR: falta corralDestinoId')
       return NextResponse.json(
         { success: false, error: 'corralDestinoId es requerido' },
         { status: 400 }
       )
     }
     if (!cantidad) {
-      console.log('[MOVER-CANTIDAD] ERROR: falta cantidad')
+      log.info('[MOVER-CANTIDAD] ERROR: falta cantidad')
       return NextResponse.json(
         { success: false, error: 'cantidad es requerida' },
         { status: 400 }
@@ -47,14 +49,14 @@ export async function POST(request: NextRequest) {
 
     const cantidadMover = parseInt(String(cantidad))
     if (isNaN(cantidadMover) || cantidadMover <= 0) {
-      console.log('[MOVER-CANTIDAD] ERROR: cantidad inválida:', cantidad)
+      log.info(`'[MOVER-CANTIDAD] ERROR: cantidad inválida:' cantidad`)
       return NextResponse.json(
         { success: false, error: 'Cantidad inválida' },
         { status: 400 }
       )
     }
 
-    console.log('[MOVER-CANTIDAD] Datos validados OK:', { tropaId, corralOrigenId, corralDestinoId, cantidadMover })
+    log.info('[MOVER-CANTIDAD] Datos validados OK:', { tropaId, corralOrigenId, corralDestinoId, cantidadMover } as Record<string, unknown>)
 
     // Verificar capacidad del corral destino ANTES de la transacción
     const corralDestinoCheck = await db.corral.findUnique({
@@ -126,7 +128,7 @@ export async function POST(request: NextRequest) {
         take: cantidadMover
       })
 
-      console.log('[MOVER-CANTIDAD] Animales encontrados en origen:', animalesEnOrigen.length)
+      log.info(`'[MOVER-CANTIDAD] Animales encontrados en origen:' animalesEnOrigen.length`)
 
       if (animalesEnOrigen.length < cantidadMover) {
         throw new Error(`STOCK_INSUFICIENTE:${animalesEnOrigen.length}`)
@@ -143,7 +145,7 @@ export async function POST(request: NextRequest) {
 
       // Mover los animales (actualizar corralId)
       const idsAMover = animalesEnOrigen.map(a => a.id)
-      console.log('[MOVER-CANTIDAD] IDs a mover:', idsAMover)
+      log.info(`'[MOVER-CANTIDAD] IDs a mover:' idsAMover`)
       
       await tx.animal.updateMany({
         where: {
@@ -204,7 +206,7 @@ export async function POST(request: NextRequest) {
       return { cantidadMover, tropa, corralDestino }
     })
 
-    console.log('[MOVER-CANTIDAD] ===== ÉXITO =====')
+    log.info('[MOVER-CANTIDAD] ===== ÉXITO =====')
 
     const response: any = {
       success: true,

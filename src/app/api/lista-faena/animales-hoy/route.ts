@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.lista-faena.animales-hoy.route')
 
 // GET - Obtener animales de la lista de faena activa (abierta o cerrada del día)
 export async function GET(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeListaFaena')
   if (authError) return authError
   try {
-    console.log('[animales-hoy] Buscando lista de faena activa...')
+    log.info('[animales-hoy] Buscando lista de faena activa...')
 
     // Buscar la lista de faena más reciente que tenga tropas asignadas
     // Puede estar ABIERTA, EN_PROCESO o CERRADA
@@ -35,10 +37,10 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    console.log('[animales-hoy] Lista encontrada:', listaFaena?.id, 'Estado:', listaFaena?.estado, 'Tropas:', listaFaena?.tropas.length)
+    log.info(`'[animales-hoy] Lista encontrada:' listaFaena?.id 'Estado:' listaFaena?.estado 'Tropas:' listaFaena?.tropas.length`)
 
     if (!listaFaena || listaFaena.tropas.length === 0) {
-      console.log('[animales-hoy] No hay lista de faena con tropas asignadas')
+      log.info('[animales-hoy] No hay lista de faena con tropas asignadas')
       return NextResponse.json({
         success: true,
         data: []
@@ -52,11 +54,11 @@ export async function GET(request: NextRequest) {
       corralId: lt.corralId
     }))
 
-    console.log('[animales-hoy] Tropas en lista:', JSON.stringify(tropasEnLista))
+    log.info(`'[animales-hoy] Tropas en lista:' JSON.stringify(tropasEnLista)`)
 
     // Calcular el total de animales que debería haber en la lista
     const totalEsperado = tropasEnLista.reduce((acc, t) => acc + t.cantidad, 0)
-    console.log('[animales-hoy] Total esperado según lista:', totalEsperado)
+    log.info(`'[animales-hoy] Total esperado según lista:' totalEsperado`)
 
     // Buscar animales de esas tropas, respetando la cantidad por tropa
     const animalesPorTropa: Map<string, typeof animales> = new Map()
@@ -98,7 +100,7 @@ export async function GET(request: NextRequest) {
       animalesFinales.push(...animalesTropa.slice(0, cantidadATomar))
     }
 
-    console.log('[animales-hoy] Animales encontrados:', animales.length, '-> Respetando cantidad:', animalesFinales.length)
+    log.info(`'[animales-hoy] Animales encontrados:' animales.length '-> Respetando cantidad:' animalesFinales.length`)
 
     // Formatear respuesta
     const data = animalesFinales.map(animal => ({

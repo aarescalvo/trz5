@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import crypto from 'crypto'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.afip.factura.route')
 
 /**
  * API de Facturación Electrónica AFIP
@@ -338,7 +340,7 @@ export async function POST(request: NextRequest) {
       fechaVencimientoCAE = generateFechaVencimientoCAE()
       numeroComprobante = factura.numeroInterno // Usar número interno como base
       
-      console.log('[AFIP] Emitiendo factura en TESTING:', {
+      log.info('[AFIP] Emitiendo factura en TESTING:', {
         factura: factura.numero,
         tipo: tipoComprobante,
         cae
@@ -351,7 +353,7 @@ export async function POST(request: NextRequest) {
       fechaVencimientoCAE = generateFechaVencimientoCAE()
       numeroComprobante = factura.numeroInterno
       
-      console.log('[AFIP] Emitiendo factura en PRODUCCIÓN:', {
+      log.info('[AFIP] Emitiendo factura en PRODUCCIÓN:', {
         factura: factura.numero,
         tipo: tipoComprobante,
         cae

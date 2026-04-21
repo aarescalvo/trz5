@@ -17,6 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { toast } from 'sonner'
 import { TextoEditable, EditableBlock, useEditor } from '@/components/ui/editable-screen'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('components.lista-faena.index')
 
 const ESTADOS_LISTA = [
   { id: 'ABIERTA', label: 'Abierta', color: 'bg-green-100 text-green-700' },
@@ -136,8 +138,8 @@ export function ListaFaenaModule({ operador }: { operador: Operador }) {
         // Priorizar: ABIERTA hoy > CERRADA hoy > más reciente
         const listaSeleccionada = listaAbiertaHoy || listaCerradaHoy || listaMasReciente || null
         
-        console.log('[ListaFaena] Listas encontradas:', sortedListas.length)
-        console.log('[ListaFaena] Lista seleccionada:', listaSeleccionada?.numero, listaSeleccionada?.estado)
+        log.info(`'[ListaFaena] Listas encontradas:' sortedListas.length`)
+        log.info(`'[ListaFaena] Lista seleccionada:' listaSeleccionada?.numero listaSeleccionada?.estado`)
         
         setListaActual(listaSeleccionada)
       }

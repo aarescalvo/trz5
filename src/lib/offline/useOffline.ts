@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.offline.useOffline')
 import { 
   initOfflineDB, 
   isOnline, 
@@ -54,7 +56,7 @@ export function useOffline() {
       processSyncQueue()
         .then(result => {
           if (result.success > 0) {
-            console.log(`Sincronización automática: ${result.success} items`)
+            log.info(`Sincronización automática: ${result.success} items`)
           }
           if (result.failed > 0) {
             console.error(`Errores de sincronización: ${result.failed}`)
@@ -140,7 +142,7 @@ export function useOfflineAware<T>(storeName: string) {
         }
       } catch (error: any) {
         // Si falla la conexión, usar offline
-        console.warn('Error de conexión, guardando offline:', error)
+        log.warn(`'Error de conexión, guardando offline:' error`)
         await saveOffline(storeName, data)
         await addToSyncQueue(storeName, action, data)
         return { success: true, data, offline: true }
@@ -176,7 +178,7 @@ export function useOfflineAware<T>(storeName: string) {
         }
       } catch (error: any) {
         // Si falla, usar caché local
-        console.warn('Error de conexión, usando caché local:', error)
+        log.warn(`'Error de conexión, usando caché local:' error`)
         const cachedData = await getAllItems<T>(storeName)
         return { success: true, data: cachedData, offline: true }
       }

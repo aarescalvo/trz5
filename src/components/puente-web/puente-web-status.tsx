@@ -13,6 +13,8 @@ import {
   Globe,
   ArrowRightLeft
 } from 'lucide-react';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('components.puente-web.puente-web-status');
 
 interface PuenteEstado {
   estado: {
@@ -59,7 +61,7 @@ export function PuenteWebStatus() {
         body: JSON.stringify({ servicio }),
       });
       const data = await res.json();
-      console.log('Sincronización:', data);
+      log.info(`Sincronización: ${data}`);
       await cargarEstado();
     } catch (error) {
       console.error('Error sincronizando:', error);

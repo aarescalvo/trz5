@@ -1,4 +1,6 @@
 // @ts-nocheck
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.chart-to-image')
 import { type RefObject } from 'react'
 
 /**
@@ -17,7 +19,7 @@ export async function captureChartAsImage(
   try {
     const container = document.getElementById(elementId)
     if (!container) {
-      console.warn(`[chart-to-image] Element #${elementId} not found`)
+      log.warn(`[chart-to-image] Element #${elementId} not found`)
       return null
     }
     return captureChartFromRef({ current: container } as RefObject<HTMLDivElement>, scale)
@@ -40,7 +42,7 @@ export async function captureChartFromRef(
 ): Promise<string | null> {
   const container = ref.current
   if (!container) {
-    console.warn('[chart-to-image] Ref container is null')
+    log.warn('[chart-to-image] Ref container is null')
     return null
   }
 
@@ -51,7 +53,7 @@ export async function captureChartFromRef(
         container.querySelector('svg')
 
       if (!svgElement) {
-        console.warn('[chart-to-image] No SVG found inside container')
+        log.warn('[chart-to-image] No SVG found inside container')
         resolve(null)
         return
       }
@@ -100,7 +102,7 @@ export async function captureChartFromRef(
 
           const ctx = canvas.getContext('2d')
           if (!ctx) {
-            console.warn('[chart-to-image] Could not get canvas 2d context')
+            log.warn('[chart-to-image] Could not get canvas 2d context')
             cleanup()
             resolve(null)
             return
@@ -125,7 +127,7 @@ export async function captureChartFromRef(
       }
 
       img.onerror = () => {
-        console.warn('[chart-to-image] Failed to load SVG image')
+        log.warn('[chart-to-image] Failed to load SVG image')
         cleanup()
         // Fallback: try data URL approach
         resolve(fallbackDataUrlCapture(svgData))

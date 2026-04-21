@@ -7,6 +7,8 @@ import { Especie, TipoAnimal, EstadoPesaje, TipoPesajeCamion } from '@prisma/cli
 
 // Función para generar código de tropa
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.pesaje-camion.route')
 async function generarCodigoTropa(especie: Especie): Promise<{ codigo: string; numero: number }> {
   const year = new Date().getFullYear()
   const letra = especie === 'BOVINO' ? 'B' : especie === 'EQUINO' ? 'E' : 'O'
@@ -126,8 +128,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    console.log('[POST pesaje-camion] === INICIANDO CREACIÓN DE PESAJE v4 ===')
-    console.log('[POST pesaje-camion] Body:', JSON.stringify(body, null, 2))
+    log.info('[POST pesaje-camion] === INICIANDO CREACIÓN DE PESAJE v4 ===')
+    log.info(`'[POST pesaje-camion] Body:' JSON.stringify(body, null, 2)`)
     
     const {
       tipo,
@@ -165,7 +167,7 @@ export async function POST(request: NextRequest) {
     const estado: EstadoPesaje = pesoBruto && pesoTara ? 'CERRADO' : 'ABIERTO'
     
     // === VALIDACIÓN DE CLAVES FORÁNEAS ===
-    console.log('[POST pesaje-camion] === VALIDANDO FKs ===')
+    log.info('[POST pesaje-camion] === VALIDANDO FKs ===')
     
     // Validate operadorId if provided
     let validOperadorId: string | undefined = undefined
@@ -176,7 +178,7 @@ export async function POST(request: NextRequest) {
       if (operadorExists) {
         validOperadorId = operadorId
       } else {
-        console.log('[POST pesaje-camion] operadorId no válido, ignorando:', operadorId)
+        log.info(`'[POST pesaje-camion] operadorId no válido, ignorando:' operadorId`)
       }
     }
     
@@ -189,7 +191,7 @@ export async function POST(request: NextRequest) {
       if (transportistaExists) {
         validTransportistaId = transportistaId
       } else {
-        console.log('[POST pesaje-camion] transportistaId no válido, ignorando:', transportistaId)
+        log.info(`'[POST pesaje-camion] transportistaId no válido, ignorando:' transportistaId`)
       }
     }
     
@@ -290,7 +292,7 @@ export async function POST(request: NextRequest) {
           
           if (disponible < cantidadIngresar && forzarCapacidad) {
             advertenciaCapacidad = `ATENCIÓN: Se excedió la capacidad del corral "${corralExists.nombre}". Capacidad: ${corralExists.capacidad}, Stock actual: ${stockActual}, Ingresando: ${cantidadIngresar}`
-            console.warn(`[POST pesaje-camion] ${advertenciaCapacidad}`)
+            log.warn(`[POST pesaje-camion] ${advertenciaCapacidad}`)
           }
         }
       }
@@ -395,7 +397,7 @@ export async function POST(request: NextRequest) {
         : []
       
       // === EJECUTAR TODO EN UNA TRANSACCIÓN ===
-      console.log('[POST pesaje-camion] === EJECUTANDO EN TRANSACCIÓN ===')
+      log.info('[POST pesaje-camion] === EJECUTANDO EN TRANSACCIÓN ===')
       
       const result = await db.$transaction(async (tx) => {
         // 1. Crear pesaje
@@ -485,7 +487,7 @@ export async function POST(request: NextRequest) {
         return { pesaje, tropaCompleta, animalesCreados }
       })
       
-      console.log(`[POST pesaje-camion] ✅ Transacción completada: ${result.animalesCreados} animales creados`)
+      log.info(`[POST pesaje-camion] ✅ Transacción completada: ${result.animalesCreados} animales creados`)
       
       const response: any = {
         success: true,

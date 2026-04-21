@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('app.api.vb-romaneo.route')
 
 // GET - Obtener datos según el tipo solicitado
 export async function GET(request: NextRequest) {
@@ -371,7 +373,7 @@ async function intercambiarGarrones(data: {
 }) {
   const { garron1, garron2 } = data
 
-  console.log('[VB Romaneo] Intercambiando garrones:', { garron1, garron2 })
+  log.info('[VB Romaneo] Intercambiando garrones:', { garron1, garron2 } as Record<string, unknown>)
 
   if (garron1 === garron2) {
     return NextResponse.json({ success: false, error: 'Los garrones deben ser diferentes' }, { status: 400 })
@@ -386,10 +388,10 @@ async function intercambiarGarrones(data: {
       where: { garron: garron2 }
     })
 
-    console.log('[VB Romaneo] Romaneos encontrados:', { 
+    log.info('[VB Romaneo] Romaneos encontrados:', { 
       romaneo1: romaneo1 ? { id: romaneo1.id, garron: romaneo1.garron, tropa: romaneo1.tropaCodigo } : null,
       romaneo2: romaneo2 ? { id: romaneo2.id, garron: romaneo2.garron, tropa: romaneo2.tropaCodigo } : null
-    })
+    } as Record<string, unknown>)
 
     if (!romaneo1 || !romaneo2) {
       return NextResponse.json({ success: false, error: 'Uno o ambos garrones no tienen romaneo' }, { status: 404 })
@@ -425,7 +427,7 @@ async function intercambiarGarrones(data: {
         tropaCodigo: romaneo2.tropaCodigo
       }
 
-      console.log('[VB Romaneo] Intercambiando datos:', { datos1, datos2 })
+      log.info('[VB Romaneo] Intercambiando datos:', { datos1, datos2 } as Record<string, unknown>)
 
       // Actualizar romaneo 1 con datos del 2
       await tx.romaneo.update({
@@ -447,7 +449,7 @@ async function intercambiarGarrones(data: {
         where: { garron: garron2 }
       })
 
-      console.log('[VB Romaneo] Asignaciones encontradas:', { asig1: !!asig1, asig2: !!asig2 })
+      log.info('[VB Romaneo] Asignaciones encontradas:', { asig1: !!asig1, asig2: !!asig2 } as Record<string, unknown>)
 
       if (asig1 && asig2) {
         // Guardar datos completos para el intercambio
@@ -501,7 +503,7 @@ async function intercambiarGarrones(data: {
       }
     })
 
-    console.log('[VB Romaneo] Intercambio completado exitosamente')
+    log.info('[VB Romaneo] Intercambio completado exitosamente')
     return NextResponse.json({ success: true, message: 'Garrones intercambiados correctamente' })
   } catch (error) {
     console.error('[VB Romaneo] Error en intercambio:', error)

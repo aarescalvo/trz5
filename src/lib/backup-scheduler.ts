@@ -9,6 +9,8 @@ import { promisify } from 'util'
 import * as fs from 'fs'
 import * as path from 'path'
 import { db } from './db'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.backup-scheduler')
 
 const execAsync = promisify(exec)
 
@@ -270,7 +272,7 @@ export async function runBackup(tipo: 'AUTOMATICO' | 'MANUAL' = 'MANUAL'): Promi
         
         finalFile = zipFile
       } catch (compressError) {
-        console.warn('Error comprimiendo backup, usando archivo sin comprimir:', compressError)
+        log.warn(`'Error comprimiendo backup, usando archivo sin comprimir:' compressError`)
       }
     }
 
@@ -397,7 +399,7 @@ export async function cleanupOldBackups(): Promise<{ deleted: number; freedMB: n
             where: { nombreArchivo: file.name }
           })
         } catch (deleteError) {
-          console.warn(`No se pudo eliminar backup antiguo ${file.name}:`, deleteError)
+          log.warn(`No se pudo eliminar backup antiguo ${file.name}`, { error: deleteError } as any)
         }
       }
     }
@@ -513,7 +515,7 @@ function mapToBackupConfig(config: any): BackupConfig {
  */
 export function startScheduler(config: BackupConfig): boolean {
   if (!config.activo) {
-    console.log('Backup scheduler deshabilitado')
+    log.info('Backup scheduler deshabilitado')
     return false
   }
 
@@ -532,14 +534,14 @@ export function startScheduler(config: BackupConfig): boolean {
     currentConfig = config
 
     scheduledTask = cron.schedule(cronExpression, async () => {
-      console.log('Ejecutando backup programado:', new Date().toISOString())
+      log.info(`'Ejecutando backup programado:' new Date().toISOString()`)
       await runBackup('AUTOMATICO')
     }, {
       scheduled: true,
       timezone: 'America/Argentina/Buenos_Aires'
     })
 
-    console.log('Backup scheduler iniciado:', cronExpression)
+    log.info(`'Backup scheduler iniciado:' cronExpression`)
     return true
   } catch (error) {
     console.error('Error iniciando backup scheduler:', error)
@@ -554,7 +556,7 @@ export function stopScheduler(): void {
   if (scheduledTask) {
     scheduledTask.stop()
     scheduledTask = null
-    console.log('Backup scheduler detenido')
+    log.info('Backup scheduler detenido')
   }
 }
 
@@ -582,7 +584,7 @@ export async function initializeScheduler(): Promise<void> {
     const config = await getBackupConfig()
     if (config && config.activo) {
       startScheduler(config)
-      console.log('Backup scheduler inicializado')
+      log.info('Backup scheduler inicializado')
     }
   } catch (error) {
     console.error('Error inicializando backup scheduler:', error)

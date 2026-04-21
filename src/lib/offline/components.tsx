@@ -13,6 +13,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.offline.components')
 import { useOffline } from '@/lib/offline/useOffline'
 import { cn } from '@/lib/utils'
 
@@ -30,7 +32,7 @@ export function ConnectionIndicator() {
     try {
       const result = await processSyncQueue()
       if (result.success > 0) {
-        console.log(`Sincronizados ${result.success} items`)
+        log.info(`Sincronizados ${result.success} items`)
       }
     } catch (error) {
       console.error('Error sincronizando:', error)

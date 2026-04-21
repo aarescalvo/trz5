@@ -1,0 +1,237 @@
+================================================================================
+  NPM DEPENDENCY ANALYSIS - produccion4z (frigorifico-sistema v3.17.0)
+  Generated: dependency usage audit across src/ directory
+================================================================================
+
+Methodology:
+  - Searched src/ for each dependency using: import from / require() patterns
+  - Also checked dynamic imports (e.g., await import('pkg'))
+  - Checked prisma/seed.ts, scripts/, next.config.ts, tailwind.config.ts
+  - Build tools (compilers, linters, CSS processors) classified separately
+
+================================================================================
+  DEFINITELY UNUSED (safe to remove)
+  These packages have ZERO references anywhere in src/ or project config files.
+  Estimated savings: ~13 packages, significant bundle & install time reduction.
+================================================================================
+
+  1. @hookform/resolvers   ^5.1.1
+     Why: react-hook-form IS used (in ui/form.tsx) but @hookform/resolvers
+          (zodResolver, yupResolver etc.) is NEVER imported. Forms do not use
+          schema-based validation via this package.
+     Action: REMOVE
+
+  2. @mdxeditor/editor     ^3.39.1
+     Why: No MDX editing functionality exists in the project. Zero imports.
+     Action: REMOVE
+
+  3. @reactuses/core       ^6.0.5
+     Why: React hooks utility library. No imports found (no useDebounce,
+          useToggle, useLocalStorage from this lib). Custom hooks exist in
+          src/hooks/.
+     Action: REMOVE
+
+  4. @tanstack/react-query ^5.82.0
+     Why: No QueryClient, QueryClientProvider, or useQuery found. The project
+          does NOT use server-state management via React Query.
+     Action: REMOVE
+
+  5. @tanstack/react-table ^8.21.3
+     Why: No useReactTable, createColumnHelper, or flexRender found.
+          Tables appear to be built with custom components or plain HTML.
+     Action: REMOVE
+
+  6. jszip                 ^3.10.1
+     Why: Zero imports. No ZIP creation/extraction functionality detected.
+     Action: REMOVE
+
+  7. next-auth             ^4.24.11
+     Why: Custom JWT authentication is used (see src/lib/jwt.ts, src/middleware.ts).
+          next-auth is NOT imported anywhere. The auth system is fully custom.
+     Action: REMOVE
+
+  8. next-intl             ^4.3.4
+     Why: Custom i18n system is used (see src/i18n/config.ts,
+          src/components/providers/locale-provider.tsx). next-intl is NOT
+          imported anywhere.
+     Action: REMOVE
+
+  9. pako                  ^2.1.0
+     Why: Zero imports. No compression/decompression functionality detected.
+     Action: REMOVE
+
+  10. react-markdown       ^10.1.0
+      Why: Zero imports. No markdown rendering detected in any component.
+      Action: REMOVE
+
+  11. react-syntax-highlighter ^15.6.1
+      Why: Zero imports. No code syntax highlighting detected.
+      Action: REMOVE
+
+  12. uuid                 ^11.1.0
+      Why: Zero imports. No UUID generation via this package detected.
+      Action: REMOVE
+
+  13. z-ai-web-dev-sdk     ^0.0.16
+      Why: Zero imports. No references found in any source file.
+      Action: REMOVE
+
+================================================================================
+  POSSIBLY UNUSED (review needed)
+  These packages are not imported in src/ but may serve indirect purposes.
+================================================================================
+
+  1. @types/pdfmake        ^0.3.2
+     Note: Type-only package. pdfmake IS used (via dynamic imports in
+           src/app/api/reportes/pdf/route.ts, src/app/api/facturacion/pdf/route.ts,
+           src/app/api/facturacion/notas/pdf/route.ts) but @types/pdfmake itself
+           is not explicitly imported.
+     Risk: LOW - Removing may cause TypeScript type errors on dynamic imports.
+     Recommendation: KEEP for type safety, or move to devDependencies.
+
+  2. bcrypt                ^6.0.0
+     Note: Only used in scripts/ directory (scripts/seed-data.ts,
+           scripts/seed-datos-prueba.ts), NOT in src/. Production code uses
+           bcryptjs instead (src/lib/security.ts, src/app/api/auth/route.ts, etc.).
+           Having both bcrypt (native C++ addon) and bcryptjs (pure JS) is redundant.
+     Risk: MEDIUM - Seed scripts will break if removed.
+     Recommendation: Move to devDependencies since only used in scripts,
+                    or consolidate to bcryptjs-only if scripts are updated.
+
+  3. sharp                 ^0.34.5
+     Note: Only used in scripts/convertir-logos.ts, NOT in src/ or next.config.ts.
+           Not used for Next.js image optimization.
+     Risk: MEDIUM - Logo conversion script will break.
+     Recommendation: Move to devDependencies since only used in build scripts.
+
+  4. framer-motion         ^12.23.2
+     Note: Only imported in 1 file. Worth verifying this single usage is intentional.
+     Risk: LOW - May be used for animations in a specific component.
+     Recommendation: VERIFY the single usage; likely keep.
+
+  5. embla-carousel-react  ^8.6.0
+     Note: Only imported in 1 file (ui/carousel.tsx). Verify the carousel is used.
+     Risk: LOW - May be used for an image/content carousel component.
+     Recommendation: VERIFY if carousel component is actually rendered anywhere.
+
+================================================================================
+  BUILD TOOLS (keep - but some should move to devDependencies)
+  These packages are used at build/dev time, not in runtime application code.
+================================================================================
+
+  In dependencies (SHOULD BE in devDependencies):
+  -------------------------------------------------
+  - prisma              6     CLI tool for database operations (db push, migrate, etc.)
+  - tailwindcss-animate 1.0.7 Referenced in tailwind.config.ts (build-time CSS plugin)
+
+  In devDependencies (correctly placed):
+  ---------------------------------------
+  - @tailwindcss/postcss  ^4        PostCSS plugin for Tailwind CSS v4
+  - @types/node-cron     ^3.0.11   TypeScript types for node-cron
+  - @types/nodemailer    ^7.0.11   TypeScript types for nodemailer
+  - @types/react         ^19       TypeScript types for React
+  - @types/react-dom     ^19       TypeScript types for React DOM
+  - bun-types            ^1.3.4    TypeScript types for Bun runtime
+  - eslint               ^9        Linter
+  - eslint-config-next   ^16.1.1   ESLint config for Next.js
+  - tailwindcss          ^4        CSS framework (build-time)
+  - tw-animate-css       ^1.3.5    Tailwind animation utilities
+  - typescript           ^5        TypeScript compiler
+
+================================================================================
+  ACTIVELY USED (confirmed in src/)
+  These packages have verified imports/usage in the codebase.
+================================================================================
+
+  Framework & Core:
+  - next                 ^16.1.1     (framework)
+  - react                ^19.0.0     (UI library)
+  - react-dom            ^19.0.0     (DOM renderer)
+  - @prisma/client       6           (ORM client - 47 files)
+  - zod                  ^4.0.2      (schema validation - 2 files)
+
+  UI Components (Radix):
+  - @radix-ui/react-accordion, alert-dialog, aspect-ratio, avatar, checkbox,
+    collapsible, context-menu, dialog, dropdown-menu, hover-card, label,
+    menubar, navigation-menu, popover, progress, radio-group, scroll-area,
+    select, separator, slider, slot (5 files), switch, tabs, toast, toggle (2),
+    toggle-group, tooltip
+  - vaul                 ^1.1.2      (drawer component)
+  - cmdk                 ^1.1.1      (command palette)
+  - input-otp            ^1.4.2      (OTP input)
+  - react-day-picker     ^9.8.0      (date picker)
+  - react-resizable-panels ^3.0.3    (resizable panels)
+  - embla-carousel-react ^8.6.0      (carousel)
+  - sonner               ^2.0.6      (toast notifications - 161 files!)
+
+  Styling:
+  - class-variance-authority ^0.7.1   (8 files)
+  - clsx                 ^2.1.1      (2 files)
+  - tailwind-merge       ^3.3.1      (2 files)
+  - next-themes          ^0.4.6      (dark/light theme)
+
+  Icons:
+  - lucide-react         ^0.525.0    (230 files - heavily used)
+
+  Data Visualization:
+  - recharts             ^2.15.4     (2 files - charts)
+
+  Forms:
+  - react-hook-form      ^7.60.0     (1 file - ui/form.tsx)
+
+  Drag & Drop:
+  - @dnd-kit/core        ^6.3.1      (3 files)
+  - @dnd-kit/sortable    ^10.0.0     (1 file)
+  - @dnd-kit/utilities   ^3.2.2      (1 file)
+
+  PDF Generation:
+  - jspdf                ^4.2.0      (11 files)
+  - jspdf-autotable      ^5.0.7      (11 files)
+  - pdfmake              ^0.3.7      (via dynamic import in 3 files)
+
+  Barcode:
+  - jsbarcode            ^3.12.3     (1 file)
+
+  Excel:
+  - exceljs              ^4.4.0      (3 files)
+  - xlsx                 ^0.18.5     (3 files)
+
+  Auth & Security:
+  - jose                 ^6.2.2      (JWT - 1 file)
+  - bcryptjs             ^3.0.3      (password hashing - 4 files)
+
+  Date/Time:
+  - date-fns             ^4.1.0      (3 files)
+
+  Email:
+  - nodemailer           ^8.0.2      (1 file)
+
+  Canvas (native):
+  - canvas               ^3.2.3      (1 file - barcode generation)
+
+  State Management:
+  - zustand              ^5.0.6      (2 files - stores)
+
+  Scheduling:
+  - node-cron            ^3.0.3      (1 file)
+
+================================================================================
+  SUMMARY & RECOMMENDED ACTIONS
+================================================================================
+
+  DEFINITELY UNUSED - Remove (13 packages):
+    npm uninstall @hookform/resolvers @mdxeditor/editor @reactuses/core \
+      @tanstack/react-query @tanstack/react-table jszip next-auth next-intl \
+      pako react-markdown react-syntax-highlighter uuid z-ai-web-dev-sdk
+
+  MOVE TO devDependencies (3 packages):
+    npm uninstall prisma tailwindcss-animate sharp \
+    && npm install -D prisma tailwindcss-animate sharp
+
+  REVIEW - Possibly consolidate (1 package):
+    bcrypt vs bcryptjs: Both do the same thing. Production uses bcryptjs.
+    Consider removing bcrypt from dependencies (update scripts to use bcryptjs).
+
+  @types/pdfmake: Keep in devDependencies for type safety (or move from deps).
+
+================================================================================

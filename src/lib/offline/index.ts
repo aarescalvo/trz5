@@ -1,3 +1,6 @@
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.offline.index')
+
 /**
  * OFFLINE MANAGER - Sistema de funcionamiento offline
  * 
@@ -75,7 +78,7 @@ export async function initOfflineDB(): Promise<IDBDatabase> {
 
     request.onsuccess = () => {
       db = request.result
-      console.log('IndexedDB inicializada correctamente')
+      log.info('IndexedDB inicializada correctamente')
       resolve(db)
     }
 
@@ -119,7 +122,7 @@ export async function initOfflineDB(): Promise<IDBDatabase> {
         syncStore.createIndex('timestamp', 'timestamp', { unique: false })
       }
 
-      console.log('Stores de IndexedDB creados')
+      log.info('Stores de IndexedDB creados')
     }
   })
 }
@@ -161,7 +164,7 @@ export async function saveItem<T>(storeName: string, item: T): Promise<void> {
     const request = store.put(item)
 
     request.onsuccess = () => {
-      console.log(`Item guardado en ${storeName}:`, item)
+      log.info(`Item guardado en ${storeName}: ${item}`)
       resolve()
     }
 
@@ -254,7 +257,7 @@ export async function addToSyncQueue(
   }
 
   await saveItem(OFFLINE_STORES.SYNC_QUEUE, syncItem)
-  console.log('Item agregado a cola de sincronización:', syncItem.id)
+  log.info(`Item agregado a cola de sincronización: ${syncItem.id}`)
 }
 
 /**
@@ -313,7 +316,7 @@ export async function processSyncQueue(): Promise<{
       await saveItem(OFFLINE_STORES.SYNC_QUEUE, item)
       
       success++
-      console.log(`Sincronizado: ${item.id}`)
+      log.info(`Sincronizado: ${item.id}`)
     } catch (error: any) {
       failed++
       item.attempts++
@@ -368,7 +371,7 @@ export async function cacheData(storeName: string, data: any[]): Promise<void> {
     }
     
     transaction.oncomplete = () => {
-      console.log(`Cache actualizado: ${storeName} (${data.length} items)`)
+      log.info(`Cache actualizado: ${storeName} (${data.length} items)`)
       resolve()
     }
     

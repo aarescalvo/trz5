@@ -1,6 +1,9 @@
 // Utilidades de cifrado para datos sensibles (contraseñas, tokens, etc.)
 // Usa AES-256-GCM con la clave derivada de ENCRYPTION_KEY en variables de entorno
 
+import { createLogger } from '@/lib/logger'
+const log = createLogger('lib.crypto')
+
 const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 12
 const AUTH_TAG_LENGTH = 16
@@ -22,7 +25,7 @@ function getEncryptionKey(): string {
   if (!key) {
     // En desarrollo, usar una clave por defecto (WARNING en consola)
     if (process.env.NODE_ENV === 'development') {
-      console.warn('[CRYPTO] ENCRYPTION_KEY no configurada. Usando clave de desarrollo. NO usar en producción.')
+      log.warn('[CRYPTO] ENCRYPTION_KEY no configurada. Usando clave de desarrollo. NO usar en producción.')
       return 'dev-key-frigorifico-2024-change-me'
     }
     throw new Error('ENCRYPTION_KEY no configurada en variables de entorno')
@@ -59,7 +62,7 @@ export function decrypt(ciphertext: string | null | undefined): string | null {
 
   // Si no tiene el formato de cipher (no contiene ':'), devolver como está (dato no encriptado legacy)
   if (!ciphertext.includes(':')) {
-    console.warn('[CRYPTO] Dato no está encriptado. Se devuelve tal cual. Considere encriptarlo.')
+    log.warn('[CRYPTO] Dato no está encriptado. Se devuelve tal cual. Considere encriptarlo.')
     return ciphertext
   }
 

@@ -13,6 +13,8 @@ import { useOfflineStore } from '@/stores/offlineStore'
 import { useAppStore } from '@/stores/appStore'
 import { OfflineBanner } from '@/lib/offline/components'
 import { initOfflineDB } from '@/lib/offline'
+import { createLogger } from '@/lib/logger'
+const log = createLogger('components.ResilienceProvider')
 
 export function ResilienceProvider({ children }: { children: React.ReactNode }) {
   const setIsOnline = useOfflineStore((s) => s.setIsOnline)
@@ -26,7 +28,7 @@ export function ResilienceProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     initOfflineDB()
       .then(() => {
-        console.log('[Resilience] IndexedDB inicializada')
+        log.info('[Resilience] IndexedDB inicializada')
         setInitialized(true)
       })
       .catch((err) => {
