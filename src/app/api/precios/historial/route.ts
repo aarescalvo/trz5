@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const tipoServicioId = searchParams.get('tipoServicioId') || undefined
     const clienteId = searchParams.get('clienteId') || undefined
-    const operadorId = searchParams.get('operadorId') || undefined
+    const operadorId = request.headers.get('x-operador-id') || undefined
     const tipoCambio = searchParams.get('tipoCambio') || undefined
     const desde = searchParams.get('desde') ? new Date(searchParams.get('desde')!) : undefined
     const hasta = searchParams.get('hasta') ? new Date(searchParams.get('hasta')!) : undefined

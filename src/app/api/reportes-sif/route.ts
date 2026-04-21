@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const fechaHasta = searchParams.get('fechaHasta')
     const formato = searchParams.get('formato') || 'json'
 
-    const operadorId = request.headers.get('x-operador-id') || searchParams.get('operadorId')
+    const operadorId = request.headers.get('x-operador-id')
 
     // Obtener configuración del frigorífico para encabezados
     const config = await db.configuracionFrigorifico.findFirst()

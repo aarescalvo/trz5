@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const modulo = searchParams.get('modulo')
     const accion = searchParams.get('accion')
-    const operadorId = searchParams.get('operadorId')
+    const operadorId = request.headers.get('x-operador-id')
     const limit = parseInt(searchParams.get('limit') || '100')
     
     const where: Record<string, unknown> = {}

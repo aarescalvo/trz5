@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { validarPermiso } from '@/lib/auth-helpers'
 
 function getOperadorId(request: NextRequest): string | null {
-  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+  return request.headers.get('x-operador-id')
 }
 
 // GET - List tributos for a factura
@@ -75,7 +75,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    const operadorId = searchParams.get('operadorId') || request.headers.get('x-operador-id')
+    const operadorId = request.headers.get('x-operador-id')
     const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
     if (!puedeFacturar) {
       return NextResponse.json({ success: false, error: 'Sin permisos de facturación' }, { status: 403 })

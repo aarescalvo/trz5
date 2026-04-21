@@ -4,7 +4,7 @@ import { crearLiquidacionSchema } from '@/modules/facturacion/types'
 import { validarPermiso } from '@/lib/auth-helpers'
 
 function getOperadorId(request: NextRequest): string | null {
-  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+  return request.headers.get('x-operador-id')
 }
 
 export async function GET(request: NextRequest) {

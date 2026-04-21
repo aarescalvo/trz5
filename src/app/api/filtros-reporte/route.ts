@@ -4,9 +4,9 @@ import { createLogger } from '@/lib/logger'
 
 const logger = createLogger('API:FiltrosReporte')
 
-// Helper to get operadorId from request
+// Helper to get operadorId from request (header only - set by JWT middleware)
 function getOperadorId(request: NextRequest): string | null {
-  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+  return request.headers.get('x-operador-id')
 }
 
 // GET - List saved filters for an operador, optionally filtered by reportType

@@ -4,7 +4,7 @@ import { Especie } from '@prisma/client'
 import { validarPermiso } from '@/lib/auth-helpers'
 
 function getOperadorId(request: NextRequest): string | null {
-  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+  return request.headers.get('x-operador-id')
 }
 
 // GET - Listar productos
@@ -191,7 +191,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    const operadorId = searchParams.get('operadorId') || request.headers.get('x-operador-id')
+    const operadorId = request.headers.get('x-operador-id')
     const puedeEliminar = await validarPermiso(operadorId, 'puedeConfiguracion')
     if (!puedeEliminar) {
       return NextResponse.json({ success: false, error: 'Solo un administrador puede eliminar productos' }, { status: 403 })

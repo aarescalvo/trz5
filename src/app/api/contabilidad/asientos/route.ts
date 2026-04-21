@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
       if (hasta) where.fecha.lte = new Date(hasta);
     }
     
+    // TODO: model AsientoContable no existe en schema - crear el modelo cuando se implemente contabilidad
     const asientos = await (db as any).asientoContable.findMany({
       where,
       include: { lineas: true },
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // TODO: model AsientoContable no existe en schema - crear el modelo cuando se implemente contabilidad
     const asiento = await (db as any).asientoContable.create({
       data: {
         tipoOrigen: tipoOrigen || 'AJUSTE',

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
   try {
     const { searchParams } = new URL(request.url)
-    const operadorId = searchParams.get('operadorId')
+    const operadorId = request.headers.get('x-operador-id')
     const modulo = searchParams.get('modulo')
     const accion = searchParams.get('accion')
     const fechaDesde = searchParams.get('fechaDesde')

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const ip = searchParams.get('ip')
-    const operadorId = searchParams.get('operadorId')
+    const operadorId = request.headers.get('x-operador-id')
     const soloFallidos = searchParams.get('fallidos') === 'true'
     const limit = parseInt(searchParams.get('limit') || '100')
     const horas = parseInt(searchParams.get('horas') || '24')
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       where.exitoso = false
     }
 
-    const intentos = await (db as any).intentoLogin.findMany({
+    const intentos = await db.intentoLogin.findMany({
       where,
       orderBy: {
         fecha: 'desc'
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     })
     
     // Estadísticas adicionales
-    const estadisticas = await (db as any).intentoLogin.groupBy({
+    const estadisticas = await db.intentoLogin.groupBy({
       by: ['ip'],
       where: {
         ...where,

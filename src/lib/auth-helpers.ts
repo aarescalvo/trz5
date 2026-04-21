@@ -5,6 +5,15 @@ import { createLogger } from '@/lib/logger'
 const logger = createLogger('AuthHelpers')
 
 /**
+ * Extrae el operadorId únicamente del header x-operador-id.
+ * El header es establecido por el middleware después de la validación JWT.
+ * NO se usa query param fallback para evitar session hijacking.
+ */
+export function getOperadorId(request: NextRequest): string | null {
+  return request.headers.get('x-operador-id')
+}
+
+/**
  * Valida que un operador tenga un permiso específico.
  * ADMINISTRADOR tiene todos los permisos automáticamente.
  * 
@@ -67,9 +76,7 @@ export async function checkPermission(
   request: NextRequest,
   permiso: string
 ): Promise<NextResponse | null> {
-  const operadorId = 
-    request.headers.get('x-operador-id') || 
-    new URL(request.url).searchParams.get('operadorId')
+  const operadorId = request.headers.get('x-operador-id')
 
   if (!operadorId) {
     return NextResponse.json(
@@ -125,9 +132,7 @@ export async function validarRolAdmin(operadorId: string | null | undefined): Pr
 export async function checkAdminRole(
   request: NextRequest
 ): Promise<NextResponse | null> {
-  const operadorId = 
-    request.headers.get('x-operador-id') || 
-    new URL(request.url).searchParams.get('operadorId')
+  const operadorId = request.headers.get('x-operador-id')
 
   if (!operadorId) {
     return NextResponse.json(

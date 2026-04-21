@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 import { validarPermiso, validarRolAdmin } from '@/lib/auth-helpers'
 
 function getOperadorId(request: NextRequest): string | null {
-  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+  return request.headers.get('x-operador-id')
 }
 
 // GET - Listar operadores
@@ -281,7 +281,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    const operadorIdAuth = searchParams.get('operadorId') || request.headers.get('x-operador-id')
+    const operadorIdAuth = request.headers.get('x-operador-id')
     
     // Verificar permiso de configuración
     const puedeEliminar = await validarPermiso(operadorIdAuth, 'puedeConfiguracion')

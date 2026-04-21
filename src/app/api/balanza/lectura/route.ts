@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Obtener configuración de balanza
-    const config = await (db as any).configuracionBalanza.findFirst({
+    const config = await db.configBalanza.findFirst({
       where: { activa: true }
     })
 
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       data: {
         ...simularPeso(),
         configuracion: {
-          puerto: config.puerto,
+          puerto: config.puertoSerial,
           protocolo: config.protocolo
         }
       }

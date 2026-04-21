@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const operadorId = searchParams.get('operadorId')
+    const operadorId = request.headers.get('x-operador-id')
     const modulo = searchParams.get('modulo')
     const limite = parseInt(searchParams.get('limite') || '100')
 

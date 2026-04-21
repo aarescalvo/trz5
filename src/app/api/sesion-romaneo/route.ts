@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
   try {
     const { searchParams } = new URL(request.url)
-    const operadorId = searchParams.get('operadorId')
+    const operadorId = request.headers.get('x-operador-id')
 
     if (!operadorId) {
       return NextResponse.json(

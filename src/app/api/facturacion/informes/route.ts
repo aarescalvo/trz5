@@ -5,7 +5,7 @@ import { startOfWeek, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 function getOperadorId(request: NextRequest): string | null {
-  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+  return request.headers.get('x-operador-id')
 }
 
 // GET - Informes de facturación con datos para gráficos

@@ -77,7 +77,7 @@ export async function GET(
   if (authError) return authError
   try {
     const { modulo } = await params
-    const operadorId = request.nextUrl.searchParams.get('operadorId')
+    const operadorId = request.headers.get('x-operador-id')
     const sesionKey = request.nextUrl.searchParams.get('sesionKey')
 
     const key = sesionKey || `${modulo}-${operadorId || 'anon'}`

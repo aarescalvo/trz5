@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     if (tipo) where.tipo = tipo;
     if (imputable !== null) where.imputable = imputable === 'true';
     
+    // TODO: model PlanCuenta no existe en schema - crear el modelo cuando se implemente contabilidad
     const cuentas = await (db as any).planCuenta.findMany({
       where,
       orderBy: { codigo: 'asc' }
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // TODO: model PlanCuenta no existe en schema - crear el modelo cuando se implemente contabilidad
     const cuenta = await (db as any).planCuenta.create({
       data: {
         codigo,

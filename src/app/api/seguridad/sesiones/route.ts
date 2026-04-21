@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url)
-    const operadorId = searchParams.get('operadorId')
+    const operadorId = request.headers.get('x-operador-id')
     const soloActivas = searchParams.get('activas') !== 'false'
     const limit = parseInt(searchParams.get('limit') || '100')
 

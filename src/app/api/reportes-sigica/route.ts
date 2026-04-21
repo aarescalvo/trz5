@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const fechaDesde = searchParams.get('fechaDesde')
     const fechaHasta = searchParams.get('fechaHasta')
 
-    const operadorId = request.headers.get('x-operador-id') || searchParams.get('operadorId')
+    const operadorId = request.headers.get('x-operador-id')
 
     // Obtener configuración del frigorífico
     const config = await db.configuracionFrigorifico.findFirst()

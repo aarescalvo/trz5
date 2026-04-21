@@ -44,10 +44,10 @@ export async function GET(request: NextRequest) {
         break
 
       case 'romaneos':
-        data = await (db as any).asignacionGarron.findMany({
+        data = await db.asignacionGarron.findMany({
           include: {
             animal: { include: { tropa: true } },
-            mediaRes: true
+            listaFaena: true
           },
           orderBy: { createdAt: 'desc' },
           take: 1000

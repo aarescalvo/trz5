@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { validarPermiso } from '@/lib/auth-helpers'
 
-// Helper para obtener operadorId desde headers o query params
+// Helper para obtener operadorId desde header (middleware JWT)
 function getOperadorId(request: NextRequest): string | null {
-  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+  return request.headers.get('x-operador-id')
 }
 
 // GET - Fetch facturas
@@ -384,7 +384,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    const operadorId = searchParams.get('operadorId') || request.headers.get('x-operador-id')
+    const operadorId = request.headers.get('x-operador-id')
     
     // Validate permissions
     const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')

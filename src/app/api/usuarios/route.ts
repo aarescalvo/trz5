@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { validarPermiso } from '@/lib/auth-helpers';
 
 function getOperadorId(request: NextRequest): string | null {
-  return request.headers.get('x-operador-id') || new URL(request.url).searchParams.get('operadorId')
+  return request.headers.get('x-operador-id')
 }
 
 // GET - Listar usuarios (usando Operador como usuarios internos del sistema)

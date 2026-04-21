@@ -223,7 +223,7 @@ export async function DELETE(request: NextRequest) {
     fs.unlinkSync(filePath)
 
     // Eliminar del historial
-    await (db as any).historialBackup.deleteMany({
+    await db.historialBackup.deleteMany({
       where: { nombreArchivo: fileName }
     })
 

@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const fechaFin = new Date(anioActual, mesActual, 0, 23, 59, 59)
 
     // Obtener facturas del mes
-    const facturas = await (db as any).factura.findMany({
+    const facturas = await db.factura.findMany({
       where: {
         fecha: {
           gte: fechaInicio,
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
       const fechaInicioMes = new Date(anioActual, mesActual - 1 - m, 1)
       const fechaFinMes = new Date(anioActual, mesActual - m, 0, 23, 59, 59)
 
-      const facturasMes = await (db as any).factura.findMany({
+      const facturasMes = await db.factura.findMany({
         where: {
           fecha: {
             gte: fechaInicioMes,

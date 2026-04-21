@@ -7,21 +7,21 @@ export async function GET(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeConfiguracion')
   if (authError) return authError
   try {
-    let config = await (db as any).configuracionBalanza.findFirst({
+    let config = await db.configBalanza.findFirst({
       where: { activa: true }
     })
 
     if (!config) {
       // Crear configuración por defecto
-      config = await (db as any).configuracionBalanza.create({
+      config = await db.configBalanza.create({
         data: {
           nombre: 'Balanza Principal',
-          puerto: 'COM1',
+          puertoSerial: 'COM1',
           baudRate: 9600,
           dataBits: 8,
-          parity: 'none',
+          paridad: 'NONE',
           stopBits: 1,
-          protocolo: 'TOLEDO',
+          protocolo: 'CONTINUO',
           activa: true
         }
       })
@@ -48,11 +48,10 @@ export async function PUT(request: NextRequest) {
     const data = await request.json()
     const { id, ...updateData } = data
 
-    const config = await (db as any).configuracionBalanza.update({
+    const config = await db.configBalanza.update({
       where: { id },
       data: {
-        ...updateData,
-        ultimoTest: updateData.probarConexion ? new Date() : undefined
+        ...updateData
       }
     })
 
@@ -76,15 +75,15 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
 
-    const config = await (db as any).configuracionBalanza.create({
+    const config = await db.configBalanza.create({
       data: {
         nombre: data.nombre || 'Nueva Balanza',
-        puerto: data.puerto || 'COM1',
+        puertoSerial: data.puerto || 'COM1',
         baudRate: data.baudRate || 9600,
         dataBits: data.dataBits || 8,
-        parity: data.parity || 'none',
+        paridad: data.paridad || 'NONE',
         stopBits: data.stopBits || 1,
-        protocolo: data.protocolo || 'TOLEDO',
+        protocolo: data.protocolo || 'CONTINUO',
         activa: true
       }
     })

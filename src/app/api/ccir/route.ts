@@ -153,7 +153,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
-    const operadorId = searchParams.get('operadorId')
+    const operadorId = request.headers.get('x-operador-id')
     
     if (!id) {
       return NextResponse.json({ success: false, error: 'ID requerido' }, { status: 400 })

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     
     // Parámetros de filtro
-    const operadorId = searchParams.get('operadorId')
+    const operadorId = request.headers.get('x-operador-id')
     const modulo = searchParams.get('modulo')
     const submodulo = searchParams.get('submodulo')
     const accion = searchParams.get('accion')
