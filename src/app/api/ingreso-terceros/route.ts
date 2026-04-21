@@ -8,13 +8,13 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
   try {
     const { searchParams } = new URL(request.url)
-    const proveedorId = searchParams.get('proveedorId')
+    const terceroId = searchParams.get('terceroId')
     const fecha = searchParams.get('fecha')
     
     const where: any = {}
     
-    if (proveedorId) {
-      where.proveedorId = proveedorId
+    if (terceroId) {
+      where.terceroId = terceroId
     }
     
     if (fecha) {
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const ingresos = await db.ingresoTercero.findMany({
       where,
       include: {
-        proveedor: { select: { id: true, nombre: true, cuit: true } },
+        tercero: { select: { id: true, nombre: true, cuit: true } },
         camaraDestino: { select: { id: true, nombre: true } },
         operador: { select: { id: true, nombre: true } }
       },
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { 
-      proveedorId, 
+      terceroId, 
       tipoCuarto, 
       tipificacion,
       cantidad, 
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     } = body
     
     // Validaciones
-    if (!proveedorId || !pesoTotal || pesoTotal <= 0) {
+    if (!terceroId || !pesoTotal || pesoTotal <= 0) {
       return NextResponse.json({ success: false, error: 'Faltan campos obligatorios' }, { status: 400 })
     }
     
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     const ingreso = await db.ingresoTercero.create({
       data: {
         codigo,
-        proveedorId,
+        terceroId,
         tipoCuarto: tipoCuarto || 'ASADO',
         tipificacion,
         especie: 'EQUINO', // Solo equino
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         observaciones
       },
       include: {
-        proveedor: { select: { id: true, nombre: true, cuit: true } },
+        tercero: { select: { id: true, nombre: true, cuit: true } },
         camaraDestino: { select: { id: true, nombre: true } }
       }
     })

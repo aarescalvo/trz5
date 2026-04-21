@@ -22,7 +22,6 @@ const ADMIN_ONLY_ROUTES = [
   '/api/admin',
   '/api/sistema/backup',
   '/api/backup',
-  '/api/migrar-usuarios',
   '/api/puente-web',
 ]
 

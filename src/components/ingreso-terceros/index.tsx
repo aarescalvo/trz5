@@ -39,7 +39,7 @@ export function IngresoTercerosModule({ operador }: { operador: Operador }) {
   const [searchTerm, setSearchTerm] = useState('')
   
   // Form state
-  const [proveedorId, setProveedorId] = useState('')
+  const [terceroId, setTerceroId] = useState('')
   const [tipoCuarto, setTipoCuarto] = useState<'A' | 'D' | 'T'>('A')
   const [tipificacion, setTipificacion] = useState('')
   const [cantidad, setCantidad] = useState(1)
@@ -76,7 +76,7 @@ export function IngresoTercerosModule({ operador }: { operador: Operador }) {
   }
 
   const handleGuardar = async () => {
-    if (!proveedorId || cantidad <= 0 || pesoTotal <= 0) {
+    if (!terceroId || cantidad <= 0 || pesoTotal <= 0) {
       toast.error('Complete todos los campos obligatorios')
       return
     }
@@ -87,7 +87,7 @@ export function IngresoTercerosModule({ operador }: { operador: Operador }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          proveedorId,
+          terceroId,
           tipoCuarto,
           tipificacion,
           cantidad,
@@ -117,7 +117,7 @@ export function IngresoTercerosModule({ operador }: { operador: Operador }) {
   }
 
   const resetForm = () => {
-    setProveedorId('')
+    setTerceroId('')
     setTipoCuarto('A')
     setTipificacion('')
     setCantidad(1)
@@ -128,7 +128,7 @@ export function IngresoTercerosModule({ operador }: { operador: Operador }) {
   }
 
   const filteredIngresos = ingresos.filter(i => 
-    i.proveedor?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    i.tercero?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     i.codigo?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -220,7 +220,7 @@ export function IngresoTercerosModule({ operador }: { operador: Operador }) {
                       </div>
                       <div>
                         <p className="font-mono font-bold text-stone-800">{ingreso.codigo}</p>
-                        <p className="text-sm text-stone-500">{ingreso.proveedor?.nombre}</p>
+                        <p className="text-sm text-stone-500">{ingreso.tercero?.nombre}</p>
                       </div>
                     </div>
                     
@@ -251,9 +251,9 @@ export function IngresoTercerosModule({ operador }: { operador: Operador }) {
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="col-span-2 space-y-2">
               <Label>Proveedor (Equino)</Label>
-              <Select value={proveedorId} onValueChange={setProveedorId}>
+              <Select value={terceroId} onValueChange={setTerceroId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar proveedor" />
+                  <SelectValue placeholder="Seleccionar tercero" />
                 </SelectTrigger>
                 <SelectContent>
                   {clientes.map((c) => (

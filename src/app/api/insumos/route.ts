@@ -52,7 +52,6 @@ export async function POST(request: NextRequest) {
         stockMinimo: body.stockMinimo ?? 0,
         stockMaximo: body.stockMaximo ?? null,
         puntoReposicion: body.puntoReposicion ?? null,
-        proveedorId: body.proveedorId || null,
         proveedorNombre: body.proveedorNombre || null,
         codigoProveedor: body.codigoProveedor || null,
         precioUnitario: body.precioUnitario ?? null,
