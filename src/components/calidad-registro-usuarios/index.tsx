@@ -51,7 +51,6 @@ interface Cliente {
   cuit: string | null
   telefono: string | null
   email: string | null
-  esUsuarioFaena: boolean
   _count?: {
     reclamosPendientes: number
     totalReclamos: number
@@ -136,7 +135,7 @@ export function CalidadRegistroUsuariosModule({ operador }: Props) {
   const fetchClientes = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/clientes?esUsuarioFaena=true')
+      const res = await fetch('/api/clientes')
       const data = await res.json()
       if (data.success) {
         const clientesConStats = await Promise.all(

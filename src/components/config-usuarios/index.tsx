@@ -48,8 +48,6 @@ interface UsuarioFaena {
   puntoVenta?: string
   observaciones?: string
   activo: boolean
-  esProductor: boolean
-  esUsuarioFaena: boolean
 }
 
 interface Operador {
@@ -83,8 +81,7 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
     razonSocial: '',
     condicionIva: '',
     puntoVenta: '',
-    observaciones: '',
-    esProductor: false
+    observaciones: ''
   })
 
   useEffect(() => {
@@ -93,10 +90,10 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
 
   const fetchUsuarios = async () => {
     try {
-      const res = await fetch('/api/clientes?tipo=usuarioFaena')
+      const res = await fetch('/api/clientes')
       const data = await res.json()
       if (data.success) {
-        setUsuarios(data.data.filter((c: UsuarioFaena) => c.esUsuarioFaena))
+        setUsuarios(data.data)
       }
     } catch (error) {
       console.error('Error fetching usuarios:', error)
@@ -122,8 +119,7 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
       razonSocial: '',
       condicionIva: '',
       puntoVenta: '',
-      observaciones: '',
-      esProductor: false
+      observaciones: ''
     })
     setDialogOpen(true)
   }
@@ -144,8 +140,7 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
       razonSocial: usuario.razonSocial || '',
       condicionIva: usuario.condicionIva || '',
       puntoVenta: usuario.puntoVenta || '',
-      observaciones: usuario.observaciones || '',
-      esProductor: usuario.esProductor
+      observaciones: usuario.observaciones || ''
     })
     setDialogOpen(true)
   }
@@ -176,8 +171,8 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
       const url = '/api/clientes'
       const method = usuarioEditando ? 'PUT' : 'POST'
       const body = usuarioEditando 
-        ? { ...formData, id: usuarioEditando.id, esUsuarioFaena: true }
-        : { ...formData, esUsuarioFaena: true }
+        ? { ...formData, id: usuarioEditando.id }
+        : { ...formData }
 
       const res = await fetch(url, {
         method,
@@ -268,7 +263,6 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
   const stats = {
     total: usuarios.length,
     activos: usuarios.filter(u => u.activo).length,
-    productores: usuarios.filter(u => u.esProductor).length,
     conDatosFacturacion: usuarios.filter(u => u.condicionIva).length,
   }
 
@@ -295,7 +289,7 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Card className="border-0 shadow-md">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -318,19 +312,6 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
                 <div>
                   <p className="text-xs text-stone-500">Activos</p>
                   <p className="text-xl font-bold text-green-600">{stats.activos}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-md">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-amber-100 p-2 rounded-lg">
-                  <Building className="w-5 h-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-stone-500">También Productores</p>
-                  <p className="text-xl font-bold text-amber-600">{stats.productores}</p>
                 </div>
               </div>
             </CardContent>
@@ -402,7 +383,6 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
                     <TableHead>Teléfono</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Cond. IVA</TableHead>
-                    <TableHead>Tipo</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead className="text-center">Acciones</TableHead>
                   </TableRow>
@@ -425,11 +405,6 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
                         {usuario.condicionIva ? (
                           <Badge variant="outline">{usuario.condicionIva}</Badge>
                         ) : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {usuario.esProductor && (
-                          <Badge className="bg-amber-100 text-amber-700">Productor</Badge>
-                        )}
                       </TableCell>
                       <TableCell>
                         <Badge className={usuario.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
@@ -552,18 +527,6 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 pt-4">
-                    <input
-                      type="checkbox"
-                      id="esProductor"
-                      checked={formData.esProductor}
-                      onChange={(e) => setFormData({ ...formData, esProductor: e.target.checked })}
-                      className="rounded"
-                    />
-                    <Label htmlFor="esProductor" className="text-sm">
-                      También es productor (envía animales propios)
-                    </Label>
-                  </div>
                 </TabsContent>
                 
                 {/* Tab Contacto */}
@@ -754,9 +717,6 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
                       {usuarioDetalle.activo ? 'Activo' : 'Inactivo'}
                     </Badge>
                   </div>
-                  {usuarioDetalle.esProductor && (
-                    <Badge className="bg-amber-100 text-amber-700">Productor</Badge>
-                  )}
                 </div>
                 
                 {/* Identificación */}

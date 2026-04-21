@@ -81,8 +81,17 @@ export interface Operador {
 export interface Cliente {
   id: string
   nombre: string
-  esProductor: boolean
-  esUsuarioFaena: boolean
+  cuit?: string
+  razonSocial?: string
+}
+
+export interface ProductorConsignatario {
+  id: string
+  nombre: string
+  cuit?: string
+  tipo: string
+  numeroRenspa?: string
+  numeroEstablecimiento?: string
 }
 
 export interface Corral {

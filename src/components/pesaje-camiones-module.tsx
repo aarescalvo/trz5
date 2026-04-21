@@ -45,8 +45,17 @@ interface Operador {
 interface Cliente {
   id: string
   nombre: string
-  esProductor: boolean
-  esUsuarioFaena: boolean
+  cuit?: string
+  razonSocial?: string
+}
+
+interface ProductorConsignatario {
+  id: string
+  nombre: string
+  cuit?: string
+  tipo: string
+  numeroRenspa?: string
+  numeroEstablecimiento?: string
 }
 
 interface Transportista {
@@ -69,6 +78,7 @@ interface TipoAnimalCounter {
 
 export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Operador; onTropaCreada?: () => void }) {
   const [clientes, setClientes] = useState<Cliente[]>([])
+  const [productores, setProductores] = useState<ProductorConsignatario[]>([])
   const [transportistas, setTransportistas] = useState<Transportista[]>([])
   const [corrales, setCorrales] = useState<Corral[]>([])
   const [nextTicket, setNextTicket] = useState(1)
@@ -143,8 +153,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
   
   // Computed
   const pesoNeto = pesoBruto > 0 && pesoTara > 0 ? pesoBruto - pesoTara : 0
-  const productores = clientes.filter(c => c.esProductor)
-  const usuariosFaena = clientes.filter(c => c.esUsuarioFaena)
+  const usuariosFaena = clientes
   const totalCabezas = tiposAnimales.reduce((acc, t) => acc + t.cantidad, 0)
 
   // Fetch data
@@ -170,17 +179,19 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
 
   const fetchData = async () => {
     try {
-      const [pesajesRes, transRes, clientesRes, corralesRes] = await Promise.all([
+      const [pesajesRes, transRes, clientesRes, corralesRes, productoresRes] = await Promise.all([
         fetch('/api/pesaje-camion'),
         fetch('/api/transportistas'),
         fetch('/api/clientes'),
-        fetch('/api/corrales')
+        fetch('/api/corrales'),
+        fetch('/api/productores')
       ])
       
       const pesajesData = await pesajesRes.json()
       const transData = await transRes.json()
       const clientesData = await clientesRes.json()
       const corralesData = await corralesRes.json()
+      const productoresData = await productoresRes.json()
       
       if (pesajesData.success) {
         setPesajesAbiertos(pesajesData.data.filter((p: any) => p.estado === 'ABIERTO'))
@@ -198,6 +209,10 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
       
       if (corralesData.success) {
         setCorrales(corralesData.data)
+      }
+      
+      if (productoresData.success) {
+        setProductores(productoresData.data)
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -252,7 +267,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
       setTransportistas([...transportistas, data])
       setTransportistaId(data.id)
     } else if (tipo === 'productor') {
-      setClientes([...clientes, data])
+      setProductores([...productores, data])
       setProductorId(data.id)
     } else if (tipo === 'usuarioFaena') {
       setClientes([...clientes, data])

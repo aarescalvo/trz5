@@ -10,19 +10,9 @@ function getOperadorId(request: NextRequest): string | null {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const tipo = searchParams.get('tipo')
-    const esUsuarioFaena = searchParams.get('esUsuarioFaena')
-    const esProductor = searchParams.get('esProductor')
-    
-    let where: Record<string, unknown> = {}
-    if (tipo === 'productor' || esProductor === 'true') {
-      where.esProductor = true
-    } else if (tipo === 'usuarioFaena' || esUsuarioFaena === 'true') {
-      where.esUsuarioFaena = true
-    }
-    
+
+    // Filters removed: esProductor and esUsuarioFaena no longer exist on Cliente model
     const clientes = await db.cliente.findMany({
-      where,
       orderBy: { nombre: 'asc' }
     })
     
@@ -51,7 +41,7 @@ export async function POST(request: NextRequest) {
     const {
       nombre, dni, cuit, matricula, direccion, localidad, provincia, 
       telefono, telefonoAlternativo, email, razonSocial, condicionIva, 
-      puntoVenta, observaciones, esProductor, esUsuarioFaena 
+      puntoVenta, observaciones 
     } = body
     
     if (!nombre) {
@@ -93,9 +83,7 @@ export async function POST(request: NextRequest) {
         razonSocial: razonSocial || null,
         condicionIva: condicionIva || null,
         puntoVenta: puntoVenta || null,
-        observaciones: observaciones || null,
-        esProductor: esProductor || false,
-        esUsuarioFaena: esUsuarioFaena || false
+        observaciones: observaciones || null
       }
     })
     
@@ -124,7 +112,7 @@ export async function PUT(request: NextRequest) {
     const {
       id, nombre, dni, cuit, matricula, direccion, localidad, provincia, 
       telefono, telefonoAlternativo, email, razonSocial, condicionIva, 
-      puntoVenta, observaciones, esProductor, esUsuarioFaena, activo 
+      puntoVenta, observaciones, activo 
     } = body
     
     if (!id) {
@@ -168,8 +156,6 @@ export async function PUT(request: NextRequest) {
     if (condicionIva !== undefined) data.condicionIva = condicionIva || null
     if (puntoVenta !== undefined) data.puntoVenta = puntoVenta || null
     if (observaciones !== undefined) data.observaciones = observaciones || null
-    if (esProductor !== undefined) data.esProductor = esProductor || false
-    if (esUsuarioFaena !== undefined) data.esUsuarioFaena = esUsuarioFaena || false
     if (activo !== undefined) data.activo = activo
     
     const cliente = await db.cliente.update({

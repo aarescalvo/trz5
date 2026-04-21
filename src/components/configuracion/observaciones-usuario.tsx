@@ -49,8 +49,6 @@ interface Cliente {
   id: string
   nombre: string
   cuit: string | null
-  esProductor: boolean
-  esUsuarioFaena: boolean
 }
 
 interface Observacion {

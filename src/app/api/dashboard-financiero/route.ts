@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       }),
       // Clientes activos
       db.cliente.count({
-        where: { activo: true, esUsuarioFaena: true }
+        where: { activo: true }
       }),
       // Tropas procesadas
       db.tropa.findMany({

@@ -35,9 +35,7 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             nombre: true,
-            cuit: true,
-            esProductor: true,
-            esUsuarioFaena: true
+            cuit: true
           }
         }
       },
@@ -115,9 +113,7 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             nombre: true,
-            cuit: true,
-            esProductor: true,
-            esUsuarioFaena: true
+            cuit: true
           }
         }
       }
@@ -218,9 +214,7 @@ export async function PUT(request: NextRequest) {
           select: {
             id: true,
             nombre: true,
-            cuit: true,
-            esProductor: true,
-            esUsuarioFaena: true
+            cuit: true
           }
         }
       }

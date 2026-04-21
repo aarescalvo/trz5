@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 
 interface QuickAddDialogProps {
   tipo: 'transportista' | 'productor' | 'usuarioFaena'
-  onAdd: (data: { id: string; nombre: string; esProductor?: boolean; esUsuarioFaena?: boolean }) => void
+  onAdd: (data: { id: string; nombre: string }) => void
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -22,8 +22,6 @@ interface FormData {
   direccion: string
   telefono: string
   email: string
-  esProductor: boolean
-  esUsuarioFaena: boolean
 }
 
 export function QuickAddDialog({ 
@@ -39,8 +37,6 @@ export function QuickAddDialog({
     direccion: '',
     telefono: '',
     email: '',
-    esProductor: tipo === 'productor',
-    esUsuarioFaena: tipo === 'usuarioFaena'
   })
   const [saving, setSaving] = useState(false)
 
@@ -54,8 +50,6 @@ export function QuickAddDialog({
         direccion: '',
         telefono: '',
         email: '',
-        esProductor: tipo === 'productor',
-        esUsuarioFaena: tipo === 'usuarioFaena'
       })
     }
     onOpenChange(isOpen)
@@ -79,6 +73,12 @@ export function QuickAddDialog({
           cuit: formData.cuit || undefined,
           telefono: formData.telefono || undefined
         }
+      } else if (tipo === 'productor') {
+        url = '/api/productores'
+        body = { 
+          nombre: formData.nombre,
+          cuit: formData.cuit || undefined
+        }
       } else {
         url = '/api/clientes'
         body = { 
@@ -87,9 +87,7 @@ export function QuickAddDialog({
           matricula: formData.matricula || undefined,
           direccion: formData.direccion || undefined,
           telefono: formData.telefono || undefined,
-          email: formData.email || undefined,
-          esProductor: tipo === 'productor',
-          esUsuarioFaena: tipo === 'usuarioFaena'
+          email: formData.email || undefined
         }
       }
       
@@ -102,7 +100,7 @@ export function QuickAddDialog({
       const data = await res.json()
       
       if (data.success) {
-        toast.success(`${tipo === 'transportista' ? 'Transportista' : 'Cliente'} creado correctamente`)
+        toast.success(`${tipo === 'transportista' ? 'Transportista' : tipo === 'productor' ? 'Productor' : 'Cliente'} creado correctamente`)
         onAdd(data.data)
         handleOpenChange(false)
       } else {
@@ -240,7 +238,7 @@ export function QuickAddDialog({
 // Componente para el botón que abre el diálogo
 interface QuickAddButtonProps {
   tipo: 'transportista' | 'productor' | 'usuarioFaena'
-  onAdd: (data: { id: string; nombre: string; esProductor?: boolean; esUsuarioFaena?: boolean }) => void
+  onAdd: (data: { id: string; nombre: string }) => void
 }
 
 export function QuickAddButton({ tipo, onAdd }: QuickAddButtonProps) {

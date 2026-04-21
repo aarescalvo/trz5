@@ -19,7 +19,7 @@ import { toast } from 'sonner'
 
 interface Cliente {
   id: string; nombre: string; cuit?: string; razonSocial?: string;
-  condicionIva?: string; esUsuarioFaena: boolean
+  condicionIva?: string
 }
 interface Pago { id: string; fecha: string; monto: number; metodoPago: string; referencia?: string }
 interface Factura {
@@ -70,7 +70,7 @@ export function CtaCteCliente({ operador }: Props) {
   useEffect(() => {
     fetch('/api/clientes')
       .then(r => r.json())
-      .then(d => { if (d.success) setClientes(d.data.filter((c: Cliente) => c.esUsuarioFaena)) })
+      .then(d => { if (d.success) setClientes(d.data) })
   }, [])
 
   const fetchCtaCte = useCallback(async () => {

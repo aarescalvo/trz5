@@ -83,7 +83,7 @@ export function ReporteResumenClienteFaena({ operador }: { operador: Operador })
 
   const fetchClientes = async () => {
     try {
-      const res = await fetch('/api/clientes?esUsuarioFaena=true')
+      const res = await fetch('/api/clientes')
       const data = await res.json()
       if (data.success) {
         setClientes(data.data || [])

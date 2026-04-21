@@ -29,7 +29,6 @@ interface Cliente {
   nombre: string
   cuit?: string
   razonSocial?: string
-  esUsuarioFaena: boolean
 }
 
 interface PrecioServicio {
@@ -90,8 +89,7 @@ export function PreciosServicioConfig({ operador }: Props) {
       if (preciosData.success) setPrecios(preciosData.data)
       if (tiposData.success) setTiposServicio(tiposData.data)
       if (clientesData.success) {
-        // Filtrar solo usuarios de faena
-        setClientes(clientesData.data.filter((c: Cliente) => c.esUsuarioFaena))
+        setClientes(clientesData.data)
       }
     } catch (error) {
       console.error('Error:', error)

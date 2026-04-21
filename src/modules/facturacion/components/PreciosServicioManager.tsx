@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 
 interface TipoServicio { id: string; codigo: string; nombre: string; unidad: string; porcentajeIva: number; activo: boolean }
-interface Cliente { id: string; nombre: string; razonSocial?: string; cuit?: string; esUsuarioFaena: boolean }
+interface Cliente { id: string; nombre: string; razonSocial?: string; cuit?: string }
 interface PrecioServicio {
   id: string; tipoServicioId: string; clienteId: string; precio: number;
   fechaDesde: string; fechaHasta?: string | null; observaciones?: string | null;
@@ -75,7 +75,7 @@ export function PreciosServicioManager({ operador }: Props) {
       const tiposData = await tiposRes.json()
       const clientesData = await clientesRes.json()
       if (tiposData.success) setTiposServicio(tiposData.data || [])
-      if (clientesData.success) setClientes(clientesData.data?.filter((c: Cliente) => c.esUsuarioFaena) || [])
+      if (clientesData.success) setClientes(clientesData.data || [])
     } catch (error) { console.error(error) } finally { setLoading(false) }
   }, [])
 

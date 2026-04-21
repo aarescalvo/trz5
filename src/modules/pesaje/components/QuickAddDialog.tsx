@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 
 interface QuickAddDialogProps {
   tipo: 'transportista' | 'productor' | 'usuarioFaena'
-  onAdd: (data: { id: string; nombre: string; esProductor?: boolean; esUsuarioFaena?: boolean }) => void
+  onAdd: (data: { id: string; nombre: string }) => void
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -33,17 +33,14 @@ export function QuickAddDialog({
     setSaving(true)
     try {
       let url = ''
-      let body: { nombre: string; esProductor?: boolean; esUsuarioFaena?: boolean } = { nombre }
+      let body: Record<string, unknown> = { nombre }
       
       if (tipo === 'transportista') {
         url = '/api/transportistas'
+      } else if (tipo === 'productor') {
+        url = '/api/productores'
       } else {
         url = '/api/clientes'
-        body = { 
-          nombre, 
-          esProductor: tipo === 'productor',
-          esUsuarioFaena: tipo === 'usuarioFaena'
-        }
       }
       
       const res = await fetch(url, {
@@ -55,7 +52,7 @@ export function QuickAddDialog({
       const data = await res.json()
       
       if (data.success) {
-        toast.success(`${tipo === 'transportista' ? 'Transportista' : 'Cliente'} creado`)
+        toast.success(`${tipo === 'transportista' ? 'Transportista' : tipo === 'productor' ? 'Productor' : 'Cliente'} creado`)
         onAdd(data.data)
         setNombre('')
         onOpenChange(false)
@@ -111,7 +108,7 @@ export function QuickAddDialog({
 // Componente para el botón que abre el diálogo
 interface QuickAddButtonProps {
   tipo: 'transportista' | 'productor' | 'usuarioFaena'
-  onAdd: (data: { id: string; nombre: string; esProductor?: boolean; esUsuarioFaena?: boolean }) => void
+  onAdd: (data: { id: string; nombre: string }) => void
 }
 
 export function QuickAddButton({ tipo, onAdd }: QuickAddButtonProps) {

@@ -50,8 +50,7 @@ export async function GET(request: NextRequest) {
             nombre: true,
             cuit: true,
             telefono: true,
-            email: true,
-            esUsuarioFaena: true
+            email: true
           }
         }
       },

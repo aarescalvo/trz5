@@ -30,8 +30,6 @@ interface Usuario {
   direccion?: string
   telefono?: string
   email?: string
-  esUsuarioFaena: boolean
-  esProductor: boolean
   esConsignatario: boolean
   esProveedor: boolean
   observaciones?: string
@@ -53,8 +51,6 @@ export function Usuarios({ operador }: Props) {
     direccion: '',
     telefono: '',
     email: '',
-    esUsuarioFaena: true,
-    esProductor: false,
     esConsignatario: false,
     esProveedor: false,
     observaciones: '',
@@ -130,8 +126,6 @@ export function Usuarios({ operador }: Props) {
       direccion: '',
       telefono: '',
       email: '',
-      esUsuarioFaena: true,
-      esProductor: false,
       esConsignatario: false,
       esProveedor: false,
       observaciones: '',
@@ -147,8 +141,6 @@ export function Usuarios({ operador }: Props) {
 
   const getTipos = (u: Usuario) => {
     const tipos: string[] = []
-    if (u.esUsuarioFaena) tipos.push('Faena')
-    if (u.esProductor) tipos.push('Productor')
     if (u.esConsignatario) tipos.push('Consignat.')
     if (u.esProveedor) tipos.push('Proveedor')
     return tipos.join(', ') || '-'
@@ -276,20 +268,6 @@ export function Usuarios({ operador }: Props) {
             <div className="border-t pt-4">
               <Label className="text-base font-semibold">Tipos de Usuario</Label>
               <div className="grid grid-cols-2 gap-4 mt-3">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={formData.esUsuarioFaena ?? false}
-                    onCheckedChange={(checked) => setFormData({ ...formData, esUsuarioFaena: checked })}
-                  />
-                  <Label className="font-normal">Usuario de Faena</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={formData.esProductor ?? false}
-                    onCheckedChange={(checked) => setFormData({ ...formData, esProductor: checked })}
-                  />
-                  <Label className="font-normal">Productor</Label>
-                </div>
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={formData.esConsignatario ?? false}

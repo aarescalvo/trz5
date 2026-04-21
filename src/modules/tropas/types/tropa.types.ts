@@ -40,7 +40,7 @@ export interface Tropa {
   codigo: string
   codigoSimplificado?: string
   productorId?: string
-  productor?: ClienteBasico
+  productor?: ProductorConsignatarioBasico
   usuarioFaenaId: string
   usuarioFaena?: ClienteBasico
   especie: Especie
@@ -102,7 +102,7 @@ export interface TropaWithAnimales extends Tropa {
 
 // Interface de Tropa con detalles completos
 export interface TropaWithDetails extends Tropa {
-  productor?: ClienteBasico
+  productor?: ProductorConsignatarioBasico
   usuarioFaena: ClienteBasico
   corral?: CorralBasico
   operador?: OperadorBasico
@@ -116,8 +116,15 @@ export interface ClienteBasico {
   nombre: string
   cuit?: string
   matricula?: string
-  esProductor: boolean
-  esUsuarioFaena: boolean
+}
+
+export interface ProductorConsignatarioBasico {
+  id: string
+  nombre: string
+  cuit?: string
+  tipo: string
+  numeroRenspa?: string
+  numeroEstablecimiento?: string
 }
 
 export interface CorralBasico {

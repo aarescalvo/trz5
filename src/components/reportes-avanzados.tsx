@@ -168,7 +168,7 @@ export function ReportesAvanzadosModule({ operador }: ReportesAvanzadosProps) {
   useEffect(() => {
     const fetchProductores = async () => {
       try {
-        const res = await fetch('/api/clientes?esProductor=true')
+        const res = await fetch('/api/productores')
         const result = await res.json()
         if (result.success) {
           setProductores(result.data)

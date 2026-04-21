@@ -38,7 +38,6 @@ interface Cliente {
   razonSocial?: string
   condicionIva?: string
   direccion?: string
-  esUsuarioFaena: boolean
 }
 
 interface TipoServicio {
@@ -317,7 +316,7 @@ export function FacturacionModule({ operador }: Props) {
       ])
 
       if (facturasData.success) setFacturas(facturasData.data)
-      if (clientesData.success) setClientes(clientesData.data.filter((c: Cliente) => c.esUsuarioFaena))
+      if (clientesData.success) setClientes(clientesData.data)
       if (tiposData.success) setTiposServicio(tiposData.data)
     } catch (error) {
       console.error('Error:', error)

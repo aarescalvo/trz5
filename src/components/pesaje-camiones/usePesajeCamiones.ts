@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
-import type { Cliente, Transportista, Corral, Pesaje, TipoAnimalCounter } from './types'
+import type { Cliente, Transportista, Corral, Pesaje, TipoAnimalCounter, ProductorConsignatario } from './types'
 import { imprimirTicket, imprimirReporte } from './ticketPrint'
 
 interface UsePesajeCamionesOptions {
@@ -13,6 +13,7 @@ interface UsePesajeCamionesOptions {
 export function usePesajeCamiones({ operadorId, onTropaCreada }: UsePesajeCamionesOptions) {
   // Data
   const [clientes, setClientes] = useState<Cliente[]>([])
+  const [productores, setProductores] = useState<ProductorConsignatario[]>([])
   const [transportistas, setTransportistas] = useState<Transportista[]>([])
   const [corrales, setCorrales] = useState<Corral[]>([])
   const [pesajesAbiertos, setPesajesAbiertos] = useState<Pesaje[]>([])
@@ -63,8 +64,7 @@ export function usePesajeCamiones({ operadorId, onTropaCreada }: UsePesajeCamion
   
   // Computed
   const pesoNeto = pesoBruto > 0 && pesoTara > 0 ? pesoBruto - pesoTara : 0
-  const productores = clientes.filter(c => c.esProductor)
-  const usuariosFaena = clientes.filter(c => c.esUsuarioFaena)
+  const usuariosFaena = clientes
   const totalCabezas = tiposAnimales.reduce((acc, t) => acc + t.cantidad, 0)
   
   // Filtered history
@@ -85,17 +85,19 @@ export function usePesajeCamiones({ operadorId, onTropaCreada }: UsePesajeCamion
   // Fetch initial data
   const fetchData = useCallback(async () => {
     try {
-      const [pesajesRes, transRes, clientesRes, corralesRes] = await Promise.all([
+      const [pesajesRes, transRes, clientesRes, corralesRes, productoresRes] = await Promise.all([
         fetch('/api/pesaje-camion'),
         fetch('/api/transportistas'),
         fetch('/api/clientes'),
-        fetch('/api/corrales')
+        fetch('/api/corrales'),
+        fetch('/api/productores')
       ])
       
       const pesajesData = await pesajesRes.json()
       const transData = await transRes.json()
       const clientesData = await clientesRes.json()
       const corralesData = await corralesRes.json()
+      const productoresData = await productoresRes.json()
       
       if (pesajesData.success) {
         setPesajesAbiertos(pesajesData.data.filter((p: Pesaje) => p.estado === 'ABIERTO'))
@@ -106,6 +108,7 @@ export function usePesajeCamiones({ operadorId, onTropaCreada }: UsePesajeCamion
       if (transData.success) setTransportistas(transData.data)
       if (clientesData.success) setClientes(clientesData.data)
       if (corralesData.success) setCorrales(corralesData.data)
+      if (productoresData.success) setProductores(productoresData.data)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -161,14 +164,16 @@ export function usePesajeCamiones({ operadorId, onTropaCreada }: UsePesajeCamion
   }, [fetchNextTropaCode])
 
   // Handle quick add
-  const handleQuickAdd = useCallback((tipo: string, data: Cliente | Transportista) => {
+  const handleQuickAdd = useCallback((tipo: string, data: Cliente | Transportista | ProductorConsignatario) => {
     if (tipo === 'transportista') {
       setTransportistas(prev => [...prev, data as Transportista])
       setTransportistaId(data.id)
+    } else if (tipo === 'productor') {
+      setProductores(prev => [...prev, data as ProductorConsignatario])
+      setProductorId(data.id)
     } else {
       setClientes(prev => [...prev, data as Cliente])
-      if (tipo === 'productor') setProductorId(data.id)
-      else setUsuarioFaenaId(data.id)
+      setUsuarioFaenaId(data.id)
     }
   }, [])
 

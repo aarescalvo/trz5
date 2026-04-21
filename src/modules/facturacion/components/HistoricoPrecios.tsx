@@ -26,7 +26,7 @@ interface HistoricoTarifa {
   cliente?: { id: string; nombre: string; razonSocial?: string }
   operador?: { id: string; nombre: string }
 }
-interface Cliente { id: string; nombre: string; razonSocial?: string; esUsuarioFaena: boolean }
+interface Cliente { id: string; nombre: string; razonSocial?: string }
 
 interface Props { operador: { id: string; nombre: string; rol: string } }
 
@@ -69,7 +69,7 @@ export function HistoricoPrecios({ operador }: Props) {
       const tiposData = await tiposRes.json()
       const clientesData = await clientesRes.json()
       if (tiposData.success) setTipos(tiposData.data)
-      if (clientesData.success) setClientes(clientesData.data.filter((c: Cliente) => c.esUsuarioFaena))
+      if (clientesData.success) setClientes(clientesData.data)
     } catch (error) { console.error(error) } finally { setLoading(false) }
   }, [])
 

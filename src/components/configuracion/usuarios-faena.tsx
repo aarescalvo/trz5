@@ -87,7 +87,7 @@ export function UsuariosFaenaModule({ operador }: { operador: Operador }) {
 
   const fetchUsuarios = async () => {
     try {
-      const res = await fetch('/api/clientes?tipo=usuarioFaena')
+      const res = await fetch('/api/clientes')
       const data = await res.json()
       if (data.success) {
         setUsuarios(data.data)
@@ -162,8 +162,6 @@ export function UsuariosFaenaModule({ operador }: { operador: Operador }) {
     try {
       const body = {
         ...formData,
-        esProductor: false,
-        esUsuarioFaena: true,
         id: editando?.id
       }
 

@@ -33,6 +33,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Plus, Trash2, AlertCircle } from 'lucide-react'
 import { Tropa, TropaCreate, TropaUpdate, Especie, TipoAnimalCantidad, TipoAnimal, ClienteBasico, CorralBasico } from '../types'
 
+interface ProductorConsignatario {
+  id: string
+  nombre: string
+  cuit?: string
+  tipo: string
+  numeroRenspa?: string
+  numeroEstablecimiento?: string
+}
+
 interface TropaFormProps {
   open: boolean
   onClose: () => void
@@ -104,6 +113,7 @@ export function TropaForm({
 
   const [formData, setFormData] = useState(initialFormData)
   const [tiposAnimales, setTiposAnimales] = useState<TipoAnimalCantidad[]>(() => tropa?.tiposAnimales || [])
+  const [productores, setProductores] = useState<ProductorConsignatario[]>([])
   const [nuevoTipo, setNuevoTipo] = useState<TipoAnimal | ''>('')
   const [nuevaCantidad, setNuevaCantidad] = useState(1)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -114,9 +124,22 @@ export function TropaForm({
     [tiposAnimales]
   )
 
-  // Filtrar clientes
-  const productores = clientes.filter(c => c.esProductor)
-  const usuariosFaena = clientes.filter(c => c.esUsuarioFaena)
+  // Fetch productores from /api/productores
+  useEffect(() => {
+    const fetchProductores = async () => {
+      try {
+        const res = await fetch('/api/productores')
+        const data = await res.json()
+        if (data.success) setProductores(data.data)
+      } catch (error) {
+        console.error('Error fetching productores:', error)
+      }
+    }
+    fetchProductores()
+  }, [])
+
+  // usuariosFaena = all clientes (esUsuarioFaena removed from schema)
+  const usuariosFaena = clientes
 
   // Tipos de animal según especie
   const tiposDisponibles = formData.especie === 'BOVINO' ? TIPOS_BOVINO : TIPOS_EQUINO

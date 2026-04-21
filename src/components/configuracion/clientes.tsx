@@ -1,16 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Plus, Edit, Trash2, Save, X, AlertTriangle, Phone, MapPin, Mail, UserCheck, Beef } from 'lucide-react'
+import { Users, Plus, Edit, Trash2, Save, X, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 
 interface ClienteItem {
@@ -20,8 +17,6 @@ interface ClienteItem {
   direccion?: string
   telefono?: string
   email?: string
-  esProductor: boolean
-  esUsuarioFaena: boolean
 }
 
 interface Operador {
@@ -37,16 +32,12 @@ export function Clientes({ operador }: { operador: Operador }) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [editando, setEditando] = useState<ClienteItem | null>(null)
-  const [activeTab, setActiveTab] = useState('todos')
-  
   const [formData, setFormData] = useState({
     nombre: '',
     cuit: '',
     direccion: '',
     telefono: '',
-    email: '',
-    esProductor: false,
-    esUsuarioFaena: false
+    email: ''
   })
 
   useEffect(() => {
@@ -67,16 +58,14 @@ export function Clientes({ operador }: { operador: Operador }) {
     }
   }
 
-  const handleNuevo = (tipo?: 'productor' | 'usuarioFaena') => {
+  const handleNuevo = () => {
     setEditando(null)
     setFormData({ 
       nombre: '', 
       cuit: '', 
       direccion: '', 
       telefono: '', 
-      email: '',
-      esProductor: tipo === 'productor',
-      esUsuarioFaena: tipo === 'usuarioFaena'
+      email: ''
     })
     setDialogOpen(true)
   }
@@ -88,9 +77,7 @@ export function Clientes({ operador }: { operador: Operador }) {
       cuit: c.cuit || '',
       direccion: c.direccion || '',
       telefono: c.telefono || '',
-      email: c.email || '',
-      esProductor: c.esProductor,
-      esUsuarioFaena: c.esUsuarioFaena
+      email: c.email || ''
     })
     setDialogOpen(true)
   }
@@ -103,11 +90,6 @@ export function Clientes({ operador }: { operador: Operador }) {
   const handleGuardar = async () => {
     if (!formData.nombre) {
       toast.error('Ingrese el nombre')
-      return
-    }
-
-    if (!formData.esProductor && !formData.esUsuarioFaena) {
-      toast.error('Seleccione al menos un tipo: Productor o Usuario de Faena')
       return
     }
 
@@ -162,13 +144,6 @@ export function Clientes({ operador }: { operador: Operador }) {
     }
   }
 
-  const clientesFiltrados = clientes.filter(c => {
-    if (activeTab === 'todos') return true
-    if (activeTab === 'productores') return c.esProductor
-    if (activeTab === 'usuarios') return c.esUsuarioFaena
-    return true
-  })
-
   return (
     <div className="space-y-6">
       <Card className="border-0 shadow-md">
@@ -177,10 +152,10 @@ export function Clientes({ operador }: { operador: Operador }) {
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Users className="w-5 h-5 text-amber-600" />
-                Gestión de Productores y Usuarios de Faena
+                Gestión de Clientes
               </CardTitle>
               <CardDescription>
-                Proveedores de hacienda y usuarios del servicio de faena
+                Clientes del servicio de faena
               </CardDescription>
             </div>
             <Button onClick={() => handleNuevo()} className="bg-amber-500 hover:bg-amber-600">
@@ -190,28 +165,11 @@ export function Clientes({ operador }: { operador: Operador }) {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {/* Tabs de filtro */}
-          <div className="border-b px-4 pt-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="todos">Todos ({clientes.length})</TabsTrigger>
-                <TabsTrigger value="productores">
-                  <Beef className="w-4 h-4 mr-1" />
-                  Productores ({clientes.filter(c => c.esProductor).length})
-                </TabsTrigger>
-                <TabsTrigger value="usuarios">
-                  <UserCheck className="w-4 h-4 mr-1" />
-                  Usuarios Faena ({clientes.filter(c => c.esUsuarioFaena).length})
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-          
           {loading ? (
             <div className="p-8 text-center">
               <Users className="w-8 h-8 animate-pulse mx-auto text-amber-500" />
             </div>
-          ) : clientesFiltrados.length === 0 ? (
+          ) : clientes.length === 0 ? (
             <div className="p-8 text-center text-stone-400">
               <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p>No hay clientes registrados en esta categoría</p>
@@ -227,12 +185,11 @@ export function Clientes({ operador }: { operador: Operador }) {
                   <TableHead>Nombre</TableHead>
                   <TableHead>CUIT</TableHead>
                   <TableHead>Contacto</TableHead>
-                  <TableHead>Tipo</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clientesFiltrados.map((c) => (
+                {clientes.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.nombre}</TableCell>
                     <TableCell className="font-mono">{c.cuit || '-'}</TableCell>
@@ -241,22 +198,6 @@ export function Clientes({ operador }: { operador: Operador }) {
                         {c.telefono && <div>{c.telefono}</div>}
                         {c.email && <div className="text-stone-500">{c.email}</div>}
                         {!c.telefono && !c.email && '-'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {c.esProductor && (
-                          <Badge className="bg-green-100 text-green-700">
-                            <Beef className="w-3 h-3 mr-1" />
-                            Productor
-                          </Badge>
-                        )}
-                        {c.esUsuarioFaena && (
-                          <Badge className="bg-blue-100 text-blue-700">
-                            <UserCheck className="w-3 h-3 mr-1" />
-                            Usuario Faena
-                          </Badge>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -331,41 +272,6 @@ export function Clientes({ operador }: { operador: Operador }) {
                 onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
                 placeholder="Dirección del cliente"
               />
-            </div>
-            <div className="space-y-3 pt-2 border-t">
-              <Label>Tipo de Cliente *</Label>
-              <div className="flex flex-col gap-3">
-                <label className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-stone-50 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={formData.esProductor}
-                    onChange={(e) => setFormData({ ...formData, esProductor: e.target.checked })}
-                    className="rounded"
-                  />
-                  <div>
-                    <div className="flex items-center gap-2 font-medium">
-                      <Beef className="w-4 h-4 text-green-600" />
-                      Productor
-                    </div>
-                    <p className="text-xs text-stone-500">Proveedor de hacienda</p>
-                  </div>
-                </label>
-                <label className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-stone-50 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={formData.esUsuarioFaena}
-                    onChange={(e) => setFormData({ ...formData, esUsuarioFaena: e.target.checked })}
-                    className="rounded"
-                  />
-                  <div>
-                    <div className="flex items-center gap-2 font-medium">
-                      <UserCheck className="w-4 h-4 text-blue-600" />
-                      Usuario de Faena
-                    </div>
-                    <p className="text-xs text-stone-500">Cliente del servicio de faena</p>
-                  </div>
-                </label>
-              </div>
             </div>
           </div>
           <DialogFooter>

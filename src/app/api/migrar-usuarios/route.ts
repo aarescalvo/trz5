@@ -31,12 +31,12 @@ export async function GET(request: NextRequest) {
   try {
     // Contar usuarios de faena existentes
     const usuariosFaena = await db.cliente.count({
-      where: { esUsuarioFaena: true }
+      where: { activo: true }
     })
 
     // Obtener los últimos 5 usuarios creados
     const ultimosUsuarios = await db.cliente.findMany({
-      where: { esUsuarioFaena: true },
+      where: { activo: true },
       orderBy: { createdAt: 'desc' },
       take: 5,
       select: {
@@ -220,8 +220,6 @@ export async function POST(request: NextRequest) {
             cuit,
             email: mail || null,  // Campo email (singular) con múltiples emails separados por ;
             celular: celular || null,
-            esUsuarioFaena: true,
-            esProductor: false,
             modalidadRetiro: true,
           } as any
         })
