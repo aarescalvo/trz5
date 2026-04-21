@@ -4374,3 +4374,71 @@ Stage Summary:
 - **URLs correctas** (produccion4z)
 - **PostgreSQL** como base de datos de produccion
 - **Build pasa sin errores**
+
+---
+Task ID: AUDIT-PESAJE-CLEANUP
+Agent: main
+Task: Limpieza de módulos duplicados de pesaje + revisión integral de seguridad
+
+Work Log:
+
+#### 1. Auditoría de duplicados en módulo pesaje
+Se encontraron múltiples duplicados en el sistema:
+
+**Rutas eliminadas (código muerto, 0 fetch callers):**
+- `/api/balanza/configuracion` — Reemplazada por `/api/config-balanzas` (más completa: DELETE, esPrincipal, TCP/IP)
+- `/api/garrones/pesaje` — Reemplazada por `/api/romaneo/pesar` (transaccional, overwrite, movimientoCámara)
+
+**POST duplicado eliminado:**
+- `POST /api/balanza/lectura` — Duplicado inseguro de `/api/pesaje-individual` (sin transacciones, sin update tropa, sin parseFloat, 0 callers frontend). El GET (lectura de peso real-time) se mantiene.
+
+Commits: `9392ffc` (-363 líneas)
+
+#### 2. Revisión integral post-limpieza
+6 agentes en paralelo verificaron:
+- Rutas eliminadas: 0 referencias rotas en todo src/
+- Reportes (31+ archivos): 0 afectados (todos usan Prisma directo)
+- Offline sync: 0 afectados (usa /api/romaneo/pesar y /api/pesaje-individual)
+- Componentes de balanza: 0 afectados (apuntan a las rutas correctas)
+- Módulo PesajeService vs pesaje-camion route: lógica duplicada detectada (mejora futura)
+
+#### 3. 3 bugs de seguridad corregidos (commit `3593847`)
+
+**Bug 1 (ALTO): `/api/migrar-usuarios` sin autenticación**
+- Estaba en PUBLIC_ROUTES y ADMIN_ONLY_ROUTES simultáneamente
+- PUBLIC_ROUTES se evalúa primero → queda completamente abierta
+- Fix: eliminada de PUBLIC_ROUTES (el handler ya tiene checkAdminRole)
+
+**Bug 2 (MEDIO): `/api/seed` entrada fantasma en PUBLIC_ROUTES**
+- La ruta no existe como archivo, pero la entrada permitía bypass de auth
+- Fix: eliminada del listado
+
+**Bug 3 (MEDIO): `/api/balanza/lectura` permisos incorrectos**
+- Requería solo `puedePesajeIndividual`, pero la usan:
+  - Romaneo → `puedeRomaneo`
+  - Cuarteo → `puedeCuarteo`
+  - Empaque → `puedeEmpaque`
+  - C2 Producción → `puedeDesposte`
+- Fix: nuevo `checkAnyPermission()` en auth-helpers.ts que acepta cualquiera de los 5 permisos (+ ADMIN siempre)
+
+**Nuevo helper: `checkAnyPermission(request, permisos[])`**
+- Valida que el operador tenga al menos uno de los permisos indicados
+- ADMINISTRADOR bypass automático
+- Usa `validarPermiso` existente en loop hasta encontrar match
+
+#### 4. `/api/balanza/lectura` sacada de PUBLIC_ROUTES (security fix)
+- Antes: cualquiera sin login podía leer config de balanza
+- Ahora: requiere JWT + al menos uno de los 5 permisos operativos
+
+#### 5. Verificación final
+- 0 errores TypeScript
+- 0 referencias rotas a rutas eliminadas
+- Todos los módulos afectados verificados (reportes, offline, balanzas, auth)
+
+Stage Summary:
+- **2 rutas muertas eliminadas**: balanza/configuracion, garrones/pesaje ✅
+- **1 POST duplicado inseguro eliminado**: balanza/lectura POST ✅
+- **3 bugs de seguridad corregidos**: migrar-usuarios sin auth, seed fantasma, permisos balanza ✅
+- **Nuevo helper checkAnyPermission()** para permisos compartidos ✅
+- **Revisión integral**: 0 reportes afectados, 0 referencias rotas ✅
+- **0 errores TS** ✅
