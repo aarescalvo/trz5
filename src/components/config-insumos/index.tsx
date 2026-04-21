@@ -34,6 +34,16 @@ interface Insumo {
   activo: boolean
 }
 
+interface MovimientoInsumo {
+  id: string
+  insumoId: string
+  tipo: string
+  cantidad: number
+  observaciones?: string | null
+  operador?: { id: string; nombre: string } | null
+  fecha: string
+}
+
 interface Props { operador: Operador }
 
 const CATEGORIAS = ['Envases', 'Etiquetas', 'Insumos Faena', 'Limpieza', 'Otros']
@@ -52,6 +62,8 @@ export function ConfigInsumosModule({ operador }: Props) {
   const [guardando, setGuardando] = useState(false)
   const [filtroCategoria, setFiltroCategoria] = useState<string>('TODAS')
   const [busqueda, setBusqueda] = useState('')
+  const [movimientos, setMovimientos] = useState<MovimientoInsumo[]>([])
+  const [loadingMovimientos, setLoadingMovimientos] = useState(false)
 
   const [formData, setFormData] = useState({
     codigo: '',
@@ -94,6 +106,34 @@ export function ConfigInsumosModule({ operador }: Props) {
   useEffect(() => {
     fetchInsumos()
   }, [])
+
+  // Cargar movimientos cuando se abre el modal
+  useEffect(() => {
+    if (modalMovimientosOpen && insumoSeleccionado) {
+      fetchMovimientos(insumoSeleccionado.id)
+    } else {
+      setMovimientos([])
+    }
+  }, [modalMovimientosOpen, insumoSeleccionado])
+
+  const fetchMovimientos = async (insumoId: string) => {
+    setLoadingMovimientos(true)
+    try {
+      const res = await fetch(`/api/movimientos-insumos?insumoId=${insumoId}&limit=50`)
+      const data = await res.json()
+      if (data.success) {
+        setMovimientos(data.data)
+        logger.info('Movimientos cargados', { insumoId, count: data.data.length })
+      } else {
+        toast.error('Error al cargar movimientos')
+      }
+    } catch (error) {
+      logger.error('Error al cargar movimientos', error)
+      toast.error('Error de conexión')
+    } finally {
+      setLoadingMovimientos(false)
+    }
+  }
 
   // Calcular estadísticas
   const totalInsumos = insumos.length
@@ -252,28 +292,29 @@ export function ConfigInsumosModule({ operador }: Props) {
     setGuardando(true)
     try {
       const cantidad = parseFloat(ajusteStock.cantidad)
-      const nuevoStock = ajusteStock.tipo === 'entrada' 
-        ? (insumoSeleccionado?.stockActual || 0) + cantidad
-        : Math.max(0, (insumoSeleccionado?.stockActual || 0) - cantidad)
+      const tipoMovimiento = ajusteStock.tipo === 'entrada' ? 'AJUSTE_POSITIVO' : 'AJUSTE_NEGATIVO'
 
-      const res = await fetch('/api/insumos', {
-        method: 'PUT',
+      // Crear movimiento (el API actualiza Insumo.stockActual automáticamente)
+      const res = await fetch('/api/movimientos-insumos', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: insumoSeleccionado?.id,
-          stockActual: nuevoStock
+          insumoId: insumoSeleccionado?.id,
+          tipo: tipoMovimiento,
+          cantidad,
+          observaciones: ajusteStock.observacion || `Ajuste manual (${ajusteStock.tipo})`,
         })
       })
 
       const data = await res.json()
 
-      if (data.success) {
+      if (res.ok) {
         toast.success(`Stock ${ajusteStock.tipo === 'entrada' ? 'incrementado' : 'decrementado'} correctamente`)
         setModalStockOpen(false)
         fetchInsumos()
         logger.info('Stock ajustado', { 
           insumo: insumoSeleccionado?.codigo, 
-          tipo: ajusteStock.tipo, 
+          tipo: tipoMovimiento, 
           cantidad 
         })
       } else {
@@ -309,6 +350,33 @@ export function ConfigInsumosModule({ operador }: Props) {
     }
   }
 
+  // Formatear tipo de movimiento
+  const formatTipoMovimiento = (tipo: string) => {
+    const labels: Record<string, { text: string; color: string }> = {
+      'INGRESO': { text: 'Ingreso', color: 'bg-green-100 text-green-700' },
+      'EGRESO': { text: 'Egreso', color: 'bg-red-100 text-red-700' },
+      'AJUSTE_POSITIVO': { text: 'Ajuste +', color: 'bg-blue-100 text-blue-700' },
+      'AJUSTE_NEGATIVO': { text: 'Ajuste −', color: 'bg-orange-100 text-orange-700' },
+      'TRANSFERENCIA': { text: 'Transferencia', color: 'bg-purple-100 text-purple-700' },
+      'PERDIDA': { text: 'Pérdida', color: 'bg-red-100 text-red-800' },
+      'DEVOLUCION': { text: 'Devolución', color: 'bg-yellow-100 text-yellow-700' },
+    }
+    const config = labels[tipo] || { text: tipo, color: 'bg-gray-100 text-gray-700' }
+    return <Badge className={config.color}>{config.text}</Badge>
+  }
+
+  // Formatear fecha
+  const formatFecha = (fecha: string) => {
+    const d = new Date(fecha)
+    return d.toLocaleDateString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
   // Formatear moneda
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-AR', {
@@ -317,11 +385,6 @@ export function ConfigInsumosModule({ operador }: Props) {
       minimumFractionDigits: 2
     }).format(value)
   }
-
-  // Movimientos simulados (TODO: implementar modelo MovimientoInsumo)
-  const movimientosSimulados = insumoSeleccionado ? [
-    { id: '1', fecha: new Date().toISOString().split('T')[0], tipo: 'Sin movimientos', cantidad: 0, usuario: '-' },
-  ] : []
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 to-stone-100 p-4 md:p-6">
@@ -488,6 +551,14 @@ export function ConfigInsumosModule({ operador }: Props) {
                             title="Ajustar Stock"
                           >
                             <Package className="w-4 h-4 text-amber-500" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleVerMovimientos(insumo)}
+                            title="Ver Movimientos"
+                          >
+                            <History className="w-4 h-4 text-blue-500" />
                           </Button>
                           <Button 
                             variant="ghost" 
@@ -671,12 +742,59 @@ export function ConfigInsumosModule({ operador }: Props) {
               <div className="bg-stone-50 rounded-lg p-3">
                 <p className="text-sm text-stone-500">Insumo</p>
                 <p className="font-medium">{insumoSeleccionado?.nombre}</p>
-                <p className="text-sm text-stone-500">Código: {insumoSeleccionado?.codigo}</p>
+                <p className="text-sm text-stone-500">Código: {insumoSeleccionado?.codigo} · Stock: {insumoSeleccionado?.stockActual} {insumoSeleccionado?.unidadMedida}</p>
               </div>
-              <div className="text-center text-stone-400 py-4">
-                <History className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>Módulo de movimientos en desarrollo</p>
-              </div>
+              {loadingMovimientos ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" />
+                  <p className="text-stone-400 mt-2">Cargando movimientos...</p>
+                </div>
+              ) : movimientos.length === 0 ? (
+                <div className="text-center text-stone-400 py-4">
+                  <History className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p>Sin movimientos registrados</p>
+                </div>
+              ) : (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-stone-50">
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead className="text-right">Cantidad</TableHead>
+                        <TableHead>Operador</TableHead>
+                        <TableHead>Observación</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {movimientos.map((mov) => (
+                        <TableRow key={mov.id}>
+                          <TableCell className="text-xs whitespace-nowrap">
+                            {formatFecha(mov.fecha)}
+                          </TableCell>
+                          <TableCell>
+                            {formatTipoMovimiento(mov.tipo)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-medium">
+                            <span className={mov.tipo.includes('NEGATIVO') || mov.tipo === 'EGRESO' || mov.tipo === 'PERDIDA'
+                              ? 'text-red-600'
+                              : 'text-green-600'
+                            }>
+                              {mov.tipo.includes('NEGATIVO') || mov.tipo === 'EGRESO' || mov.tipo === 'PERDIDA' ? '−' : '+'}{mov.cantidad.toLocaleString()}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs text-stone-600">
+                            {mov.operador?.nombre || '-'}
+                          </TableCell>
+                          <TableCell className="text-xs text-stone-500 max-w-[150px] truncate">
+                            {mov.observaciones || '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setModalMovimientosOpen(false)}>

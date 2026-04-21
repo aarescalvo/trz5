@@ -34,6 +34,8 @@ export interface WSAAConfig {
   clavePrivada: string // Contenido de la clave privada .key
   puntoVenta: number
   razonSocial: string
+  domicilio?: string    // Domicilio comercial
+  inicioActividades?: string // Fecha inicio actividades
   ambiente: 'testing' | 'production'
 }
 
@@ -322,6 +324,8 @@ export async function getConfiguracionAFIP(): Promise<WSAAConfig | null> {
     cuit: config.cuit.replace(/-/g, ''),
     razonSocial: config.nombre,
     puntoVenta: certificados.puntoVenta,
+    domicilio: config.direccion || certificados.domicilio || '',
+    inicioActividades: certificados.inicioActividades || '',
     certificado: certificados.certificado,
     clavePrivada: certificados.clavePrivada,
     ambiente: certificados.ambiente as 'testing' | 'production'

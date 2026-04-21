@@ -37,11 +37,11 @@ export async function createSecurityNotification(notification: SecurityNotificat
       }
     })
 
-    // TODO: En el futuro, aquí se podría:
-    // 1. Enviar email al administrador
-    // 2. Enviar notificación push
-    // 3. Mostrar en un panel de alertas en tiempo real
-    
+    // NOTE: Posibles mejoras futuras para notificaciones de seguridad:
+    //   1. Enviar email al administrador (usando nodemailer ya configurado)
+    //   2. Enviar notificación push (WebSocket / Server-Sent Events)
+    //   3. Mostrar en un panel de alertas en tiempo real
+
     log.info(`[SECURITY ALERT] ${notification.tipo}: ${notification.detalles}`)
   } catch (error) {
     console.error('Error creando notificación de seguridad:', error)

@@ -64,8 +64,19 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Generar número de asiento secuencial: ASC-YYYYMMDD-NNNN
+    const now = new Date()
+    const fechaStr = now.toISOString().slice(0, 10).replace(/-/g, '')
+    const countToday = await db.asientoContable.count({
+      where: {
+        numero: { startsWith: `ASC-${fechaStr}` }
+      }
+    })
+    const numero = `ASC-${fechaStr}-${String(countToday + 1).padStart(4, '0')}`
+
     const asiento = await db.asientoContable.create({
       data: {
+        numero,
         tipoOrigen: tipoOrigen || 'AJUSTE',
         origenId,
         origenDetalle,

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { TipoMovimientoInsumo } from '@prisma/client';
-import { checkPermission } from '@/lib/auth-helpers'
+import { checkPermission } from '@/lib/auth-helpers';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('MovimientosInsumos')
 
 // GET - Listar movimientos de insumos
 export async function GET(request: NextRequest) {
@@ -45,13 +48,14 @@ export async function GET(request: NextRequest) {
       include: {
         insumo: true,
         depositoOrigen: true,
-        depositoDestino: true
+        depositoDestino: true,
+        operador: { select: { id: true, nombre: true } }
       },
       orderBy: { fecha: 'desc' },
       take: limit ? parseInt(limit) : undefined
     });
 
-    return NextResponse.json(movimientos);
+    return NextResponse.json({ success: true, data: movimientos });
   } catch (error) {
     console.error('Error al obtener movimientos de insumos:', error);
     return NextResponse.json({ error: 'Error al obtener movimientos de insumos' }, { status: 500 });
@@ -163,20 +167,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if ((tipo === 'INGRESO' || tipo === 'AJUSTE_POSITIVO') && !data.depositoDestinoId) {
-      return NextResponse.json({ 
-        error: 'Se requiere depósito destino para este tipo de movimiento' 
-      }, { status: 400 });
-    }
+    // AJUSTE types allow movements without deposito (simple stock adjustments)
+    const isAjusteSinDeposito = (tipo === 'AJUSTE_POSITIVO' || tipo === 'AJUSTE_NEGATIVO') 
+      && !data.depositoDestinoId && !data.depositoOrigenId;
 
-    if ((tipo === 'EGRESO' || tipo === 'AJUSTE_NEGATIVO' || tipo === 'PERDIDA' || tipo === 'DEVOLUCION') && !data.depositoOrigenId) {
-      return NextResponse.json({ 
-        error: 'Se requiere depósito origen para este tipo de movimiento' 
-      }, { status: 400 });
+    if (!isAjusteSinDeposito) {
+      if ((tipo === 'INGRESO' || tipo === 'AJUSTE_POSITIVO') && !data.depositoDestinoId) {
+        return NextResponse.json({ 
+          error: 'Se requiere depósito destino para este tipo de movimiento' 
+        }, { status: 400 });
+      }
+
+      if ((tipo === 'EGRESO' || tipo === 'AJUSTE_NEGATIVO' || tipo === 'PERDIDA' || tipo === 'DEVOLUCION') && !data.depositoOrigenId) {
+        return NextResponse.json({ 
+          error: 'Se requiere depósito origen para este tipo de movimiento' 
+        }, { status: 400 });
+      }
     }
 
     const cantidad = parseFloat(data.cantidad);
     const precioUnitario = data.precioUnitario ? parseFloat(data.precioUnitario) : undefined;
+
+    const operadorIdHeader = request.headers.get('x-operador-id');
+    const operadorId = data.operadorId || operadorIdHeader || null;
 
     // Crear el movimiento
     const movimiento = await db.movimientoInsumo.create({
@@ -194,12 +207,13 @@ export async function POST(request: NextRequest) {
         centroCostoId: data.centroCostoId || null,
         produccionId: data.produccionId || null,
         observaciones: data.observaciones,
-        operadorId: data.operadorId || null,
+        operadorId,
       },
       include: {
         insumo: true,
         depositoOrigen: true,
-        depositoDestino: true
+        depositoDestino: true,
+        operador: { select: { id: true, nombre: true } }
       }
     });
 
@@ -207,26 +221,44 @@ export async function POST(request: NextRequest) {
     switch (tipo) {
       case 'INGRESO':
       case 'AJUSTE_POSITIVO':
-        await actualizarStock(
-          data.insumoId,
-          data.depositoDestinoId,
-          cantidad,
-          tipo,
-          precioUnitario
-        );
+        if (isAjusteSinDeposito) {
+          // Ajuste simple sin depósito: actualizar Insumo.stockActual directamente
+          await db.insumo.update({
+            where: { id: data.insumoId },
+            data: { stockActual: { increment: cantidad } }
+          });
+          logger.info('Stock ajustado (sin depósito)', { insumoId: data.insumoId, tipo, cantidad });
+        } else {
+          await actualizarStock(
+            data.insumoId,
+            data.depositoDestinoId,
+            cantidad,
+            tipo,
+            precioUnitario
+          );
+        }
         break;
 
       case 'EGRESO':
       case 'AJUSTE_NEGATIVO':
       case 'PERDIDA':
       case 'DEVOLUCION':
-        await actualizarStock(
-          data.insumoId,
-          data.depositoOrigenId,
-          cantidad,
-          tipo,
-          precioUnitario
-        );
+        if (isAjusteSinDeposito) {
+          // Ajuste simple sin depósito: actualizar Insumo.stockActual directamente
+          await db.insumo.update({
+            where: { id: data.insumoId },
+            data: { stockActual: { decrement: cantidad } }
+          });
+          logger.info('Stock ajustado (sin depósito)', { insumoId: data.insumoId, tipo, cantidad });
+        } else {
+          await actualizarStock(
+            data.insumoId,
+            data.depositoOrigenId,
+            cantidad,
+            tipo,
+            precioUnitario
+          );
+        }
         break;
 
       case 'TRANSFERENCIA':
@@ -416,7 +448,14 @@ export async function DELETE(request: NextRequest) {
 
       case 'AJUSTE_POSITIVO':
         // Revertir: quitar el ajuste
-        if (movimiento.depositoDestinoId) {
+        if (!movimiento.depositoDestinoId && !movimiento.depositoOrigenId) {
+          // Ajuste sin depósito: revertir Insumo.stockActual
+          await db.insumo.update({
+            where: { id: movimiento.insumoId },
+            data: { stockActual: { decrement: cantidad } }
+          });
+          logger.info('Movimiento AJUSTE_POSITIVO anulado (sin depósito)', { id, cantidad });
+        } else if (movimiento.depositoDestinoId) {
           const stock = await db.stockInsumo.findUnique({
             where: {
               stockInsumo_insumo_deposito: {
@@ -436,7 +475,14 @@ export async function DELETE(request: NextRequest) {
 
       case 'AJUSTE_NEGATIVO':
         // Revertir: devolver lo que se quitó
-        if (movimiento.depositoOrigenId) {
+        if (!movimiento.depositoOrigenId && !movimiento.depositoDestinoId) {
+          // Ajuste sin depósito: revertir Insumo.stockActual
+          await db.insumo.update({
+            where: { id: movimiento.insumoId },
+            data: { stockActual: { increment: cantidad } }
+          });
+          logger.info('Movimiento AJUSTE_NEGATIVO anulado (sin depósito)', { id, cantidad });
+        } else if (movimiento.depositoOrigenId) {
           const stock = await db.stockInsumo.findUnique({
             where: {
               stockInsumo_insumo_deposito: {

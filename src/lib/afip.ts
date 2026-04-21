@@ -98,9 +98,9 @@ export class AFIPService {
     this.config = {
       cuit: wsaaConfig.cuit,
       razonSocial: wsaaConfig.razonSocial,
-      domicilio: '', // TODO: agregar a configuración
+      domicilio: wsaaConfig.domicilio || '',
       puntoVenta: wsaaConfig.puntoVenta,
-      inicioActividades: '', // TODO: agregar a configuración
+      inicioActividades: wsaaConfig.inicioActividades || '',
       certificado: wsaaConfig.certificado,
       clavePrivada: wsaaConfig.clavePrivada,
       ambiente: wsaaConfig.ambiente

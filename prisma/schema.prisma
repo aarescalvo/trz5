@@ -4742,6 +4742,8 @@ model AFIPConfig {
   habilitado      Boolean   @default(false)
   cuit            String?
   razonSocial     String?
+  domicilio       String?
+  inicioActividades String?
   certificado     String?
   clavePrivada    String?
   clave           String?

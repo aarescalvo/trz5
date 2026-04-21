@@ -29,9 +29,9 @@ export async function GET() {
       data: {
         cuit: config?.cuit || '',
         razonSocial: config?.nombre || '',
-        domicilio: config?.direccion || '',
+        domicilio: config?.direccion || certConfig?.domicilio || '',
         puntoVenta: certConfig?.puntoVenta || 1,
-        inicioActividades: '',
+        inicioActividades: certConfig?.inicioActividades || '',
         ambiente: certConfig?.ambiente || 'testing',
         certificadoConfigurado: !!certConfig?.certificate,
         clavePrivadaConfigurada: !!certConfig?.privateKey,
@@ -123,14 +123,16 @@ export async function POST(request: NextRequest) {
           where: { id: existing.id },
           data: {
             puntoVenta: puntoVenta || existing.puntoVenta,
-            ambiente: ambiente || existing.ambiente
+            ambiente: ambiente || existing.ambiente,
+            inicioActividades: inicioActividades || existing.inicioActividades
           }
         })
       } else {
         await db.aFIPConfig.create({
           data: {
             puntoVenta: puntoVenta || 1,
-            ambiente: ambiente || 'testing'
+            ambiente: ambiente || 'testing',
+            inicioActividades: inicioActividades || null
           }
         })
       }

@@ -11,11 +11,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
-import { 
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle
+} from '@/components/ui/dialog'
+import {
   Search, Loader2, FileText, Truck, User, Package, Beef,
   Calendar, Hash, Scale, ClipboardList, TrendingUp, Warehouse,
   Mail, Download, MapPin, CheckCircle, Circle, ArrowRight,
-  Barcode, Building, Phone, FileCheck, Tag
+  Barcode, Building, Phone, FileCheck, Tag, Send
 } from 'lucide-react'
 
 interface Operador {
@@ -154,6 +160,9 @@ export function TrazabilidadModule({ operador }: Props) {
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<TrazabilidadData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
+  const [emailTo, setEmailTo] = useState('')
+  const [sendingEmail, setSendingEmail] = useState(false)
 
   const handleSearch = async () => {
     if (!searchValue.trim()) {
@@ -194,14 +203,320 @@ export function TrazabilidadModule({ operador }: Props) {
 
   const handleExportPDF = () => {
     if (!data) return
-    toast.info('Exportando a PDF...')
-    // TODO: Implement PDF export
+    try {
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const pageHeight = doc.internal.pageSize.getHeight()
+      let y = 15
+
+      // Company header
+      doc.setFontSize(18)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(51, 51, 51)
+      doc.text('Solemar Alimentaria', pageWidth / 2, y, { align: 'center' })
+      y += 5
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(120, 120, 120)
+      doc.text('Ruta 2 Km 45, San Cayetano | CUIT: 30-12345678-9', pageWidth / 2, y, { align: 'center' })
+      y += 8
+      doc.setDrawColor(200, 200, 200)
+      doc.line(14, y, pageWidth - 14, y)
+      y += 8
+
+      // Report title
+      doc.setFontSize(16)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(51, 51, 51)
+      doc.text('Reporte de Trazabilidad', pageWidth / 2, y, { align: 'center' })
+      y += 6
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(100, 100, 100)
+      doc.text(`Tropa: ${data.tropa.codigo} | ${data.tropa.estado.replace(/_/g, ' ')}`, pageWidth / 2, y, { align: 'center' })
+      y += 5
+      doc.setDrawColor(200, 200, 200)
+      doc.line(14, y, pageWidth - 14, y)
+      y += 8
+
+      // Helper for section titles
+      const addSectionTitle = (title: string) => {
+        if (y > pageHeight - 40) { doc.addPage(); y = 15 }
+        y += 4
+        doc.setFillColor(245, 245, 245)
+        doc.rect(14, y - 4, pageWidth - 28, 8, 'F')
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(80, 80, 80)
+        doc.text(title, 16, y + 1)
+        y += 10
+      }
+
+      // Ingreso section
+      addSectionTitle('DATOS DE INGRESO')
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(60, 60, 60)
+      const ingresoData = [
+        ['DTE', data.ingreso.dte || '-'],
+        ['Guía', data.ingreso.guia || '-'],
+        ['Productor', data.ingreso.productor || '-'],
+        ['Usuario Faena', data.ingreso.usuarioFaena || '-'],
+        ['Especie', data.ingreso.especie || '-'],
+        ['Cantidad Cabezas', String(data.ingreso.cantidadCabezas)],
+        ['Fecha Recepción', formatDate(data.ingreso.fechaRecepcion)],
+      ]
+      autoTable(doc, {
+        startY: y,
+        body: ingresoData,
+        theme: 'plain',
+        styles: { fontSize: 9, cellPadding: 2 },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 }, 1: { cellWidth: 120 } },
+        margin: { left: 20 },
+      })
+      y = (doc as any).lastAutoTable?.finalY + 6 || y + 30
+
+      // Pesaje Camion
+      if (data.pesajeCamion) {
+        addSectionTitle('PESAJE DE CAMIÓN')
+        const pc = data.pesajeCamion
+        autoTable(doc, {
+          startY: y,
+          body: [
+            ['Peso Bruto', `${pc.pesoBruto?.toFixed(0) || '-'} kg`],
+            ['Peso Tara', `${pc.pesoTara?.toFixed(0) || '-'} kg`],
+            ['Peso Neto', `${pc.pesoNeto?.toFixed(0) || '-'} kg`],
+            ['Patente Chasis', pc.patenteChasis || '-'],
+            ['Patente Acoplado', pc.patenteAcoplado || '-'],
+            ['Transportista', pc.transportista || '-'],
+            ['Fecha', formatDate(pc.fecha)],
+          ],
+          theme: 'plain',
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 } },
+          margin: { left: 20 },
+        })
+        y = (doc as any).lastAutoTable?.finalY + 6 || y + 30
+      }
+
+      // Pesaje Individual
+      if (data.pesajeIndividual && data.pesajeIndividual.animales.length > 0) {
+        addSectionTitle(`PESAJE INDIVIDUAL (${data.pesajeIndividual.totalAnimales} animales)`)
+        autoTable(doc, {
+          startY: y,
+          head: [['N°', 'Código', 'Tipo', 'Raza', 'Caravana', 'Peso (kg)', 'Fecha']],
+          body: data.pesajeIndividual.animales.map(a => [
+            String(a.numero), a.codigo, a.tipoAnimal, a.raza || '-',
+            a.caravana || '-', a.pesoVivo?.toFixed(0) || '-', formatDate(a.fecha),
+          ]),
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [245, 158, 11], textColor: [255, 255, 255], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [250, 250, 250] },
+          margin: { left: 14, right: 14 },
+        })
+        y = (doc as any).lastAutoTable?.finalY + 6 || y + 30
+      }
+
+      // Lista de Faena
+      if (data.listaFaena) {
+        addSectionTitle('LISTA DE FAENA')
+        const lf = data.listaFaena
+        autoTable(doc, {
+          startY: y,
+          body: [
+            ['Número', `#${lf.numero}`],
+            ['Fecha', formatDate(lf.fecha)],
+            ['Estado', lf.estado],
+            ['Cantidad Total', `${lf.cantidadTotal} animales`],
+            ['Tropas', lf.tropas.map(t => `${t.codigo} (${t.cantidad})`).join(', ')],
+          ],
+          theme: 'plain',
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 } },
+          margin: { left: 20 },
+        })
+        y = (doc as any).lastAutoTable?.finalY + 6 || y + 30
+      }
+
+      // Garrones
+      if (data.garrones && data.garrones.asignaciones.length > 0) {
+        addSectionTitle(`ASIGNACIÓN DE GARRONES (${data.garrones.totalGarrones})`)
+        autoTable(doc, {
+          startY: y,
+          head: [['Garrón', 'Animal N°', 'Tipo', 'Peso Vivo (kg)', 'Hora', 'Estado']],
+          body: data.garrones.asignaciones.map(g => [
+            `G-${g.garron}`, String(g.animalNumero || '-'), g.tipoAnimal || '-',
+            g.pesoVivo?.toFixed(0) || '-', formatDate(g.horaIngreso),
+            g.completado ? 'Completado' : 'Pendiente',
+          ]),
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [245, 158, 11], textColor: [255, 255, 255], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [250, 250, 250] },
+          margin: { left: 14, right: 14 },
+        })
+        y = (doc as any).lastAutoTable?.finalY + 6 || y + 30
+      }
+
+      // Romaneo
+      if (data.romaneo && data.romaneo.romaneos.length > 0) {
+        addSectionTitle(`ROMANEO (Rinde Prom: ${data.romaneo.rindePromedio?.toFixed(1) || '-'}%)`)
+        autoTable(doc, {
+          startY: y,
+          head: [['Garrón', 'Med. Izq (kg)', 'Med. Der (kg)', 'Total (kg)', 'Rinde %', 'Denticion', 'Tipif.', 'Estado']],
+          body: data.romaneo.romaneos.map(r => [
+            `G-${r.garron}`, r.pesoMediaIzq?.toFixed(1) || '-', r.pesoMediaDer?.toFixed(1) || '-',
+            r.pesoTotal?.toFixed(1) || '-', r.rinde?.toFixed(1) || '-',
+            r.denticion || '-', r.tipificador || '-', r.estado,
+          ]),
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [245, 158, 11], textColor: [255, 255, 255], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [250, 250, 250] },
+          margin: { left: 14, right: 14 },
+        })
+        y = (doc as any).lastAutoTable?.finalY + 6 || y + 30
+      }
+
+      // Camara
+      if (data.ubicacionCamara && data.ubicacionCamara.medias.length > 0) {
+        addSectionTitle(`UBICACIÓN EN CÁMARA (${data.ubicacionCamara.totalMedias} medias)`)
+        autoTable(doc, {
+          startY: y,
+          head: [['Código Barras', 'Lado', 'Sigla', 'Peso (kg)', 'Cámara', 'Estado']],
+          body: data.ubicacionCamara.medias.map(m => [
+            m.codigo, m.lado === 'IZQUIERDA' ? 'Izq' : 'Der', m.sigla,
+            m.peso.toFixed(1), m.camara || '-', m.estado,
+          ]),
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [245, 158, 11], textColor: [255, 255, 255], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [250, 250, 250] },
+          margin: { left: 14, right: 14 },
+        })
+        y = (doc as any).lastAutoTable?.finalY + 6 || y + 30
+      }
+
+      // Despacho
+      if (data.despacho && data.despacho.facturas.length > 0) {
+        addSectionTitle(`DESPACHO (${data.despacho.mediasDespachadas} medias despachadas)`)
+        autoTable(doc, {
+          startY: y,
+          head: [['Factura N°', 'Cliente', 'Fecha', 'Total', 'Remito', 'Estado']],
+          body: data.despacho.facturas.map(f => [
+            f.numero, f.cliente, formatDate(f.fecha), `$${f.total.toFixed(2)}`,
+            f.remito || '-', f.estado,
+          ]),
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [245, 158, 11], textColor: [255, 255, 255], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [250, 250, 250] },
+          margin: { left: 14, right: 14 },
+        })
+      }
+
+      // Footer on all pages
+      const pageCount = doc.getNumberOfPages()
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i)
+        doc.setFontSize(7)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(150, 150, 150)
+        doc.text(`Generado el ${new Date().toLocaleString('es-AR')}`, 14, pageHeight - 8)
+        doc.text(`Página ${i} de ${pageCount}`, pageWidth - 14, pageHeight - 8, { align: 'right' })
+      }
+
+      doc.save(`trazabilidad_${data.tropa.codigo}_${new Date().toISOString().slice(0, 10)}.pdf`)
+      toast.success('PDF exportado correctamente')
+    } catch (err) {
+      console.error('Error exportando PDF:', err)
+      toast.error('Error al exportar PDF')
+    }
+  }
+
+  const buildEmailBody = () => {
+    if (!data) return ''
+    const lines: string[] = []
+    lines.push('=== TRAZABILIDAD ===')
+    lines.push(`Tropa: ${data.tropa.codigo} | Estado: ${data.tropa.estado.replace(/_/g, ' ')}`)
+    lines.push('')
+    lines.push('--- INGRESO ---')
+    lines.push(`DTE: ${data.ingreso.dte || '-'}`)
+    lines.push(`Guía: ${data.ingreso.guia || '-'}`)
+    lines.push(`Productor: ${data.ingreso.productor || '-'}`)
+    lines.push(`Especie: ${data.ingreso.especie} | Cabezas: ${data.ingreso.cantidadCabezas}`)
+    lines.push(`Fecha Recepción: ${formatDate(data.ingreso.fechaRecepcion)}`)
+    if (data.pesajeCamion) {
+      lines.push('')
+      lines.push('--- PESAJE CAMIÓN ---')
+      lines.push(`Bruto: ${data.pesajeCamion.pesoBruto?.toFixed(0) || '-'} kg | Tara: ${data.pesajeCamion.pesoTara?.toFixed(0) || '-'} kg | Neto: ${data.pesajeCamion.pesoNeto?.toFixed(0) || '-'} kg`)
+      lines.push(`Patente: ${data.pesajeCamion.patenteChasis}${data.pesajeCamion.patenteAcoplado ? ' / ' + data.pesajeCamion.patenteAcoplado : ''}`)
+    }
+    if (data.pesajeIndividual && data.pesajeIndividual.animales.length > 0) {
+      lines.push('')
+      lines.push(`--- PESAJE INDIVIDUAL (${data.pesajeIndividual.totalAnimales} animales) ---`)
+      data.pesajeIndividual.animales.forEach(a => {
+        lines.push(`  N°${a.numero} | ${a.codigo} | ${a.tipoAnimal} | ${a.raza || '-'} | Peso: ${a.pesoVivo?.toFixed(0) || '-'} kg`)
+      })
+    }
+    if (data.listaFaena) {
+      lines.push('')
+      lines.push('--- LISTA DE FAENA ---')
+      lines.push(`Lista N°${data.listaFaena.numero} | Estado: ${data.listaFaena.estado} | ${data.listaFaena.cantidadTotal} animales`)
+    }
+    if (data.romaneo && data.romaneo.romaneos.length > 0) {
+      lines.push('')
+      lines.push(`--- ROMANEO (Rinde Prom: ${data.romaneo.rindePromedio?.toFixed(1) || '-'}%) ---`)
+      data.romaneo.romaneos.forEach(r => {
+        lines.push(`  G-${r.garron} | Izq: ${r.pesoMediaIzq?.toFixed(1) || '-'} kg | Der: ${r.pesoMediaDer?.toFixed(1) || '-'} kg | Total: ${r.pesoTotal?.toFixed(1) || '-'} kg | Rinde: ${r.rinde?.toFixed(1) || '-'}%`)
+      })
+    }
+    if (data.ubicacionCamara && data.ubicacionCamara.medias.length > 0) {
+      lines.push('')
+      lines.push(`--- CÁMARA (${data.ubicacionCamara.totalMedias} medias) ---`)
+    }
+    if (data.despacho && data.despacho.facturas.length > 0) {
+      lines.push('')
+      lines.push(`--- DESPACHO (${data.despacho.mediasDespachadas} medias despachadas) ---`)
+      data.despacho.facturas.forEach(f => {
+        lines.push(`  Factura: ${f.numero} | Cliente: ${f.cliente} | Total: $${f.total.toFixed(2)} | Estado: ${f.estado}`)
+      })
+    }
+    lines.push('')
+    lines.push('--- LÍNEA DE TIEMPO ---')
+    data.timeline.forEach(s => {
+      const mark = s.completado ? '[OK]' : '[  ]'
+      lines.push(`  ${mark} ${s.datos}${s.fecha ? ' (' + formatDate(s.fecha) + ')' : ''}`)
+    })
+    return lines.join('\n')
   }
 
   const handleSendEmail = () => {
     if (!data) return
-    toast.info('Abriendo formulario de email...')
-    // TODO: Implement email sending
+    setEmailTo('')
+    setEmailDialogOpen(true)
+  }
+
+  const handleConfirmSendEmail = async () => {
+    if (!data || !emailTo.trim()) {
+      toast.error('Ingrese un email válido')
+      return
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(emailTo.trim())) {
+      toast.error('El formato del email no es válido')
+      return
+    }
+    setSendingEmail(true)
+    try {
+      const body = buildEmailBody()
+      const subject = `Trazabilidad - Tropa ${data.tropa.codigo} - ${data.tropa.estado.replace(/_/g, ' ')}`
+      const mailtoLink = `mailto:${encodeURIComponent(emailTo.trim())}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+      window.open(mailtoLink, '_blank')
+      setEmailDialogOpen(false)
+      toast.success('Se abrió el cliente de email con los datos pre-cargados')
+    } catch (err) {
+      console.error('Error enviando email:', err)
+      toast.error('Error al abrir el cliente de email')
+    } finally {
+      setSendingEmail(false)
+    }
   }
 
   const formatDate = (date: string | Date | null) => {
@@ -899,6 +1214,57 @@ export function TrazabilidadModule({ operador }: Props) {
             </Tabs>
           </div>
         )}
+
+        {/* Email Dialog */}
+        <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-amber-500" />
+                Enviar Trazabilidad por Email
+              </DialogTitle>
+              <DialogDescription>
+                Se abrirá su cliente de correo con un resumen de la trazabilidad de la tropa {data?.tropa.codigo}. Complete el destinatario.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label htmlFor="email-to" className="text-sm font-medium text-stone-700">
+                  Destinatario
+                </label>
+                <Input
+                  id="email-to"
+                  type="email"
+                  placeholder="destinatario@ejemplo.com"
+                  value={emailTo}
+                  onChange={(e) => setEmailTo(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleConfirmSendEmail() }}
+                />
+              </div>
+              <div className="rounded-md bg-stone-50 border p-3 text-xs text-stone-600 max-h-32 overflow-y-auto">
+                <p className="font-medium text-stone-700 mb-1">Vista previa del contenido:</p>
+                <pre className="whitespace-pre-wrap font-mono">{data ? buildEmailBody().slice(0, 500) : ''}...</pre>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEmailDialogOpen(false)} disabled={sendingEmail}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleConfirmSendEmail}
+                disabled={sendingEmail || !emailTo.trim()}
+                className="bg-amber-500 hover:bg-amber-600"
+              >
+                {sendingEmail ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
+                Abrir Email
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Initial State */}
         {!data && !error && (

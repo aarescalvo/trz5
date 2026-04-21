@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import nodemailer from 'nodemailer'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
+import { decrypt } from '@/lib/crypto'
 
 // POST - Enviar romaneo por email
 export async function POST(request: NextRequest) {
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
     // Obtener configuración del frigorífico
     const config = await db.configuracionFrigorifico.findFirst()
 
-    if (!config?.emailHabilitado || !config.emailHost || !config.emailUsuario) {
+    if (!config?.emailHabilitado || !config.emailHost || !config.emailUsuario || !config.emailPassword) {
       return NextResponse.json(
         { success: false, error: 'El envío de emails no está configurado. Configure SMTP en Configuración.' },
         { status: 400 }
@@ -113,30 +115,28 @@ ${config.nombre || 'Solemar Alimentaria S.A.'}
 ${config.direccion || ''}
     `.trim()
 
-    // Aquí iría la lógica real de envío de email usando nodemailer o similar
-    // Por ahora, simulamos el envío exitoso
-    
-    // TODO: Implementar envío real con nodemailer cuando esté configurado
-    // const transporter = nodemailer.createTransport({
-    //   host: config.emailHost,
-    //   port: config.emailPuerto || 587,
-    //   secure: false,
-    //   auth: {
-    //     user: config.emailUsuario,
-    //     pass: decrypt(config.emailPassword)
-    //   }
-    // })
-    // 
-    // await transporter.sendMail({
-    //   from: config.emailUsuario,
-    //   to: email,
-    //   subject: `Romaneo Tropa ${tropa.numero} - ${config.nombre}`,
-    //   text: emailContent,
-    //   attachments: [{
-    //     filename: `romaneo-tropa-${tropa.numero}.pdf`,
-    //     content: pdfBuffer
-    //   }]
-    // })
+    // Enviar email con nodemailer
+    const transporter = nodemailer.createTransport({
+      host: config.emailHost,
+      port: config.emailPuerto || 587,
+      secure: config.emailPuerto === 465,
+      auth: {
+        user: config.emailUsuario,
+        pass: decrypt(config.emailPassword) || ''
+      },
+      tls: {
+        rejectUnauthorized: false
+      }
+    })
+
+    await transporter.sendMail({
+      from: `"${config.nombre || 'Sistema Frigorífico'}" <${config.emailUsuario}>`,
+      to: email,
+      subject: `Romaneo Tropa ${tropa.codigo} - ${config.nombre || 'Frigorífico'}`,
+      text: emailContent
+    })
+
+    await transporter.close()
 
     // Registrar envío en auditoría
     await db.auditoria.create({

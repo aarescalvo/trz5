@@ -212,6 +212,8 @@ export async function getCertificateConfig(): Promise<{
   ambiente: 'testing' | 'production'
   isValid: boolean
   expirationDate: Date | null
+  domicilio: string | null
+  inicioActividades: string | null
 } | null> {
   try {
     const config = await db.aFIPConfig.findFirst() as any
@@ -226,7 +228,9 @@ export async function getCertificateConfig(): Promise<{
       puntoVenta: config.puntoVenta,
       ambiente: (config.entorno || 'testing') as 'testing' | 'production',
       isValid: !!config.fechaVencimiento,
-      expirationDate: config.fechaVencimiento
+      expirationDate: config.fechaVencimiento,
+      domicilio: config.domicilio || null,
+      inicioActividades: config.inicioActividades || null
     }
   } catch (error) {
     console.error('Error getting certificate config:', error)

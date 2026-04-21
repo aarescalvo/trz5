@@ -9,6 +9,7 @@ import { db } from '@/lib/db'
 import net from 'net'
 import fs from 'fs'
 import path from 'path'
+import sharp from 'sharp'
 import { checkPermission } from '@/lib/auth-helpers'
 import { createLogger } from '@/lib/logger'
 const log = createLogger('app.api.rotulos.imprimir-media-res.route')
@@ -144,12 +145,66 @@ async function cargarLogoGRF(nombreArchivo: string): Promise<string> {
       return '00000000000000000000'
     }
 
-    // TODO: Convertir PNG a GRF usando una librería
-    // Por ahora devolvemos un placeholder hasta que se implemente la conversión
     log.info(`Logo encontrado: ${nombreArchivo}, convirtiendo a GRF...`)
-    
-    // Placeholder temporal - se reemplazará con la conversión real
-    return '00000000000000000000'
+
+    // Convertir PNG a monocromo (1 bit) usando sharp
+    const image = sharp(rutaLogo)
+    const metadata = await image.metadata()
+
+    const width = metadata.width || 0
+    const height = metadata.height || 0
+    if (width === 0 || height === 0) {
+      log.warn(`Logo con dimensiones inválidas: ${nombreArchivo}`)
+      return ''
+    }
+
+    // Escalar a máximo 200px de ancho para etiquetas térmicas
+    const maxWidth = 200
+    const scale = width > maxWidth ? maxWidth / width : 1
+    const targetWidth = Math.round(width * scale)
+    const targetHeight = Math.round(height * scale)
+
+    // Convertir a escala de grises, luego a umbral (blanco/negro)
+    const { data } = await image
+      .resize(targetWidth, targetHeight, { fit: 'fill' })
+      .greyscale()
+      .threshold(128)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+
+    const bytesPerRow = Math.ceil(targetWidth / 8)
+    const bitmapBytes: Buffer = Buffer.alloc(bytesPerRow * targetHeight)
+
+    for (let y = 0; y < targetHeight; y++) {
+      for (let x = 0; x < targetWidth; x++) {
+        // Cada pixel en formato raw es RGBA (4 bytes)
+        const pixelIndex = (y * targetWidth + x) * 4
+        const alpha = data[pixelIndex + 3]
+        const grey = data[pixelIndex]
+
+        // Considerar pixel como negro si tiene suficiente opacidad y brillo bajo
+        const isBlack = alpha > 128 && grey < 128
+
+        if (isBlack) {
+          const byteIndex = y * bytesPerRow + Math.floor(x / 8)
+          // MSB = pixel izquierdo (convención Zebra)
+          const bitIndex = 7 - (x % 8)
+          bitmapBytes[byteIndex] |= (1 << bitIndex)
+        }
+      }
+    }
+
+    // Convertir bitmap a string hexadecimal (formato requerido por ZPL ~DG)
+    const hexData = bitmapBytes.toString('hex').toUpperCase()
+    const totalBytes = bitmapBytes.length
+
+    // Generar comando ZPL ~DG para descargar la imagen a memoria RAM
+    const objectName = path.parse(nombreArchivo).name.toUpperCase().replace(/-/g, '_')
+
+    log.info(`Logo ${nombreArchivo} convertido: ${targetWidth}x${targetHeight}px, ${totalBytes} bytes GRF`)
+
+    return `~DGR:${objectName}.GRF,${totalBytes.toString().padStart(5, '0')},${bytesPerRow.toString().padStart(3, '0')},${hexData}`
     
   } catch (error) {
     console.error(`Error cargando logo ${nombreArchivo}:`, error)

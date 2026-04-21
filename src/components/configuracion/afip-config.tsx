@@ -51,6 +51,10 @@ export function AFIPConfig({ operador }: Props) {
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
   const [certFile, setCertFile] = useState<File | null>(null)
   const [keyFile, setKeyFile] = useState<File | null>(null)
+  const [certContent, setCertContent] = useState<string | null>(null)
+  const [keyContent, setKeyContent] = useState<string | null>(null)
+  const [uploadingCert, setUploadingCert] = useState(false)
+  const [uploadingKey, setUploadingKey] = useState(false)
 
   useEffect(() => {
     fetchConfig()
@@ -108,16 +112,86 @@ export function AFIPConfig({ operador }: Props) {
     }
   }
 
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(new Error('Error al leer el archivo'))
+      reader.readAsText(file)
+    })
+  }
+
+  const submitCertificates = async (cert: string, key: string) => {
+    const res = await fetch('/api/afip/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...config,
+        certificado: cert,
+        clavePrivada: key
+      })
+    })
+    return res
+  }
+
   const handleCertUpload = async () => {
     if (!certFile) return
-    // TODO: Implementar upload de certificado
-    alert('Funcionalidad de upload pendiente de implementar')
+    setUploadingCert(true)
+    try {
+      const content = await readFileAsText(certFile)
+      setCertContent(content)
+
+      if (keyContent) {
+        const res = await submitCertificates(content, keyContent)
+        if (res.ok) {
+          setCertFile(null)
+          setKeyFile(null)
+          setCertContent(null)
+          setKeyContent(null)
+          setTestResult({ ok: true, message: 'Certificado y clave privada actualizados correctamente' })
+          fetchConfig()
+        } else {
+          const error = await res.json()
+          setTestResult({ ok: false, message: error.error || error.errors?.join(', ') || 'Error al guardar certificado' })
+        }
+      } else {
+        setTestResult({ ok: true, message: 'Certificado cargado. Ahora cargue la clave privada para completar la configuración.' })
+      }
+    } catch (error) {
+      setTestResult({ ok: false, message: 'Error al leer el archivo de certificado' })
+    } finally {
+      setUploadingCert(false)
+    }
   }
 
   const handleKeyUpload = async () => {
     if (!keyFile) return
-    // TODO: Implementar upload de clave privada
-    alert('Funcionalidad de upload pendiente de implementar')
+    setUploadingKey(true)
+    try {
+      const content = await readFileAsText(keyFile)
+      setKeyContent(content)
+
+      if (certContent) {
+        const res = await submitCertificates(certContent, content)
+        if (res.ok) {
+          setCertFile(null)
+          setKeyFile(null)
+          setCertContent(null)
+          setKeyContent(null)
+          setTestResult({ ok: true, message: 'Certificado y clave privada actualizados correctamente' })
+          fetchConfig()
+        } else {
+          const error = await res.json()
+          setTestResult({ ok: false, message: error.error || error.errors?.join(', ') || 'Error al guardar clave privada' })
+        }
+      } else {
+        setTestResult({ ok: true, message: 'Clave privada cargada. Ahora cargue el certificado para completar la configuración.' })
+      }
+    } catch (error) {
+      setTestResult({ ok: false, message: 'Error al leer el archivo de clave privada' })
+    } finally {
+      setUploadingKey(false)
+    }
   }
 
   const formatCUIT = (value: string) => {
@@ -333,10 +407,14 @@ export function AFIPConfig({ operador }: Props) {
                 <Button
                   variant="outline"
                   onClick={handleCertUpload}
-                  disabled={!certFile}
+                  disabled={!certFile || uploadingCert}
                 >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Subir
+                  {uploadingCert ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Upload className="w-4 h-4 mr-2" />
+                  )}
+                  {uploadingCert ? 'Subiendo...' : 'Subir'}
                 </Button>
               </div>
             </div>
@@ -366,10 +444,14 @@ export function AFIPConfig({ operador }: Props) {
                 <Button
                   variant="outline"
                   onClick={handleKeyUpload}
-                  disabled={!keyFile}
+                  disabled={!keyFile || uploadingKey}
                 >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Subir
+                  {uploadingKey ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Upload className="w-4 h-4 mr-2" />
+                  )}
+                  {uploadingKey ? 'Subiendo...' : 'Subir'}
                 </Button>
               </div>
             </div>
