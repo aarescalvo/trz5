@@ -8,8 +8,6 @@ const PUBLIC_ROUTES = [
   '/api/seed',
   '/api/migrar-usuarios',
   '/api/sistema/status',
-  '/api/balanza/lectura',
-  '/api/balanza/configuracion',
 ]
 
 // Rutas de solo lectura (GET) que no requieren permisos específicos
