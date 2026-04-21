@@ -16,7 +16,7 @@ async function checkAdminAuth(request: NextRequest): Promise<boolean> {
     select: { rol: true }
   })
   
-  return operador?.rol === 'ADMIN'
+  return operador?.rol === 'ADMINISTRADOR'
 }
 
 // GET - Listar backups o estadísticas

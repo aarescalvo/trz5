@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
     let actualizados = 0
     let errores = 0
     
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i] as unknown[]
+    for (let i = 0; i < (data as any[]).length; i++) {
+      const row = (data as any[])[i] as unknown[]
       if (!row || row.length === 0) continue
       
       // Get first column value

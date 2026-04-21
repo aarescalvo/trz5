@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         entidad: 'IpBloqueada',
         entidadId: bloqueo.id,
         descripcion: `IP bloqueada: ${ip}. Motivo: ${motivo || 'MANUAL'}`,
-        datosDespues: { ip, motivo, duracionMinutos }
+        datosDespues: JSON.stringify({ ip, motivo, duracionMinutos })
       }
     })
     

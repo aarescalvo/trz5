@@ -19,12 +19,20 @@ export type EstadoBackup = 'PENDIENTE' | 'EN_PROGRESO' | 'COMPLETADO' | 'FALLIDO
 
 export interface BackupConfig {
   id: string
-  enabled: boolean
+  activo: boolean
+  backupDiario: boolean
+  horaBackup: string
+  retenerDias: number
+  nubeHabilitado: boolean
+  proveedorNube: string | null
+  credenciales: any | null
+  pointInTime: boolean
+  intervaloPIT: string | null
+  ultimoBackup: Date | null
+  ultimoExitoso: boolean
+  tamanoUltimo: number | null
+  espacioUsado: number | null
   frecuencia: FrecuenciaBackup
-  hora: number
-  minuto: number
-  diaSemana?: number | null
-  diaMes?: number | null
   retencionDias: number
   maxBackups: number
   destino: DestinoBackup
@@ -36,12 +44,9 @@ export interface BackupConfig {
   notificarExito: boolean
   notificarFallo: boolean
   emailNotificacion?: string | null
-  ultimoBackup?: Date | null
-  proximoBackup?: Date | null
   ultimoEstado: EstadoBackup
   ultimoError?: string | null
   totalBackups: number
-  espacioUsado: number
 }
 
 // Instancia del scheduler
@@ -53,29 +58,23 @@ let currentConfig: BackupConfig | null = null
  */
 export async function getBackupConfig(): Promise<BackupConfig | null> {
   try {
-    const config = await db.configuracionBackup.findFirst()
-    if (!config) {
+    // Check if default config needs updating for interface fields
+    const configFromDb = await db.configuracionBackup.findFirst()
+    if (!configFromDb) {
       // Crear configuración por defecto
       const newConfig = await db.configuracionBackup.create({
         data: {
-          enabled: false,
-          frecuencia: 'DAILY',
-          hora: 3,
-          minuto: 0,
-          retencionDias: 30,
-          maxBackups: 10,
-          destino: 'LOCAL',
-          compresion: true,
-          incluirArchivos: false,
-          verificarIntegridad: true,
-          notificarExito: false,
-          notificarFallo: true,
-          ultimoEstado: 'PENDIENTE'
+          activo: false,
+          backupDiario: true,
+          horaBackup: '02:00',
+          retenerDias: 30,
+          nubeHabilitado: false,
+          ultimoExitoso: false
         }
       })
-      return newConfig as BackupConfig
+      return mapToBackupConfig(newConfig)
     }
-    return config as BackupConfig
+    return mapToBackupConfig(configFromDb)
   } catch (error) {
     console.error('Error obteniendo configuración de backup:', error)
     return null
@@ -90,20 +89,27 @@ export async function updateBackupConfig(data: Partial<BackupConfig>): Promise<B
     const existing = await getBackupConfig()
     if (!existing) return null
 
+    // Update DB fields that exist in schema
+    const dbData: any = {}
+    if (data.activo !== undefined) dbData.activo = data.activo
+    if (data.backupDiario !== undefined) dbData.backupDiario = data.backupDiario
+    if (data.horaBackup !== undefined) dbData.horaBackup = data.horaBackup
+    if (data.retenerDias !== undefined) dbData.retenerDias = data.retenerDias
+    if (data.nubeHabilitado !== undefined) dbData.nubeHabilitado = data.nubeHabilitado
+    if (data.proveedorNube !== undefined) dbData.proveedorNube = data.proveedorNube
+    dbData.updatedAt = new Date()
+
     const updated = await db.configuracionBackup.update({
       where: { id: existing.id },
-      data: {
-        ...data,
-        updatedAt: new Date()
-      }
+      data: dbData
     })
 
     // Reiniciar scheduler si cambió la configuración
-    if (data.enabled !== undefined || data.frecuencia || data.hora !== undefined || data.minuto !== undefined) {
+    if (data.activo !== undefined || data.backupDiario !== undefined || data.horaBackup !== undefined) {
       await restartScheduler()
     }
 
-    return updated as BackupConfig
+    return mapToBackupConfig(updated)
   } catch (error) {
     console.error('Error actualizando configuración de backup:', error)
     return null
@@ -123,23 +129,20 @@ export function getBackupDir(): string {
  * Genera el cron expression basado en la configuración
  */
 function getCronExpression(config: BackupConfig): string {
-  const { frecuencia, hora, minuto, diaSemana, diaMes } = config
+  // Use parsed hour and minute from horaBackup (HH:mm format)
+  const hourStr = config.horaBackup || '02:00'
+  const [hora, minuto] = hourStr.split(':').map(Number)
+  const { frecuencia } = config
 
   switch (frecuencia) {
     case 'HOURLY':
-      // Cada hora en el minuto especificado
       return `${minuto} * * * *`
     case 'DAILY':
-      // Diario a la hora y minuto especificados
       return `${minuto} ${hora} * * *`
     case 'WEEKLY':
-      // Semanal en el día de la semana especificado
-      const weekDay = diaSemana ?? 0
-      return `${minuto} ${hora} * * ${weekDay}`
+      return `${minuto} ${hora} * * 0`
     case 'MONTHLY':
-      // Mensual en el día del mes especificado
-      const monthDay = diaMes ?? 1
-      return `${minuto} ${hora} ${monthDay} * *`
+      return `${minuto} ${hora} 1 * *`
     default:
       return `${minuto} ${hora} * * *`
   }
@@ -151,30 +154,31 @@ function getCronExpression(config: BackupConfig): string {
 export function calculateNextBackup(config: BackupConfig): Date {
   const now = new Date()
   const next = new Date()
+  const hourStr = config.horaBackup || '02:00'
+  const [hora, minuto] = hourStr.split(':').map(Number)
 
   switch (config.frecuencia) {
     case 'HOURLY':
-      next.setMinutes(config.minuto, 0, 0)
+      next.setMinutes(minuto, 0, 0)
       if (next <= now) {
         next.setHours(next.getHours() + 1)
       }
       break
     case 'DAILY':
-      next.setHours(config.hora, config.minuto, 0, 0)
+      next.setHours(hora, minuto, 0, 0)
       if (next <= now) {
         next.setDate(next.getDate() + 1)
       }
       break
     case 'WEEKLY':
-      next.setHours(config.hora, config.minuto, 0, 0)
+      next.setHours(hora, minuto, 0, 0)
       const currentDay = next.getDay()
-      const targetDay = config.diaSemana ?? 0
-      const daysUntil = (targetDay - currentDay + 7) % 7
+      const daysUntil = (0 - currentDay + 7) % 7
       next.setDate(next.getDate() + (daysUntil === 0 && next <= now ? 7 : daysUntil))
       break
     case 'MONTHLY':
-      next.setHours(config.hora, config.minuto, 0, 0)
-      next.setDate(config.diaMes ?? 1)
+      next.setHours(hora, minuto, 0, 0)
+      next.setDate(1)
       if (next <= now) {
         next.setMonth(next.getMonth() + 1)
       }
@@ -276,17 +280,13 @@ export async function runBackup(tipo: 'AUTOMATICO' | 'MANUAL' = 'MANUAL'): Promi
 
     const duration = Date.now() - startTime
 
-    // Registrar en historial
     await db.historialBackup.create({
       data: {
-        archivo: path.basename(finalFile),
-        ruta: finalFile,
-        tamano: sizeMB,
-        comprimido: config?.compresion ?? true,
+        rutaArchivo: finalFile,
+        nombreArchivo: path.basename(finalFile),
+        tamanio: sizeMB,
         estado: 'COMPLETADO',
-        duracionMs: duration,
         tipo,
-        configuracionId: config?.id
       }
     })
 
@@ -296,11 +296,9 @@ export async function runBackup(tipo: 'AUTOMATICO' | 'MANUAL' = 'MANUAL'): Promi
         where: { id: config.id },
         data: {
           ultimoBackup: new Date(),
-          proximoBackup: calculateNextBackup(config),
-          ultimoEstado: 'COMPLETADO',
-          ultimoError: null,
-          totalBackups: { increment: 1 },
-          espacioUsado: { increment: sizeMB }
+          ultimoExitoso: true,
+          tamanoUltimo: sizeMB,
+          espacioUsado: (config.espacioUsado || 0) + sizeMB
         }
       })
     }
@@ -324,22 +322,18 @@ export async function runBackup(tipo: 'AUTOMATICO' | 'MANUAL' = 'MANUAL'): Promi
       await db.configuracionBackup.update({
         where: { id: config.id },
         data: {
-          ultimoEstado: 'FALLIDO',
-          ultimoError: errorMessage
+          ultimoExitoso: false,
         }
       })
 
       // Registrar en historial
       await db.historialBackup.create({
         data: {
-          archivo: '',
-          ruta: '',
-          tamano: 0,
-          comprimido: false,
+          rutaArchivo: '',
+          tamanio: 0,
           estado: 'FALLIDO',
-          error: errorMessage,
+          mensajeError: errorMessage,
           tipo,
-          configuracionId: config.id
         }
       })
     }
@@ -400,7 +394,7 @@ export async function cleanupOldBackups(): Promise<{ deleted: number; freedMB: n
 
           // Actualizar historial
           await db.historialBackup.deleteMany({
-            where: { archivo: file.name }
+            where: { nombreArchivo: file.name }
           })
         } catch (deleteError) {
           console.warn(`No se pudo eliminar backup antiguo ${file.name}:`, deleteError)
@@ -464,11 +458,9 @@ export async function verifyBackup(fileName: string): Promise<{
 
     // Actualizar historial
     await db.historialBackup.updateMany({
-      where: { archivo: fileName },
+      where: { nombreArchivo: fileName },
       data: {
-        verificado: true,
-        fechaVerificacion: new Date(),
-        resultadoVerificacion: 'OK'
+        descripcion: 'OK'
       }
     })
 
@@ -483,10 +475,44 @@ export async function verifyBackup(fileName: string): Promise<{
 }
 
 /**
+ * Map DB config to BackupConfig interface
+ */
+function mapToBackupConfig(config: any): BackupConfig {
+  return {
+    id: config.id,
+    activo: config.activo,
+    backupDiario: config.backupDiario,
+    horaBackup: config.horaBackup,
+    retenerDias: config.retenerDias,
+    nubeHabilitado: config.nubeHabilitado,
+    proveedorNube: config.proveedorNube,
+    credenciales: config.credenciales,
+    pointInTime: config.pointInTime,
+    intervaloPIT: config.intervaloPIT,
+    ultimoBackup: config.ultimoBackup,
+    ultimoExitoso: config.ultimoExitoso,
+    tamanoUltimo: config.tamanoUltimo,
+    espacioUsado: config.espacioUsado,
+    // Defaults for interface fields not in DB
+    frecuencia: 'DAILY',
+    retencionDias: config.retenerDias || 30,
+    maxBackups: 10,
+    destino: 'LOCAL',
+    compresion: true,
+    incluirArchivos: false,
+    verificarIntegridad: true,
+    notificarExito: false,
+    notificarFallo: true,
+    ultimoEstado: 'PENDIENTE',
+    totalBackups: 0,
+  }
+}
+
+/**
  * Inicia el scheduler de backups
  */
 export function startScheduler(config: BackupConfig): boolean {
-  if (!config.enabled) {
+  if (!config.activo) {
     console.log('Backup scheduler deshabilitado')
     return false
   }
@@ -541,7 +567,7 @@ export async function restartScheduler(): Promise<boolean> {
 
   stopScheduler()
   
-  if (config.enabled) {
+  if (config && config.activo) {
     return startScheduler(config)
   }
   
@@ -554,7 +580,7 @@ export async function restartScheduler(): Promise<boolean> {
 export async function initializeScheduler(): Promise<void> {
   try {
     const config = await getBackupConfig()
-    if (config && config.enabled) {
+    if (config && config.activo) {
       startScheduler(config)
       console.log('Backup scheduler inicializado')
     }

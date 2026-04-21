@@ -113,12 +113,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Preparar datos a actualizar
-    const updateData: Partial<BackupConfig> = {}
+    const updateData: any = {}
 
-    if (enabled !== undefined) updateData.enabled = Boolean(enabled)
+    if (enabled !== undefined) updateData.activo = Boolean(enabled)
     if (frecuencia) updateData.frecuencia = frecuencia as FrecuenciaBackup
-    if (hora !== undefined) updateData.hora = Number(hora)
-    if (minuto !== undefined) updateData.minuto = Number(minuto)
+    if (hora !== undefined) updateData.horaBackup = `${Number(hora)}:00`
+    if (minuto !== undefined) updateData.horaBackup = updateData.horaBackup || `${Number(minuto)}`
     if (diaSemana !== undefined) updateData.diaSemana = diaSemana !== null ? Number(diaSemana) : null
     if (diaMes !== undefined) updateData.diaMes = diaMes !== null ? Number(diaMes) : null
     if (retencionDias !== undefined) updateData.retencionDias = Number(retencionDias)

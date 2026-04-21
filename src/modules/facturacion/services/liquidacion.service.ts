@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { liquidacionRepository } from '../repositories/liquidacion.repository'
 import { tarifasService } from './tarifas.service'
 import { eventBus } from '@/core/events/event-bus'

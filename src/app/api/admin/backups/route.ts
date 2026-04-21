@@ -69,10 +69,10 @@ export async function GET(request: NextRequest) {
         totalSizeBytes: totalSize,
         backupDir,
         config: config ? {
-          enabled: config.enabled,
-          frecuencia: config.frecuencia,
-          hora: config.hora,
-          minuto: config.minuto,
+          enabled: (config as any).activo,
+          frecuencia: (config as any).frecuencia,
+          hora: (config as any).horaBackup ? parseInt((config as any).horaBackup.split(':')[0]) : undefined,
+          minuto: (config as any).horaBackup ? parseInt((config as any).horaBackup.split(':')[1]) : undefined,
           ultimoBackup: config.ultimoBackup?.toISOString() || null,
           proximoBackup: config ? calculateNextBackup(config).toISOString() : null,
           ultimoEstado: config.ultimoEstado,
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar integridad si se solicitó
-    let verification = null
+    let verification: any = null
     if (verify && result.file) {
       verification = await verifyBackup(result.file)
     }
@@ -223,8 +223,8 @@ export async function DELETE(request: NextRequest) {
     fs.unlinkSync(filePath)
 
     // Eliminar del historial
-    await db.historialBackup.deleteMany({
-      where: { archivo: fileName }
+    await (db as any).historialBackup.deleteMany({
+      where: { nombreArchivo: fileName }
     })
 
     // Actualizar espacio usado en configuración
@@ -233,7 +233,7 @@ export async function DELETE(request: NextRequest) {
       await db.configuracionBackup.update({
         where: { id: config.id },
         data: {
-          espacioUsado: Math.max(0, config.espacioUsado - sizeMB)
+          espacioUsado: Math.max(0, (config as any).espacioUsado - sizeMB)
         }
       })
     }

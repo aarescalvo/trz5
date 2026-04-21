@@ -345,7 +345,7 @@ export async function DELETE(request: NextRequest) {
       }
 
       // Revertir el saldo
-      const monto = movimiento.monto.toNumber()
+      const monto = movimiento.monto
       const tipoMovimiento = movimiento.tipo as string
       let saldoRevertido: number
 

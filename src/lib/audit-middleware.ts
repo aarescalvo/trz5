@@ -58,30 +58,17 @@ export type AuditAction =
  */
 export async function logAudit(params: AuditLogParams): Promise<void> {
   try {
-    // Calcular cambios si hay datos antes y después
-    let cambios: string | undefined
-    if (params.datosAntes && params.datosDespues) {
-      const cambiosObj = calculateChanges(params.datosAntes, params.datosDespues)
-      cambios = JSON.stringify(cambiosObj)
-    }
-
     await db.auditoria.create({
       data: {
         operadorId: params.operadorId || null,
         modulo: params.modulo,
-        submodulo: params.submodulo || null,
         accion: params.accion,
         entidad: params.entidad,
         entidadId: params.entidadId || null,
-        entidadNombre: params.entidadNombre || null,
         descripcion: params.descripcion,
         datosAntes: params.datosAntes ? JSON.stringify(params.datosAntes) : null,
         datosDespues: params.datosDespues ? JSON.stringify(params.datosDespues) : null,
-        cambios,
         ip: params.ip || null,
-        userAgent: params.userAgent || null,
-        sessionId: params.sessionId || null,
-        dispositivo: params.dispositivo || null
       }
     })
   } catch (error) {

@@ -32,8 +32,8 @@ export async function GET(
     }
 
     // Calcular saldo
-    const totalPagado = factura.pagos.reduce((sum, p) => sum + p.monto.toNumber(), 0)
-    const saldoPendiente = factura.total.toNumber() - totalPagado
+    const totalPagado = factura.pagos.reduce((sum, p) => sum + p.monto, 0)
+    const saldoPendiente = factura.total - totalPagado
 
     return NextResponse.json({
       success: true,

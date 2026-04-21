@@ -41,9 +41,8 @@ export async function POST(
         accion: 'LOCK',
         entidad: 'Sesion',
         entidadId: sesionId,
-        descripcion: `Sesión cerrada forzadamente. Operador: ${sesion.operadorId}`,
-        ip: sesion.ip,
-        userAgent: sesion.userAgent
+        descripcion: `Sesión cerrada forzadamente. Operador: ${sesion.operadorId}. UA: ${sesion.userAgent || ''}`,
+        ip: sesion.ip
       }
     })
     

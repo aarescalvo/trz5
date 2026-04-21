@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     // Caso 1: Imputación múltiple (varias facturas con un solo pago)
     if (imputaciones && Array.isArray(imputaciones) && imputaciones.length > 0) {
-      const resultados = []
+      const resultados: any[] = []
 
       for (const imp of imputaciones) {
         const factura = await db.factura.findUnique({

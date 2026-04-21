@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     // Obtener todos los animales agrupados por tropa y corral
     const animales = await db.animal.findMany({
       where: {
-        estado: { in: estados }
+        estado: { in: estados as any }
       },
       include: {
         tropa: {

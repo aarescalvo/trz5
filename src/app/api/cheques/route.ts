@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     // Verificar si ya existe un cheque con el mismo número y banco
     const existente = await db.cheque.findUnique({
       where: {
-        numero_banco: {
+        cheque_numero_banco: {
           numero: data.numero,
           banco: data.banco
         }
@@ -207,7 +207,7 @@ export async function PUT(request: NextRequest) {
         (data.banco && data.banco !== existente.banco)) {
       const duplicado = await db.cheque.findUnique({
         where: {
-          numero_banco: {
+          cheque_numero_banco: {
             numero: data.numero || existente.numero,
             banco: data.banco || existente.banco
           }

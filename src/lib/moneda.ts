@@ -215,7 +215,7 @@ export async function obtenerCotizacionesMultiples(): Promise<{
   const bcra = await obtenerCotizacionBCRA()
   
   // Intentar obtener dólar blue de una API alternativa
-  let blue = null
+  let blue: { compra: number; venta: number } | null = null
   try {
     const response = await fetch('https://api.bluelytics.com.ar/v2/latest', {
       method: 'GET',

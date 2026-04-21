@@ -161,7 +161,7 @@ export function Cached<T extends (...args: unknown[]) => Promise<unknown>>(
   ) {
     const originalMethod = descriptor.value!
     
-    descriptor.value = async function (...args: Parameters<T>) {
+    descriptor.value = async function (this: unknown, ...args: Parameters<T>) {
       const key = keyGenerator(...args)
       const cached = cacheGet<ReturnType<T>>(key)
       

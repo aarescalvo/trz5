@@ -34,7 +34,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (body.action === 'autorizar') {
       const parsed = supervisorAuthSchema.safeParse({ ...body, liquidacionId: id })
       if (!parsed.success) {
-        return NextResponse.json({ success: false, error: parsed.error.errors.map(e => e.message).join(', ') }, { status: 400 })
+        return NextResponse.json({ success: false, error: (parsed.error as any).issues?.map((e: any) => e.message).join(', ') || 'Validation error' }, { status: 400 })
       }
       const result = await liquidacionService.autorizarEdicion(id, body.pin, body.operadorId)
       return NextResponse.json({ success: true, data: result })
@@ -43,7 +43,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (body.action === 'items') {
       const parsed = actualizarItemsSchema.safeParse(body)
       if (!parsed.success) {
-        return NextResponse.json({ success: false, error: parsed.error.errors.map(e => e.message).join(', ') }, { status: 400 })
+        return NextResponse.json({ success: false, error: (parsed.error as any).issues?.map((e: any) => e.message).join(', ') || 'Validation error' }, { status: 400 })
       }
       const data = await liquidacionService.actualizarItems(id, parsed.data.items)
       return NextResponse.json({ success: true, data })

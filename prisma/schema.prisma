@@ -77,6 +77,10 @@ model Camara {
   cuartos             Cuarto[]
   pallets             Pallet[]
   stockProductos      StockProducto[]
+  sesionesRomaneo      SesionRomaneo[]
+  stockCamara          StockCamara[]
+  stockCamaraSIGICA    StockCamaraSIGICA?
+  ingresosTerceroDestino IngresoTercero[]
 }
 
 enum TipoCamara {
@@ -99,6 +103,7 @@ model Tipificador {
   updatedAt     DateTime @updatedAt
   
   romaneos      Romaneo[]
+  sesionesRomaneo SesionRomaneo[]
 }
 
 // ==================== PRODUCTOS ====================
@@ -135,6 +140,7 @@ model Producto {
   
   cajas               CajaEmpaque[]
   stockProductos      StockProducto[]
+  stockCamara          StockCamara[]
 
   @@unique([codigo, especie])
   @@index([especie])
@@ -166,6 +172,12 @@ model TipoMenudencia {
 
 // ==================== OPERADORES ====================
 
+enum RolOperador {
+  OPERADOR
+  SUPERVISOR
+  ADMINISTRADOR
+}
+
 model Operador {
   id            String   @id @default(cuid())
   nombre        String
@@ -193,6 +205,7 @@ model Operador {
   puedeCuarteo            Boolean @default(false)  // Cuarteo de medias
   puedeEmpaque            Boolean @default(false)  // Empaque y cajas
   puedeExpedicionC2       Boolean @default(false)  // Expedición C2 y pallets
+  puedeAutorizarReportes  Boolean @default(false)  // Autorizar envío de reportes
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -235,12 +248,29 @@ model Operador {
   c2Expediciones      C2ExpedicionOrden[]
   preferenciasUI      PreferenciasUI?
   filtrosReportes     FiltroReporte[]
-}
+  sesiones                Sesion[]              @relation("SesionOperador")
+  sesionesRomaneo         SesionRomaneo[]       @relation("SesionRomaneoOperador")
+  enviosSIGICA            EnvioSIGICA[]       @relation("EnvioSIGICAOperador")
+  flujosFaenaVerificador  FlujoFaena[]       @relation("FlujoVerificador")
+  flujosFaenaSupervisor   FlujoFaena[]       @relation("FlujoSupervisor")
+  movimientosCaja         MovimientoCaja[]
+  pagos                   Pago[]
+  arqueosCajaOperador     ArqueoCaja[]       @relation("ArqueoCajaOperador")
+  arqueosCajaSupervisor   ArqueoCaja[]       @relation("ArqueoCajaSupervisor")
+  observacionesUsuario     ObservacionUsuario[]
+  ingresosTercero        IngresoTercero[]
+  pesajesInternos        PesajeInterno[]
+  rendimientosFaena      RindeFaena[]
+  notaCreditoCliente     NotaCredito[]
+  notaDebitoCliente     NotaDebito[]
+  movimientosInsumo     MovimientoInsumo[]
+  historicoPrecioProductoHistorico HistoricoPrecioProducto[]
+  historicoPrecio        HistoricoPrecio[]
+  ordenCompra           OrdenCompra[]
+  recepcionesCompra     RecepcionCompra[]
+  actividades           ActividadOperador[]
 
-enum RolOperador {
-  OPERADOR
-  SUPERVISOR
-  ADMINISTRADOR
+  @@index([usuario])
 }
 
 // ==================== CLIENTES / PROVEEDORES ====================
@@ -290,6 +320,15 @@ model Cliente {
   liquidaciones          LiquidacionFaena[]
   historicoTarifas       HistoricoTarifa[]
   c2Expediciones        C2ExpedicionOrden[]
+  observacionesUsuario   ObservacionUsuario[]
+  ingresosTercero      IngresoTercero[]
+  preciosCliente        PrecioCliente[]
+  preciosHistorico HistoricoPrecioProducto[]
+
+  precioRendering       PrecioRendering[]
+  notasCreditoCliente    NotaCredito[]
+  notasDebitoCliente    NotaDebito[]
+  despachos              Despacho[]  @relation("DespachoCliente")
 }
 
 // ==================== TRANSPORTISTAS ====================
@@ -449,6 +488,8 @@ model Tropa {
   animales        Animal[]
   listasFaena     ListaFaenaTropa[]
   liquidacion     LiquidacionFaena?
+  balancesFaena    BalanceFaena[]
+
   
   @@index([especie])
   @@index([estado])
@@ -631,6 +672,9 @@ model PesajeCamion {
   // Despachos asociados (salida de mercadería)
   despachos       Despacho[]
   
+  // Despacho por pesaje de camión (relación alternativa)
+  despachoPesaje  Despacho?     @relation("DespachoPesajeCamion")
+  
   @@index([tipo])
   @@index([estado])
   @@index([fecha])
@@ -697,6 +741,9 @@ model ListaFaena {
   
   tropas        ListaFaenaTropa[]
   asignaciones  AsignacionGarron[]
+  flujoFaena    FlujoFaena?
+  costosAplicados CostoFaenaAplicado[]
+  resumenCostos  ResumenCostosFaena?
   
   @@index([fecha])
   @@index([estado])
@@ -860,6 +907,7 @@ model MediaRes {
   facturado        Boolean        @default(false)  // Si ya fue facturada
   facturaId        String?                         // ID de la factura donde se facturó
   cuartos          Cuarto[]
+  decomisos        Decomiso[]     @relation("DecomisoMediaRes")
   
   @@unique([romaneoId, lado, sigla])
   @@index([estado])
@@ -985,6 +1033,31 @@ model Auditoria {
   fecha         DateTime @default(now())
   ip            String?
   
+  @@index([modulo])
+  @@index([fecha])
+}
+
+// ==================== ACTIVIDAD OPERADORES ====================
+
+model ActividadOperador {
+  id            String   @id @default(cuid())
+  operadorId    String?
+  operador      Operador? @relation(fields: [operadorId], references: [id])
+  tipo          String                // LOGIN, LOGOUT, CREAR, MODIFICAR, ELIMINAR, etc.
+  modulo        String                // auth, dashboard, pesajeCamiones, romaneo, etc.
+  descripcion   String
+  entidad       String?
+  entidadId     String?
+  datos         String?               // JSON stringified
+  ip            String?
+  userAgent     String?
+  sessionId     String?
+  fecha         DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([operadorId])
+  @@index([tipo])
   @@index([modulo])
   @@index([fecha])
 }
@@ -1176,6 +1249,13 @@ model Factura {
   puntoVenta        Int           @default(1)
   numeroAfip        Int?
   
+  // Datos AFIP (factura electrónica)
+  numeroComprobante   String?
+  fechaVencimientoCAE DateTime?
+  fechaEmisionAFIP    DateTime?
+  qrData               String?
+  saldoPendiente       Float?
+  
   // Operador
   operadorId        String?
   operador          Operador?     @relation(fields: [operadorId], references: [id])
@@ -1187,7 +1267,12 @@ model Factura {
   pagos             PagoFactura[]
   tributos          FacturaTributo[]
   notas             NotaCreditoDebito[]
+  notasCredito       NotaCredito[]
+  notasDebito        NotaDebito[]
+
   liquidacion       LiquidacionFaena?
+  balancesFaena    BalanceFaena[]
+
   
   @@index([numero])
   @@index([clienteId])
@@ -1257,7 +1342,7 @@ model Insumo {
   nombre          String
   
   // Categorización
-  categoria       CategoriaInsumo
+  categoria       CategoriaInsumoTipo
   subcategoria    String?
   
   // Unidad de medida
@@ -1287,6 +1372,12 @@ model Insumo {
   
   // Relación con BOM (Ciclo II)
   bomItems        C2BOM[]
+  stockInsumo     StockInsumo[]
+  movimientosInsumo MovimientoInsumo[]
+  detallesInventario DetalleInventario[]
+  consumosInsumo  ConsumoInsumo[]
+  detallesOrdenCompra  DetalleOrdenCompra[]
+
   
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -1295,7 +1386,7 @@ model Insumo {
   @@index([activo])
 }
 
-enum CategoriaInsumo {
+enum CategoriaInsumoTipo {
   EMBALAJE          // Bolsas, films, cajas
   ETIQUETAS         // Rótulos, etiquetas
   HIGIENE           // Productos de limpieza
@@ -1720,8 +1811,14 @@ model Despacho {
   patenteAcoplado   String?                         // Patente del acoplado
   chofer            String?                         // Nombre del chofer
   choferDni         String?                         // DNI del chofer
+  patenteChasis     String?                         // Patente del chasis (alternativa)
+  choferNombre      String?                         // Nombre del chofer (alternativa)
   transportista     String?                         // Nombre del transportista
   transportistaId   String?                         // ID del transportista (si está registrado)
+  
+  // Cliente
+  clienteId         String?
+  cliente           Cliente?        @relation("DespachoCliente", fields: [clienteId], references: [id])
   
   // Documentos
   remito            String?                         // Número de remito
@@ -1734,6 +1831,10 @@ model Despacho {
   // Ticket de pesaje (salida con mercadería)
   ticketPesajeId    String?                         // ID del pesaje de camión de salida
   ticketPesaje      PesajeCamion?   @relation(fields: [ticketPesajeId], references: [id])
+  
+  // Pesaje de salida (asociado al pesaje de camión de salida)
+  pesajeCamionId    String?        @unique
+  pesajeCamion      PesajeCamion?   @relation("DespachoPesajeCamion", fields: [pesajeCamionId], references: [id])
   
   // Estado
   estado            EstadoDespacho  @default(PENDIENTE)
@@ -1749,21 +1850,28 @@ model Despacho {
   updatedAt         DateTime        @updatedAt
   
   items             DespachoItem[]
+  lineas            DespachoItem[]  @relation("DespachoLineas")
+  ordenCarga        OrdenCarga?
 
   // Facturación
   facturado        Boolean        @default(false)  // Si ya fue facturado (todas las medias)
   fechaFacturacion DateTime?                      // Fecha en que se generó la factura
   facturas         Factura[]      // Facturas generadas desde este despacho
+  facturaId        String?                         // ID de la última factura asociada
+  fechaDespacho    DateTime?                      // Fecha de despacho efectivo
   
   @@index([fecha])
   @@index([estado])
   @@index([destino])
+  @@index([clienteId])
 }
 
 model DespachoItem {
-  id            String       @id @default(cuid())
-  despachoId    String
-  despacho      Despacho     @relation(fields: [despachoId], references: [id], onDelete: Cascade)
+  id              String       @id @default(cuid())
+  despachoId      String
+  despacho        Despacho     @relation(fields: [despachoId], references: [id], onDelete: Cascade)
+  despachoLineaId String?
+  despachoLinea   Despacho?    @relation("DespachoLineas", fields: [despachoLineaId], references: [id])
   
   // Media res despachada
   mediaResId    String
@@ -2198,6 +2306,7 @@ model Balanza {
   
   // Relaciones
   puestos         PuestoTrabajo[]
+  terminals       Terminal[]
   
   @@index([activa])
   @@index([estado])
@@ -2706,7 +2815,13 @@ model Decomiso {
   tropaCodigo     String?
   motivo          String
   pesoKg          Float?
+  peso            Float?       // Peso del decomiso (alias)
+  parte           String?       // Parte decomisada
   observaciones   String?
+  
+  // Relación con media res
+  mediaResId      String?
+  mediaRes        MediaRes?     @relation("DecomisoMediaRes", fields: [mediaResId], references: [id])
   
   // Relación con romaneo
   romaneoId       String?
@@ -2723,6 +2838,7 @@ model Decomiso {
   @@index([garron])
   @@index([tipo])
   @@index([fecha])
+  @@index([mediaResId])
 }
 
 enum TipoDecomiso {
@@ -3488,4 +3604,1606 @@ model FiltroReporte {
   
   @@index([operadorId])
   @@index([reportType])
+}
+
+// ==================== ENUMS ADICIONALES ====================
+
+enum EstadoCheque {
+  RECIBIDO
+  DEPOSITADO
+  COBRADO
+  ANULADO
+}
+
+enum TipoMovimientoInsumo {
+  INGRESO
+  EGRESO
+  TRANSFERENCIA
+  AJUSTE_POSITIVO
+  AJUSTE_NEGATIVO
+  PERDIDA
+  DEVOLUCION
+}
+
+enum EstadoOrdenCompra {
+  PENDIENTE
+  APROBADA
+  ENVIADA
+  PARCIAL
+  COMPLETADA
+  ANULADA
+}
+
+enum EstadoDetalleOrden {
+  PENDIENTE
+  PARCIAL
+  COMPLETADO
+}
+
+enum EstadoRecepcion {
+  PARCIAL
+  COMPLETA
+}
+
+enum EstadoPago {
+  PENDIENTE
+  APLICADO
+  ANULADO
+}
+
+enum EstadoNota {
+  EMITIDA
+  APLICADA
+  ANULADA
+}
+
+enum EstadoInventario {
+  PENDIENTE
+  EN_PROCESO
+  COMPLETADO
+  ANULADO
+}
+
+// ==================== MONEDA Y COTIZACIÓN ====================
+
+model Moneda {
+  id        String   @id @default(cuid())
+  codigo    String   @unique
+  nombre    String
+  simbolo   String
+  esDefault Boolean  @default(false)
+  activa    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cotizaciones Cotizacion[]
+}
+
+model Cotizacion {
+  id          String   @id @default(cuid())
+  monedaId    String
+  moneda      Moneda   @relation(fields: [monedaId], references: [id])
+  compra      Float
+  venta       Float
+  fuente      String   @default("MANUAL")
+  fecha       DateTime @default(now())
+
+  @@index([monedaId])
+}
+
+// ==================== FORMAS DE PAGO ====================
+
+model FormaPago {
+  id                String   @id @default(cuid())
+  nombre            String   @unique
+  descripcion       String?
+  tipo              String
+  requiereBanco     Boolean  @default(false)
+  requiereCheque    Boolean  @default(false)
+  requiereTarjeta   Boolean  @default(false)
+  cuentaContable    String?
+  activo            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  pagos Pago[]
+}
+
+// ==================== CUENTAS BANCARIAS ====================
+
+model CuentaBancaria {
+  id              String   @id @default(cuid())
+  banco           String
+  tipoCuenta      String
+  numeroCuenta    String
+  cbu             String?  @unique
+  alias           String?
+  saldoActual     Float    @default(0)
+  saldoConciliado Float    @default(0)
+  titular         String?
+  cuitTitular     String?
+  activo          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  cheques               Cheque[]
+  conciliaciones         ConciliacionBancaria[]
+}
+
+// ==================== CHEQUES ====================
+
+model Cheque {
+  id               String        @id @default(cuid())
+  numero           String
+  banco            String
+  monto            Float
+  fechaEmision     DateTime      @default(now())
+  fechaVencimiento DateTime
+  fechaCobro       DateTime?
+  cuentaBancariaId String?
+  cuentaBancaria   CuentaBancaria? @relation(fields: [cuentaBancariaId], references: [id])
+  libradorNombre   String
+  libradorCuit     String?
+  libradorTelefono String?
+  estado           EstadoCheque  @default(RECIBIDO)
+  destino          String?
+  observaciones    String?
+  createdAt        DateTime      @default(now())
+
+  pagos Pago[]
+
+  @@unique([numero, banco], name: "cheque_numero_banco")
+}
+
+// ==================== CAJA ====================
+
+model Caja {
+  id          String   @id @default(cuid())
+  nombre      String
+  tipo        String
+  saldoActual Float    @default(0)
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  movimientos MovimientoCaja[]
+  arqueos     ArqueoCaja[]
+}
+
+// ==================== MOVIMIENTOS DE CAJA ====================
+
+model MovimientoCaja {
+  id              String    @id @default(cuid())
+  cajaId          String
+  caja            Caja      @relation(fields: [cajaId], references: [id])
+  tipo            String
+  monto           Float
+  saldoAnterior   Float
+  saldoNueva      Float
+  documentoTipo   String?
+  documentoId     String?
+  documentoNumero String?
+  concepto        String
+  observaciones   String?
+  terceroNombre   String?
+  terceroCuit     String?
+  operadorId      String?
+  operador        Operador? @relation(fields: [operadorId], references: [id])
+  fecha           DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  detallesConciliacion DetalleConciliacion[]
+
+  @@index([cajaId])
+  @@index([tipo])
+  @@index([fecha])
+  @@index([documentoId])
+}
+
+// ==================== ARQUEOS DE CAJA ====================
+
+model ArqueoCaja {
+  id              String    @id @default(cuid())
+  cajaId          String
+  caja            Caja      @relation(fields: [cajaId], references: [id])
+  fecha           DateTime  @default(now())
+  saldoSistema    Float
+  saldoFisico     Float
+  diferencia      Float
+  estado          String    @default("PENDIENTE")
+  observaciones   String?
+  operadorId      String?
+  operador        Operador? @relation(fields: [operadorId], references: [id], name: "ArqueoCajaOperador")
+  supervisorId    String?
+  supervisor      Operador? @relation(fields: [supervisorId], references: [id], name: "ArqueoCajaSupervisor")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([cajaId])
+  @@index([estado])
+  @@index([fecha])
+}
+
+// ==================== DEPÓSITOS ====================
+
+model Deposito {
+  id             String   @id @default(cuid())
+  nombre         String
+  descripcion    String?
+  ubicacion      String?
+  responsable    String?
+  capacidadM2    Float?
+  capacidadM3    Float?
+  activo         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  stockInsumos     StockInsumo[]
+  inventarios      Inventario[]
+  movimientosOrigenInsumo  MovimientoInsumo[] @relation("DepositoOrigenInsumo")
+  movimientosDestinoInsumo  MovimientoInsumo[] @relation("DepositoDestinoInsumo")
+}
+
+// ==================== STOCK DE INSUMOS ====================
+
+model StockInsumo {
+  id               String   @id @default(cuid())
+  insumoId         String
+  insumo           Insumo   @relation(fields: [insumoId], references: [id])
+  depositoId       String
+  deposito         Deposito @relation(fields: [depositoId], references: [id])
+  cantidad         Float    @default(0)
+  cantidadMinima   Float?
+  cantidadMaxima   Float?
+  precioPromedio   Float?
+  valorTotal       Float?
+  ultimoIngreso    DateTime?
+  ultimaSalida     DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([insumoId, depositoId], name: "stockInsumo_insumo_deposito")
+  @@index([depositoId])
+}
+
+// ==================== MOVIMIENTOS DE INSUMOS ====================
+
+model MovimientoInsumo {
+  id                String               @id @default(cuid())
+  insumoId          String
+  insumo            Insumo               @relation(fields: [insumoId], references: [id])
+  tipo              TipoMovimientoInsumo
+  depositoOrigenId  String?
+  depositoOrigen    Deposito?            @relation("DepositoOrigenInsumo", fields: [depositoOrigenId], references: [id])
+  depositoDestinoId String?
+  depositoDestino   Deposito?            @relation("DepositoDestinoInsumo", fields: [depositoDestinoId], references: [id])
+  cantidad          Float
+  loteInsumoId      String?
+  precioUnitario    Float?
+  costoTotal        Float?
+  documentoTipo    String?
+  documentoNumero   String?
+  centroCostoId     String?
+  produccionId      String?
+  observaciones     String?
+  operadorId        String?
+  operador          Operador? @relation(fields: [operadorId], references: [id])
+  fecha             DateTime             @default(now())
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([insumoId])
+  @@index([tipo])
+  @@index([fecha])
+}
+
+// ==================== CATEGORÍA INSUMO (modelo) ====================
+
+model CategoriaInsumo {
+  id          String   @id @default(cuid())
+  nombre      String
+  descripcion String?
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==================== ARTÍCULOS ====================
+
+model Articulo {
+  id            String   @id @default(cuid())
+  codigo        String   @unique
+  nombre        String
+  categoria     String?
+  especie       String?
+  observaciones String?
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ==================== RAZAS ====================
+
+model Raza {
+  id            String   @id @default(cuid())
+  nombre        String
+  especie       String
+  observaciones String?
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ==================== TIPOS DE TRABAJO (config) ====================
+
+model TipoTrabajo {
+  id          String   @id @default(cuid())
+  codigo      String   @unique
+  nombre      String
+  descripcion String?
+  esDefault   Boolean  @default(false)
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==================== IMPRESORAS ====================
+
+model Impresora {
+  id              String   @id @default(cuid())
+  nombre          String
+  tipo            String
+  marca           String?
+  modelo          String?
+  puerto          String   @default("USB")
+  direccionIP     String?
+  anchoEtiqueta   Int      @default(80)
+  altoEtiqueta    Int      @default(50)
+  dpi             Int      @default(203)
+  activa          Boolean  @default(true)
+  predeterminada  Boolean  @default(false)
+  observaciones   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  terminales Terminal[]
+}
+
+// ==================== TERMINALES ====================
+
+model Terminal {
+  id            String    @id @default(cuid())
+  nombre        String
+  ubicacion     String?
+  balanzaId     String?
+  balanza       Balanza?  @relation(fields: [balanzaId], references: [id])
+  impresoraId   String?
+  impresora     Impresora? @relation(fields: [impresoraId], references: [id])
+  activa        Boolean   @default(true)
+  observaciones String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ==================== CONFIGURACIÓN BALANZAS ====================
+
+model ConfigBalanza {
+  id               String   @id @default(cuid())
+  nombre           String
+  modelo           String?
+  marca            String?
+  tipoConexion     String   @default("SERIAL")
+  puertoSerial     String?
+  baudRate         Int      @default(9600)
+  dataBits         Int      @default(8)
+  stopBits         Int      @default(1)
+  paridad          String   @default("NONE")
+  direccionIP      String?
+  puertoTCP        Int?
+  protocolo        String   @default("CONTINUO")
+  timeout          Int      @default(5000)
+  intervaloLectura Int      @default(500)
+  comandoPesar     String?
+  comandoTara      String?
+  comandoCero      String?
+  formatoTrama     String?
+  posicionPeso     Int?
+  decimales        Int      @default(2)
+  unidad           String   @default("KG")
+  activa           Boolean  @default(true)
+  esPrincipal      Boolean  @default(false)
+  ubicacion        String?
+  terminalId       String?
+  observaciones     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ==================== CONFIGURACIÓN BACKUP ====================
+
+model ConfiguracionBackup {
+  id              String    @id @default(cuid())
+  backupDiario    Boolean   @default(true)
+  horaBackup      String    @default("02:00")
+  retenerDias     Int       @default(30)
+  nubeHabilitado  Boolean   @default(false)
+  proveedorNube   String?
+  credenciales    Json?
+  pointInTime     Boolean   @default(false)
+  intervaloPIT    String?
+  activo          Boolean   @default(true)
+  ultimoBackup    DateTime?
+  ultimoExitoso   Boolean   @default(false)
+  tamanoUltimo    Float?
+  espacioUsado    Float?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// ==================== HISTORIAL BACKUP ====================
+
+model HistorialBackup {
+  id              String   @id @default(cuid())
+  tipo            String?
+  fecha           DateTime @default(now())
+  rutaArchivo     String
+  nombreArchivo   String?
+  tamanio         Float?
+  tablasIncluidas String?
+  estado          String?
+  descripcion     String?
+  mensajeError    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ==================== CONFIGURACIÓN RÓTULOS ====================
+
+model ConfiguracionRotulo {
+  id                  String   @id @default(cuid())
+  tipo                String
+  nombre              String
+  ancho               Int      @default(100)
+  alto                Int      @default(50)
+  campos              String?
+  incluyeCodigoBarras Boolean  @default(true)
+  codigoBarrasTipo    String   @default("CODE128")
+  codigoBarrasPosicion String?
+  orientacion         String   @default("HORIZONTAL")
+  margenes            String?
+  plantilla           String?
+  activo              Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// ==================== OBSERVACIONES DE USUARIO ====================
+
+model ObservacionUsuario {
+  id                 String    @id @default(cuid())
+  clienteId          String
+  cliente            Cliente   @relation(fields: [clienteId], references: [id])
+  tipo               String    @default("NOTA")
+  observacion        String
+  fechaSeguimiento   DateTime?
+  resuelto           Boolean   @default(false)
+  resolucion         String?
+  fechaResolucion    DateTime?
+  operadorId         String?
+  operador           Operador? @relation(fields: [operadorId], references: [id])
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([clienteId])
+  @@index([resuelto])
+}
+
+// ==================== PRODUCTORES / CONSIGNATARIOS ====================
+
+model ProductorConsignatario {
+  id                     String   @id @default(cuid())
+  nombre                 String
+  cuit                   String?
+  direccion              String?
+  telefono               String?
+  email                  String?
+  tipo                   String   @default("PRODUCTOR")
+  numeroRenspa           String?
+  numeroEstablecimiento  String?
+  localidad              String?
+  provincia              String?
+  observaciones          String?
+  activo                 Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+// ==================== PRODUCTOS VENDIBLES ====================
+
+model ProductoVendible {
+  id                      String    @id @default(cuid())
+  codigo                  String    @unique
+  nombre                  String
+  descripcion             String?
+  tara                    Float     @default(0)
+  vencimientoDias         Int       @default(0)
+  numeroRegistroSenasa    String?
+  unidadMedida            String    @default("KG")
+  cantidadEtiquetas       Int       @default(1)
+  tieneTipificacion       Boolean   @default(false)
+  tipificacion            String?
+  categoria               String?
+  subcategoria            String?
+  especie                 String?
+  tipo                    String?
+  delCuarto               String?
+  tipoVenta               String    @default("POR_KG")
+  descripcionCircular     String?
+  precioBase              Float?
+  precioDolar             Float     @default(0)
+  precioEuro              Float     @default(0)
+  precioArs               Float     @default(0)
+  moneda                  String    @default("ARS")
+  alicuotaIva             Float     @default(21)
+  producidoParaCliente    String?
+  productoGeneral         Boolean   @default(false)
+  productoReporteRinde    Boolean   @default(false)
+  tipoTrabajo             String?
+  idiomaEtiqueta          String    @default("ES")
+  formatoEtiqueta         String?
+  textoEtiqueta           String?
+  textoEspanol            String?
+  textoIngles             String?
+  textoTercerIdioma       String?
+  temperaturaTransporte   String?
+  tipoConsumo             String?
+  empresa                 String?
+  tipoTrabajoId           String?
+  tipoCarne               String?
+  activo                  Boolean   @default(true)
+  requiereTrazabilidad    Boolean   @default(false)
+  precioActual            Float     @default(0)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  preciosHistorico  HistoricoPrecioProducto[]
+  historicosPrecio  HistoricoPrecio[]
+  preciosCliente    PrecioCliente[]
+
+
+  @@index([categoria])
+  @@index([activo])
+}
+
+// ==================== HISTÓRICO PRECIO PRODUCTO ====================
+
+model HistoricoPrecioProducto {
+  id                 String    @id @default(cuid())
+  productoVendibleId String
+  productoVendible   ProductoVendible @relation(fields: [productoVendibleId], references: [id])
+  precioAnterior     Float?
+  precioNuevo        Float
+  moneda             String    @default("ARS")
+  motivo             String?
+  fechaVigencia      DateTime  @default(now())
+  clienteId           String?
+  cliente             Cliente? @relation(fields: [clienteId], references: [id])
+  operadorId         String?
+  operador           Operador? @relation(fields: [operadorId], references: [id])
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([productoVendibleId, fechaVigencia(sort: Desc)])
+  @@index([clienteId])
+}
+
+// ==================== PRECIO CLIENTE ====================
+
+model PrecioCliente {
+  id                 String    @id @default(cuid())
+  clienteId          String
+  cliente            Cliente   @relation(fields: [clienteId], references: [id])
+  productoVendibleId String
+  productoVendible   ProductoVendible @relation(fields: [productoVendibleId], references: [id])
+  precioEspecial     Float
+  moneda             String    @default("ARS")
+  fechaDesde         DateTime?
+  fechaHasta         DateTime?
+  activo             Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([clienteId, productoVendibleId])
+}
+
+// ==================== PRECIO RENDERING ====================
+
+model PrecioRendering {
+  id              String    @id @default(cuid())
+  clienteId       String
+  cliente         Cliente   @relation(fields: [clienteId], references: [id])
+  tipoProducto    String
+  precioKg        Float
+  fechaDesde      DateTime  @default(now())
+  fechaHasta      DateTime?
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([clienteId])
+  @@index([tipoProducto])
+}
+
+// ==================== HISTÓRICO PRECIO ====================
+
+model HistoricoPrecio {
+  id                 String    @id @default(cuid())
+  productoVendibleId String?
+  productoVendible   ProductoVendible? @relation(fields: [productoVendibleId], references: [id])
+  precioAnterior     Float?
+  precioNuevo        Float
+  moneda             String    @default("ARS")
+  fechaVigencia      DateTime  @default(now())
+  motivo             String?
+  operadorId         String?
+  operador           Operador? @relation(fields: [operadorId], references: [id])
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([productoVendibleId])
+}
+
+// ==================== ORDENES DE COMPRA ====================
+
+model OrdenCompra {
+  id              String             @id @default(cuid())
+  numero          Int
+  proveedorId     String?
+  proveedor       Proveedor?         @relation(fields: [proveedorId], references: [id])
+  fechaEmision    DateTime           @default(now())
+  fechaEntrega    DateTime?
+  fechaRecepcion  DateTime?
+  estado          EstadoOrdenCompra  @default(PENDIENTE)
+  subtotal        Float              @default(0)
+  iva             Float              @default(0)
+  total           Float              @default(0)
+  observaciones   String?
+  operadorId      String?
+  operador        Operador?          @relation(fields: [operadorId], references: [id])
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  detalles    DetalleOrdenCompra[]
+  recepciones  RecepcionCompra[]
+
+  @@index([estado])
+  @@index([proveedorId])
+  @@index([fechaEmision])
+}
+
+model DetalleOrdenCompra {
+  id               String              @id @default(cuid())
+  ordenCompraId    String
+  ordenCompra      OrdenCompra         @relation(fields: [ordenCompraId], references: [id], onDelete: Cascade)
+  insumoId         String
+  insumo           Insumo              @relation(fields: [insumoId], references: [id])
+  cantidadPedida   Float
+  cantidadRecibida Float               @default(0)
+  precioUnitario   Float
+  subtotal         Float
+  centroCostoId     String?
+  centroCosto       CentroCosto? @relation(fields: [centroCostoId], references: [id])
+  estado           EstadoDetalleOrden  @default(PENDIENTE)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([ordenCompraId])
+  @@index([insumoId])
+  @@index([centroCostoId])
+}
+
+model RecepcionCompra {
+  id               String             @id @default(cuid())
+  ordenCompraId    String
+  ordenCompra      OrdenCompra        @relation(fields: [ordenCompraId], references: [id])
+  numeroRemito     String?
+  fechaRecepcion   DateTime           @default(now())
+  estado           EstadoRecepcion    @default(PARCIAL)
+  observaciones     String?
+  operadorId       String?
+  operador         Operador?          @relation(fields: [operadorId], references: [id])
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([ordenCompraId])
+  @@index([estado])
+}
+
+// ==================== PROVEEDOR ====================
+
+model Proveedor {
+  id            String   @id @default(cuid())
+  nombre        String
+  cuit          String?
+  direccion     String?
+  telefono      String?
+  email         String?
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  ordenesCompra OrdenCompra[]
+}
+
+// ==================== PAGOS ====================
+
+model Pago {
+  id              String        @id @default(cuid())
+  numero          Int
+  terceroId       String?
+  terceroNombre   String
+  terceroCuit     String?
+  terceroTipo     String
+  formaPagoId     String?
+  formaPago       FormaPago?    @relation(fields: [formaPagoId], references: [id])
+  monto           Float
+  chequeId        String?
+  cheque          Cheque?       @relation(fields: [chequeId], references: [id])
+  fecha           DateTime      @default(now())
+  estado          EstadoPago    @default(PENDIENTE)
+  comprobante     String?
+  observaciones   String?
+  operadorId      String?
+  operador        Operador?     @relation(fields: [operadorId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([terceroId])
+  @@index([fecha])
+  @@index([estado])
+}
+
+// ==================== NOTAS DE CRÉDITO / DÉBITO ====================
+
+model NotaCredito {
+  id              String       @id @default(cuid())
+  numero          String
+  numeroInterno   Int
+  clienteId       String
+  cliente         Cliente      @relation(fields: [clienteId], references: [id])
+  facturaId       String?
+  factura         Factura?     @relation(fields: [facturaId], references: [id])
+  fecha           DateTime     @default(now())
+  subtotal        Float        @default(0)
+  iva             Float        @default(0)
+  total           Float        @default(0)
+  motivo          String
+  estado          EstadoNota   @default(EMITIDA)
+  observaciones   String?
+  operadorId      String?
+  operador        Operador?    @relation(fields: [operadorId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  detalles DetalleNotaCredito[]
+
+  @@index([clienteId])
+  @@index([fecha])
+  @@index([estado])
+}
+
+model NotaDebito {
+  id              String       @id @default(cuid())
+  numero          String
+  numeroInterno   Int
+  clienteId       String
+  cliente         Cliente      @relation(fields: [clienteId], references: [id])
+  facturaId       String?
+  factura         Factura?     @relation(fields: [facturaId], references: [id])
+  fecha           DateTime     @default(now())
+  subtotal        Float        @default(0)
+  iva             Float        @default(0)
+  total           Float        @default(0)
+  motivo          String
+  estado          EstadoNota   @default(EMITIDA)
+  observaciones   String?
+  operadorId      String?
+  operador        Operador?    @relation(fields: [operadorId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  detalles DetalleNotaDebito[]
+
+  @@index([clienteId])
+  @@index([fecha])
+  @@index([estado])
+}
+
+model DetalleNotaCredito {
+  id               String       @id @default(cuid())
+  notaCreditoId    String
+  notaCredito      NotaCredito  @relation(fields: [notaCreditoId], references: [id], onDelete: Cascade)
+  descripcion      String
+  cantidad         Float        @default(1)
+  precioUnitario   Float        @default(0)
+  subtotal         Float
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model DetalleNotaDebito {
+  id              String       @id @default(cuid())
+  notaDebitoId    String
+  notaDebito      NotaDebito  @relation(fields: [notaDebitoId], references: [id], onDelete: Cascade)
+  descripcion     String
+  cantidad        Float        @default(1)
+  precioUnitario  Float        @default(0)
+  subtotal        Float
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+// ==================== CONCILIACIÓN BANCARIA ====================
+
+model ConciliacionBancaria {
+  id                 String              @id @default(cuid())
+  cuentaBancariaId   String
+  cuentaBancaria     CuentaBancaria      @relation(fields: [cuentaBancariaId], references: [id])
+  fechaDesde         DateTime
+  fechaHasta         DateTime
+  nombreArchivo      String
+  totalRegistros     Int                 @default(0)
+  totalDebitos       Float               @default(0)
+  totalCreditos      Float               @default(0)
+  conciliados        Int                 @default(0)
+  pendientes         Int                 @default(0)
+  diferencias        Int                 @default(0)
+  estado             String              @default("PENDIENTE")
+  creadoPor          String?
+  fecha              DateTime            @default(now())
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  detalles DetalleConciliacion[]
+
+  @@index([cuentaBancariaId])
+  @@index([estado])
+}
+
+model DetalleConciliacion {
+  id                   String               @id @default(cuid())
+  conciliacionId       String
+  conciliacion         ConciliacionBancaria @relation(fields: [conciliacionId], references: [id], onDelete: Cascade)
+  movimientoCajaId     String?
+  movimientoCaja       MovimientoCaja?     @relation(fields: [movimientoCajaId], references: [id])
+  fechaExtracto        DateTime
+  descripcionExtracto  String
+  referenciaExtracto   String?
+  montoExtracto        Float
+  tipoExtracto         String
+  estado               String               @default("PENDIENTE")
+  confianza            Float?
+  montoAjuste          Float?
+  observaciones         String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@index([conciliacionId])
+  @@index([estado])
+}
+
+// ==================== BALANCE DE FAENA ====================
+
+model BalanceFaena {
+  id                 String    @id @default(cuid())
+  tropaId            String?
+  tropa              Tropa?    @relation(fields: [tropaId], references: [id])
+  fecha              DateTime  @default(now())
+  pesoVivoTotal      Float     @default(0)
+  cantidadCabezas    Int       @default(0)
+  pesoFrioTotal      Float     @default(0)
+  cantidadMedias     Int       @default(0)
+  rindePromedio      Float?
+  rindeMinimo        Float?
+  rindeMaximo        Float?
+  pesoMenudencias    Float?
+  pesoMerma          Float?
+  porcentajeMerma    Float?
+  facturaId           String?
+  factura             Factura? @relation(fields: [facturaId], references: [id])
+  centroCostoId      String?
+  observaciones       String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([tropaId])
+  @@index([facturaId])
+  @@index([fecha])
+}
+
+// ==================== FLUJO DE FAENA ====================
+
+model FlujoFaena {
+  id              String     @id @default(cuid())
+  listaFaenaId    String     @unique
+  listaFaena      ListaFaena @relation(fields: [listaFaenaId], references: [id])
+  estado          String     @default("INICIADO")
+  fecha           DateTime   @default(now())
+  observaciones   String?
+  verificadorId   String?
+  verificador     Operador?  @relation("FlujoVerificador", fields: [verificadorId], references: [id])
+  supervisorId    String?
+  supervisor      Operador?  @relation("FlujoSupervisor", fields: [supervisorId], references: [id])
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([estado])
+  @@index([fecha])
+}
+
+// ==================== INDICADORES ====================
+
+model Indicador {
+  id              String   @id @default(cuid())
+  codigo          String   @unique
+  nombre          String
+  descripcion     String?
+  unidad          String
+  meta            Float?
+  alertaMinima    Float?
+  alertaMaxima    Float?
+  categoria       String
+  activo          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  valores ValorIndicador[]
+
+  @@index([categoria])
+  @@index([activo])
+}
+
+model ValorIndicador {
+  id              String    @id @default(cuid())
+  indicadorId     String
+  indicador       Indicador @relation(fields: [indicadorId], references: [id], onDelete: Cascade)
+  fecha           DateTime  @default(now())
+  valor           Float
+  valorMeta       Float?
+  desviacion      Float?
+  observaciones   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([indicadorId, fecha], name: "valorIndicador_indicador_fecha")
+  @@index([indicadorId])
+  @@index([fecha])
+}
+
+// ==================== SEGURIDAD ====================
+
+model ConfiguracionSeguridad {
+  id                       String   @id @default(cuid())
+  passwordMinLength        Int      @default(8)
+  passwordRequireUppercase Boolean  @default(true)
+  passwordRequireLowercase Boolean  @default(true)
+  passwordRequireNumbers   Boolean  @default(true)
+  passwordRequireSpecialChars Boolean @default(false)
+  passwordMaxAge           Int      @default(90)
+  sessionTimeout           Int      @default(480)
+  maxConcurrentSessions    Int      @default(1)
+  maxLoginAttempts         Int      @default(5)
+  lockoutDuration          Int      @default(30)
+  notifyNewIp              Boolean  @default(true)
+  notifyFailedAttempts     Boolean  @default(true)
+  notifyPasswordChange     Boolean  @default(true)
+  notifyOutOfHoursAccess   Boolean  @default(false)
+  restrictedHoursEnabled   Boolean  @default(false)
+  allowedHourStart         Int?
+  allowedHourEnd           Int?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}
+
+model Sesion {
+  id               String    @id @default(cuid())
+  operadorId       String
+  operador         Operador  @relation("SesionOperador", fields: [operadorId], references: [id])
+  ip               String
+  userAgent        String?
+  activa           Boolean   @default(true)
+  fechaInicio      DateTime  @default(now())
+  fechaExpiracion  DateTime
+  fechaCierre      DateTime?
+  motivoCierre     String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([operadorId])
+  @@index([activa])
+}
+
+model IntentoLogin {
+  id          String   @id @default(cuid())
+  operadorId  String?
+  ip          String
+  exitoso     Boolean
+  fecha       DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([ip])
+  @@index([operadorId])
+  @@index([fecha])
+}
+
+model IpBloqueada {
+  id               String    @id @default(cuid())
+  ip               String
+  motivo           String    @default("MANUAL")
+  activo           Boolean   @default(true)
+  fechaBloqueo     DateTime  @default(now())
+  fechaExpiracion  DateTime?
+  operadorId       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([ip])
+  @@index([activo])
+}
+
+// ==================== CALIDAD ====================
+
+model UsuarioCalidad {
+  id             String    @id @default(cuid())
+  nombre         String
+  apellido       String
+  dni            String?   @unique
+  cuit           String?
+  tipo           String    @default("EMPLEADO")
+  area           String?
+  sector         String?
+  puesto         String?
+  telefono       String?
+  email          String?
+  direccion      String?
+  fechaIngreso   DateTime  @default(now())
+  fechaEgreso    DateTime?
+  estado         String    @default("ACTIVO")
+  observaciones  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  novedades NovedadCalidad[]
+
+  @@index([estado])
+}
+
+model NovedadCalidad {
+  id                String         @id @default(cuid())
+  usuarioId         String
+  usuario           UsuarioCalidad @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tipo              String
+  titulo            String
+  descripcion       String?
+  fecha             DateTime       @default(now())
+  fechaVencimiento  DateTime?
+  responsableId     String?
+  responsableNombre String?
+  estado            String         @default("PENDIENTE")
+  acciones          String?
+  adjuntoUrl        String?
+  observaciones     String?
+  fechaResolucion   DateTime?
+  resueltoPor       String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([usuarioId])
+  @@index([estado])
+  @@index([fecha])
+}
+
+// ==================== AUTORIZACIONES DE REPORTE ====================
+
+model AutorizacionReporte {
+  id                String    @id @default(cuid())
+  tipoReporte       String
+  datosReporte      String?
+  resumenReporte    String?
+  solicitadoPorId   String
+  solicitadoPor     String
+  destinatarios     String
+  copiasOcultas     String?
+  motivoSolicitud   String?
+  fechaVigencia     DateTime?
+  estado            String    @default("PENDIENTE")
+  autorizadoPorId   String?
+  autorizadoPor     String?
+  fechaAutorizacion DateTime?
+  motivoRechazo     String?
+  fechaSolicitud    DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([estado])
+}
+
+// ==================== AFIP CONFIG (simplificada) ====================
+
+model AFIPConfig {
+  id              String    @id @default(cuid())
+  puntoVenta      Int       @default(1)
+  ambiente        String    @default("testing")
+  habilitado      Boolean   @default(false)
+  cuit            String?
+  razonSocial     String?
+  certificado     String?
+  clavePrivada    String?
+  clave           String?
+  certificadoPath String?
+  clavePrivadaPath String?
+  fechaVencimiento DateTime?
+  ultimoToken     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// ==================== SIGICA ====================
+
+model ConfiguracionSIGICA {
+  id                    String    @id @default(cuid())
+  habilitado            Boolean   @default(false)
+  urlServicio           String?
+  usuario               String?
+  password              String?
+  certificado           String?
+  establecimiento       String?
+  ultimaSincronizacion  DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model EnvioSIGICA {
+  id                 String     @id @default(cuid())
+  tipo               String
+  datosEnviados      String?
+  cantidadRegistros  Int?
+  estado             String     @default("ENVIANDO")
+  respuestaSIGICA    String?
+  codigoTransaccion  String?
+  mensajeError       String?
+  romaneoIds         String?
+  operadorId         String?
+  operador           Operador?  @relation("EnvioSIGICAOperador", fields: [operadorId], references: [id])
+  intentos           Int        @default(0)
+  ultimoIntento      DateTime?
+  fechaEnvio         DateTime   @default(now())
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@index([tipo])
+  @@index([estado])
+  @@index([operadorId])
+  @@index([fechaEnvio])
+}
+
+model StockCamaraSIGICA {
+  id                String    @id @default(cuid())
+  camaraId          String    @unique
+  camara            Camara    @relation(fields: [camaraId], references: [id])
+  totalMedias       Int       @default(0)
+  totalKg           Float     @default(0)
+  bovinosMedias     Int       @default(0)
+  bovinosKg          Float     @default(0)
+  equinosMedias     Int       @default(0)
+  equinosKg          Float     @default(0)
+  remanenteKg        Float     @default(0)
+  sincronizado      Boolean   @default(false)
+  ultimaActualizacion DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+// ==================== INGRESO DE TERCEROS ====================
+
+model IngresoTercero {
+  id               String    @id @default(cuid())
+  codigo           String    @unique
+  proveedorId      String
+  proveedor        Cliente   @relation(fields: [proveedorId], references: [id])
+  tipoCuarto       String    @default("ASADO")
+  tipificacion     String?
+  especie          String    @default("EQUINO")
+  cantidad         Int       @default(1)
+  pesoTotal        Float
+  camaraDestinoId  String?
+  camaraDestino    Camara?   @relation(fields: [camaraDestinoId], references: [id])
+  dte              String?
+  guia             String?
+  operadorId       String?
+  operador         Operador? @relation(fields: [operadorId], references: [id])
+  observaciones    String?
+  fecha            DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([proveedorId])
+  @@index([fecha])
+  @@index([camaraDestinoId])
+}
+
+// ==================== PESAJE INTERNO ====================
+
+model PesajeInterno {
+  id              String    @id @default(cuid())
+  tropaCodigo     String    @unique
+  fecha           DateTime  @default(now())
+  grasa           Float     @default(0)
+  lavadito        Float     @default(0)
+  bolsaAzul       Float     @default(0)
+  hueso           Float     @default(0)
+  grasaBascula    Float     @default(0)
+  despojo         Float     @default(0)
+  operadorId      String?
+  operador        Operador? @relation(fields: [operadorId], references: [id])
+  observaciones   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tropaCodigo])
+  @@index([fecha])
+}
+
+// ==================== RINDE FAENA ====================
+
+model RindeFaena {
+  id                String    @id @default(cuid())
+  tropaId           String?
+  tropaCodigo       String?
+  numeroGarron      Int?
+  numeroAnimal      Int?
+  caravana          String?
+  raza              String?
+  tipoAnimal        String?
+  pesoVivo          Float
+  pesoMediaA        Float?
+  pesoMediaB        Float?
+  pesoTotalMedia    Float
+  rinde             Float
+  rindePorcentaje  Float
+  fechaFaena       DateTime  @default(now())
+  matarife          String?
+  numeroDTE         String?
+  operadorId        String?
+  operador          Operador? @relation(fields: [operadorId], references: [id])
+  observaciones      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([tropaId])
+  @@index([tropaCodigo])
+  @@index([fechaFaena])
+}
+
+// ==================== SESIÓN ROMANEO ====================
+
+model SesionRomaneo {
+  id             String      @id @default(cuid())
+  operadorId     String
+  operador       Operador    @relation("SesionRomaneoOperador", fields: [operadorId], references: [id])
+  tipificadorId  String?
+  tipificador    Tipificador? @relation(fields: [tipificadorId], references: [id])
+  camaraId       String?
+  camara         Camara?     @relation(fields: [camaraId], references: [id])
+  ultimoGarron   Int?
+  activa         Boolean     @default(true)
+  fechaInicio    DateTime    @default(now())
+  fechaFin       DateTime?
+
+  @@index([operadorId])
+  @@index([activa])
+}
+
+// ==================== REPORTES AUTOMÁTICOS ====================
+
+model ReporteAutomatico {
+  id              String    @id @default(cuid())
+  nombre          String
+  descripcion     String?
+  tipo            String
+  formato         String    @default("PDF")
+  frecuencia      String
+  diaSemana       Int?
+  diaMes          Int?
+  hora            String    @default("08:00")
+  destinatarios   String
+  activo          Boolean   @default(true)
+  proximoEnvio    DateTime?
+  ultimoEnvio     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// ==================== RENDIMIENTO HISTÓRICO ====================
+
+model RendimientoHistorico {
+  id                 String     @id @default(cuid())
+  anio               Int
+  mes                Int
+  especie            Especie
+  tipoAnimal         TipoAnimal
+  cantidadAnimales   Int        @default(0)
+  pesoVivoPromedio   Float?
+  pesoFrioPromedio   Float?
+  rindePromedio      Float?
+  rindeMinimo        Float?
+  rindeMaximo        Float?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@unique([anio, mes, especie, tipoAnimal], name: "rendimientoHistorico_anio_mes_especie_tipo")
+  @@index([anio])
+  @@index([mes])
+  @@index([especie])
+}
+
+// ==================== INVENTARIOS ====================
+
+model Inventario {
+  id                 String             @id @default(cuid())
+  numero             Int
+  depositoId         String
+  deposito           Deposito           @relation(fields: [depositoId], references: [id])
+  fechaInicio        DateTime           @default(now())
+  fechaFin           DateTime?
+  operadorId         String?
+  supervisorId       String?
+  estado             EstadoInventario   @default(PENDIENTE)
+  observaciones       String?
+  itemsTotal         Int                @default(0)
+  itemsConDiferencia Int                @default(0)
+  valorDiferencia    Float?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  detalles DetalleInventario[]
+
+  @@index([depositoId])
+  @@index([estado])
+}
+
+model DetalleInventario {
+  id              String     @id @default(cuid())
+  inventarioId    String
+  inventario      Inventario @relation(fields: [inventarioId], references: [id], onDelete: Cascade)
+  insumoId        String
+  insumo          Insumo     @relation(fields: [insumoId], references: [id])
+  cantidadSistema Float     @default(0)
+  cantidadFisica  Float     @default(0)
+  diferencia      Float     @default(0)
+  costoUnitario   Float?
+  costoDiferencia Float?
+  estado          String?
+  observaciones   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([inventarioId, insumoId], name: "detalleInventario_insumo_deposito")
+  @@index([inventarioId])
+}
+
+// ==================== COSTOS DE FAENA ====================
+
+model CostoFaena {
+  id            String   @id @default(cuid())
+  nombre        String
+  descripcion   String?
+  tipo          String
+  monto         Float
+  monedaId      String?
+  aplicaA       String   @default("TODOS")
+  fechaDesde    DateTime @default(now())
+  fechaHasta    DateTime?
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  costosAplicados CostoFaenaAplicado[]
+
+  @@index([tipo])
+  @@index([activo])
+}
+
+model CostoFaenaAplicado {
+  id              String       @id @default(cuid())
+  listaFaenaId    String
+  listaFaena      ListaFaena   @relation(fields: [listaFaenaId], references: [id])
+  costoFaenaId    String
+  costoFaena      CostoFaena   @relation(fields: [costoFaenaId], references: [id])
+  cantidad        Int          @default(1)
+  montoUnitario   Float
+  montoTotal      Float
+  observaciones   String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([listaFaenaId])
+  @@index([costoFaenaId])
+}
+
+model ResumenCostosFaena {
+  id              String       @id @default(cuid())
+  listaFaenaId    String       @unique
+  listaFaena      ListaFaena   @relation(fields: [listaFaenaId], references: [id])
+  totalAnimales   Int?
+  totalKg         Float?
+  costoTotal      Float        @default(0)
+  costoPorKg      Float?
+  costoPorAnimal  Float?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+// ==================== CENTROS DE COSTO ====================
+
+model CentroCosto {
+  id                 String   @id @default(cuid())
+  codigo             String   @unique
+  nombre             String
+  descripcion        String?
+  tipo               String
+  responsable        String?
+  presupuestoMensual Float?
+  activo             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  presupuestos      PresupuestoCentro[]
+  consumosCentro    ConsumoCentro[]
+  consumosInsumo    ConsumoInsumo[]
+  detallesOrdenCompra  DetalleOrdenCompra[]
+
+  balancesInsumos   BalanceInsumos[]
+
+  @@index([activo])
+}
+
+model ConsumoCentro {
+  id              String      @id @default(cuid())
+  centroCostoId   String
+  centroCosto     CentroCosto @relation(fields: [centroCostoId], references: [id])
+  fecha           DateTime    @default(now())
+  concepto        String
+  categoria       String?
+  cantidad        Float?
+  monto           Float
+  observaciones   String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([centroCostoId])
+  @@index([fecha])
+}
+
+model ConsumoInsumo {
+  id                 String       @id @default(cuid())
+  insumoId           String
+  insumo             Insumo       @relation(fields: [insumoId], references: [id])
+  centroCostoId      String?
+  centroCosto        CentroCosto?  @relation(fields: [centroCostoId], references: [id])
+  cantidad           Float
+  costoUnitario      Float?
+  costoTotal         Float?
+  tropaId            String?
+  produccionFecha    DateTime?
+  cantidadProducida  Float?
+  consumoEstandar    Float?
+  desviacion         Float?
+  observaciones      String?
+  fecha              DateTime     @default(now())
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([insumoId])
+  @@index([centroCostoId])
+  @@index([tropaId])
+  @@index([fecha])
+}
+
+model PresupuestoCentro {
+  id              String      @id @default(cuid())
+  centroCostoId   String
+  centroCosto     CentroCosto @relation(fields: [centroCostoId], references: [id])
+  anio            Int
+  mes             Int
+  presupuesto     Float      @default(0)
+  ejecutado       Float      @default(0)
+  desviacion      Float?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@unique([centroCostoId, anio, mes])
+}
+
+model BalanceInsumos {
+  id                 String      @id @default(cuid())
+  fechaDesde         DateTime
+  fechaHasta         DateTime
+  centroCostoId      String?
+  centroCosto        CentroCosto? @relation(fields: [centroCostoId], references: [id])
+  consumoTotal        Float      @default(0)
+  kgProducidos        Float      @default(0)
+  cabezasFaenadas     Int        @default(0)
+  costoPorKg          Float?
+  costoPorCabeza      Float?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@index([centroCostoId])
+}
+
+// ==================== SUBPRODUCTOS INCOMESTIBLES ====================
+
+model SubproductoIncomestible {
+  id              String    @id @default(cuid())
+  tipo            String
+  descripcion     String?
+  kilos           Float
+  cantidad        Int?
+  tropaCodigo     String?
+  fechaFaena      DateTime?
+  destino         String?
+  clienteId       String?
+  precioKg        Float?
+  montoTotal      Float?
+  estado          String    @default("DISPONIBLE")
+  operadorId      String?
+  fecha           DateTime  @default(now())
+  observaciones   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tipo])
+  @@index([estado])
+  @@index([fecha])
+}
+
+// ==================== ORDEN DE CARGA ====================
+
+model OrdenCarga {
+  id                 String     @id @default(cuid())
+  despachoId         String     @unique
+  despacho           Despacho   @relation(fields: [despachoId], references: [id])
+  numero             Int
+  codigo             String
+  horaPreparacion    String
+  estado             String     @default("PENDIENTE")
+  firmaOperario      String?
+  firmaChofer        String?
+  tempCargaOK        Boolean?
+  tempTransporteOK   Boolean?
+  precintosOK        Boolean?
+  fechaPreparacion   DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@index([estado])
+}
+
+// ==================== STOCK CÁMARA (productos) ====================
+
+model StockCamara {
+  id          String   @id @default(cuid())
+  productoId  String
+  producto    Producto @relation(fields: [productoId], references: [id])
+  camaraId    String
+  camara      Camara   @relation(fields: [camaraId], references: [id])
+  cantidad    Int?
+  pesoTotal   Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([productoId])
+  @@index([camaraId])
 }

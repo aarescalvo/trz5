@@ -10,7 +10,7 @@ import { Prisma, Especie as PrismaEspecie, TipoAnimal as PrismaTipoAnimal, TipoP
  * Implementa la lógica de negocio y coordina el repositorio
  */
 export class PesajeService extends BaseService<PesajeCamion> {
-  protected repository: PesajeRepository = pesajeRepository
+  protected repository: any = pesajeRepository
 
   /**
    * Crea un nuevo pesaje con lógica de negocio completa
@@ -41,10 +41,10 @@ export class PesajeService extends BaseService<PesajeCamion> {
     
     // Agregar FKs opcionales si existen
     if (data.transportistaId) {
-      pesajeData.transportistaId = data.transportistaId
+      pesajeData.transportista = { connect: { id: data.transportistaId } }
     }
     if (data.operadorId) {
-      pesajeData.operadorId = data.operadorId
+      pesajeData.operador = { connect: { id: data.operadorId } }
     }
     
     const pesaje = await this.repository.createPesaje(pesajeData)
@@ -199,22 +199,22 @@ export class PesajeService extends BaseService<PesajeCamion> {
     const tropaData: Prisma.TropaCreateInput = {
       numero,
       codigo,
-      usuarioFaenaId: data.usuarioFaenaId,
+      usuarioFaena: { connect: { id: data.usuarioFaenaId } },
       especie: data.especie as PrismaEspecie,
       cantidadCabezas: data.cantidadCabezas,
       dte: data.dte || '',
       guia: data.guia || '',
-      pesajeCamionId: pesaje.id,
+      pesajeCamion: { connect: { id: pesaje.id } },
       estado: 'RECIBIDO'
     }
     
-    if (data.productorId) tropaData.productorId = data.productorId
-    if (data.corralId) tropaData.corralId = data.corralId
+    if (data.productorId) tropaData.productor = { connect: { id: data.productorId } }
+    if (data.corralId) tropaData.corral = { connect: { id: data.corralId } }
     if (data.pesoBruto) tropaData.pesoBruto = data.pesoBruto
     if (data.pesoTara) tropaData.pesoTara = data.pesoTara
     if (data.pesoNeto) tropaData.pesoNeto = data.pesoNeto
     if (data.observaciones) tropaData.observaciones = data.observaciones
-    if (data.operadorId) tropaData.operadorId = data.operadorId
+    if (data.operadorId) tropaData.operador = { connect: { id: data.operadorId } }
     
     const tropa = await db.tropa.create({
       data: tropaData,

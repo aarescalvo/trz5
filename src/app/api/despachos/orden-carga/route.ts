@@ -24,15 +24,7 @@ export async function GET(request: NextRequest) {
         despacho: {
           include: {
             cliente: true,
-            destinos: { orderBy: { orden: 'asc' } },
-            lineas: {
-              include: {
-                camaraOrigen: true,
-                destino: true
-              },
-              orderBy: { camaraOrigenId: 'asc' }
-            },
-            transportista: true
+            items: true,
           }
         }
       }
@@ -79,9 +71,7 @@ export async function POST(request: NextRequest) {
         despacho: {
           include: {
             cliente: true,
-            destinos: true,
-            lineas: { include: { camaraOrigen: true } },
-            transportista: true
+            items: true,
           }
         }
       }
@@ -91,8 +81,7 @@ export async function POST(request: NextRequest) {
     await db.despacho.update({
       where: { id: despachoId },
       data: { 
-        estado: 'EN_PREPARACION',
-        fechaPreparacion: new Date()
+        estado: 'PENDIENTE',
       }
     })
 

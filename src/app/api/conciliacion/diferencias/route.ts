@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
         })
         
         // Crear movimiento de ajuste en caja
-        const caja = await db.caja.findFirst({
+        const caja = await (db as any).caja.findFirst({
           where: { cuentaBancariaId: detalle.conciliacion.cuentaBancariaId }
         })
         

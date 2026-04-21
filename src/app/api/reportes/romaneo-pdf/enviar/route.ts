@@ -37,12 +37,7 @@ export async function POST(request: NextRequest) {
       where: { id: tropaId },
       include: {
         productor: true,
-        usuarioFaena: true,
-        romaneos: {
-          include: {
-            mediasRes: true
-          }
-        }
+        usuarioFaena: true
       }
     })
 
@@ -52,6 +47,14 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       )
     }
+
+    // Get romaneos separately
+    const romaneos = await db.romaneo.findMany({
+      where: { tropaCodigo: tropa.codigo },
+      include: {
+        mediasRes: true
+      }
+    })
 
     // Obtener configuración del frigorífico
     const config = await db.configuracionFrigorifico.findFirst()
@@ -64,9 +67,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Calcular estadísticas del romaneo
-    const romaneos = tropa.romaneos.filter(r => r.estado === 'CONFIRMADO')
-    const kgVivoTotal = romaneos.reduce((acc, r) => acc + (r.pesoVivo || 0), 0)
-    const kgMediaTotal = romaneos.reduce((acc, r) => acc + (r.pesoTotal || 0), 0)
+    const romaneosConfirmados = romaneos.filter(r => r.estado === 'CONFIRMADO')
+    const kgVivoTotal = romaneosConfirmados.reduce((acc, r) => acc + (r.pesoVivo || 0), 0)
+    const kgMediaTotal = romaneosConfirmados.reduce((acc, r) => acc + (r.pesoTotal || 0), 0)
     const rindeGeneral = kgVivoTotal > 0 ? (kgMediaTotal / kgVivoTotal) * 100 : 0
 
     // Preparar contenido del email
@@ -97,7 +100,7 @@ Peso Promedio: ${tropa.cantidadCabezas > 0 ? (kgMediaTotal / tropa.cantidadCabez
 ----------------------------------------
 DETALLE POR ANIMAL
 ----------------------------------------
-${romaneos.map((r, i) => 
+${romaneosConfirmados.map((r, i) => 
   `${i + 1}. Garrón ${r.garron} | Tipo: ${r.tipoAnimal || '-'} | KG Vivo: ${(r.pesoVivo || 0).toFixed(0)} | KG Media: ${(r.pesoTotal || 0).toFixed(0)} | Rinde: ${r.rinde ? r.rinde.toFixed(1) : '-'}%`
 ).join('\n')}
 
@@ -148,11 +151,11 @@ ${config.direccion || ''}
 
     // Marcar romaneos como enviados
     await db.romaneo.updateMany({
-      where: { 
-        tropaId: tropaId,
+      where: {
+        tropaCodigo: tropa.codigo,
         estado: 'CONFIRMADO'
       },
-      data: { 
+      data: {
         emailEnviado: true
       }
     })

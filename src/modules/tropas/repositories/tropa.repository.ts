@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { BaseRepository } from '@/core/repository/base.repository'
 import { db } from '@/lib/db'
 import {

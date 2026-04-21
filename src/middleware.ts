@@ -271,20 +271,19 @@ export async function middleware(request: NextRequest) {
     }
   }
   
-  // Fallback: legacy header/query param (for transition period)
+  // LEGACY AUTH REMOVIDO - Solo se acepta JWT via cookie session_token
+  // Antes se aceptaba x-operador-id header / operadorId query param (session hijacking risk)
+
+  // Para TODOS los métodos: exigir autenticación JWT
   if (!operadorId) {
-    operadorId = request.headers.get('x-operador-id') || request.nextUrl.searchParams.get('operadorId')
-    operadorRol = request.headers.get('x-operador-rol')
+    return NextResponse.json(
+      { success: false, error: 'No autenticado - inicie sesión' },
+      { status: 401 }
+    )
   }
 
-  // Para escritura (POST/PUT/DELETE/PATCH): exigir autenticación
+  // Para escritura (POST/PUT/DELETE/PATCH): verificar permisos adicionales
   if (method !== 'GET') {
-    if (!operadorId) {
-      return NextResponse.json(
-        { success: false, error: 'No autenticado - inicie sesión' },
-        { status: 401 }
-      )
-    }
 
     // Verificar rutas admin: exigir rol ADMINISTRADOR
     if (isAdminOnlyRoute(pathname)) {
@@ -297,21 +296,12 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Para GET: si hay autenticación, propagar
-  // Si no hay, el handler deberá validar si es necesario
+  // Para GET: autenticación ya verificada arriba, propagar identidy
 
-  // Propagar operadorId desde query params a headers si no está presente
+  // Propagar identidad del operador autenticado via headers
   const response = NextResponse.next()
-  const operadorIdQuery = request.nextUrl.searchParams.get('operadorId')
-  if (operadorIdQuery && !request.headers.get('x-operador-id')) {
-    response.headers.set('x-operador-id', operadorIdQuery)
-  }
-  
-  // Set operadorId from JWT if available (for handlers that read headers)
-  if (operadorId && !request.headers.get('x-operador-id')) {
-    response.headers.set('x-operador-id', operadorId)
-  }
-  if (operadorRol && !request.headers.get('x-operador-rol')) {
+  response.headers.set('x-operador-id', operadorId!)
+  if (operadorRol) {
     response.headers.set('x-operador-rol', operadorRol)
   }
 

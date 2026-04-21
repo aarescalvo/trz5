@@ -17,12 +17,7 @@ export async function GET(request: NextRequest) {
 
     const categorias = await db.categoriaInsumo.findMany({
       where,
-      orderBy: { nombre: 'asc' },
-      include: {
-        _count: {
-          select: { insumos: true }
-        }
-      }
+      orderBy: { nombre: 'asc' as any },
     });
 
     return NextResponse.json(categorias);
@@ -95,7 +90,7 @@ export async function DELETE(request: NextRequest) {
 
     // Verificar si tiene insumos asociados
     const insumosAsociados = await db.insumo.count({
-      where: { categoriaId: id }
+      where: { categoria: 'OTROS' }
     });
 
     if (insumosAsociados > 0) {

@@ -28,15 +28,16 @@ export async function GET(request: NextRequest) {
       where.estado = estado
     }
     if (fechaDesde || fechaHasta) {
-      where.fecha = {}
+      const fechaFilter: Record<string, Date> = {}
       if (fechaDesde) {
-        where.fecha = { ...where.fecha, gte: new Date(fechaDesde) }
+        fechaFilter.gte = new Date(fechaDesde)
       }
       if (fechaHasta) {
         const hasta = new Date(fechaHasta)
         hasta.setHours(23, 59, 59)
-        where.fecha = { ...where.fecha, lte: hasta }
+        fechaFilter.lte = hasta
       }
+      where.fecha = fechaFilter
     }
     if (pendientes === 'true') {
       where.estado = 'PENDIENTE'

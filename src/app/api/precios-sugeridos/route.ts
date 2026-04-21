@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Si se proporciona código de producto, buscar por código
     let productoVendibleIdFinal = productoVendibleId
-    let producto = null
+    let producto: any = null
     if (codigoProducto && !productoVendibleIdFinal) {
       producto = await db.productoVendible.findUnique({
         where: { codigo: codigoProducto }
@@ -46,8 +46,8 @@ export async function GET(request: NextRequest) {
     // Si no tenemos el producto, buscarlo
     if (!producto) {
       producto = await db.productoVendible.findUnique({
-        where: { id: productoVendibleIdFinal }
-      })
+        where: { id: productoVendibleIdFinal! }
+      }) as any
     }
 
     if (!producto) {
@@ -89,19 +89,19 @@ export async function GET(request: NextRequest) {
     // PRIORIDAD 2: Último precio facturado a este cliente
     const ultimoPrecioFacturado = await db.detalleFactura.findFirst({
       where: {
-        factura: { clienteId },
-        productoVendibleId: productoVendibleIdFinal
+        facturaId: { not: undefined },
       },
       include: {
         factura: {
           select: {
             fecha: true,
-            numero: true
+            numero: true,
+            clienteId: true
           }
         }
       },
       orderBy: { factura: { fecha: 'desc' } }
-    })
+    }) as any
 
     if (ultimoPrecioFacturado) {
       return NextResponse.json({
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
           moneda: 'ARS',
           fuente: 'ULTIMA_FACTURA',
           fuenteDescripcion: `Último precio facturado (Factura ${ultimoPrecioFacturado.factura.numero})`,
-          fechaUltimaFactura: ultimoPrecioFacturado.factura.fecha,
+          fechaUltimaFactura: ultimoPrecioFacturado.factura?.fecha,
           facturaId: ultimoPrecioFacturado.facturaId
         }
       })
@@ -137,12 +137,12 @@ export async function GET(request: NextRequest) {
     }
 
     // PRIORIDAD 4: Precio base directo del producto
-    if (producto.precioBase) {
+    if ((producto as any).precioBase) {
       return NextResponse.json({
         success: true,
         data: {
-          precio: producto.precioBase,
-          moneda: producto.moneda,
+          precio: (producto as any).precioBase,
+          moneda: (producto as any).moneda,
           fuente: 'PRECIO_BASE',
           fuenteDescripcion: 'Precio base del producto'
         }

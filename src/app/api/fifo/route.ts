@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
       tropasDelCliente = tropas.map(t => t.codigo)
     }
 
-    // Obtener medias reses ordenadas por fecha de faena (más antiguas primero)
+    // Obtener medias reses ordenadas por fecha de creación (más antiguas primero)
+    // MediaRes doesn't have fechaFaena, use createdAt or romaneo.fecha
     const mediasRes = await db.mediaRes.findMany({
       where: {
         ...whereMedia,
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
         camara: { select: { id: true, nombre: true } }
       },
       orderBy: {
-        fechaFaena: 'asc' // FIFO: más antiguos primero
+        createdAt: 'asc' // FIFO: más antiguos primero
       }
     })
 
@@ -56,14 +57,16 @@ export async function GET(request: NextRequest) {
     const alertas: Array<{
       tipo: 'CRITICO' | 'URGENTE' | 'PROXIMO'
       diasRestantes: number
-      mediaRes: typeof mediasRes[0]
+      mediaRes: any
     }> = []
 
     // Procesar cada media res y calcular días en cámara
-    const stockFIFO = mediasRes.map(media => {
-      const fechaFaena = media.fechaFaena || media.romaneo.fecha
-      const diasEnCamara = Math.floor((hoy.getTime() - new Date(fechaFaena).getTime()) / (1000 * 60 * 60 * 24))
-      const diasRestantes = (media.diasVencimiento || diasVencimiento) - diasEnCamara
+    // MediaRes doesn't have fechaFaena, diasVencimiento, or fechaVencimiento
+    // Use romaneo.fecha as the faena date proxy and createdAt for camera date
+    const stockFIFO = mediasRes.map((media: any) => {
+      const fechaReferencia = media.romaneo?.fecha || media.createdAt
+      const diasEnCamara = Math.floor((hoy.getTime() - new Date(fechaReferencia).getTime()) / (1000 * 60 * 60 * 24))
+      const diasRestantes = diasVencimiento - diasEnCamara
       
       // Calcular estado de vencimiento
       let estadoVencimiento: 'OK' | 'PROXIMO' | 'URGENTE' | 'CRITICO' = 'OK'
@@ -80,7 +83,7 @@ export async function GET(request: NextRequest) {
         alertas.push({
           tipo: estadoVencimiento,
           diasRestantes,
-          media
+          mediaRes: media
         })
       }
 
@@ -91,14 +94,16 @@ export async function GET(request: NextRequest) {
         sigla: media.sigla,
         peso: media.peso,
         camara: media.camara,
-        tropaCodigo: media.romaneo.tropaCodigo,
-        garron: media.romaneo.garron,
-        tipoAnimal: media.romaneo.tipoAnimal,
-        fechaFaena,
+        tropaCodigo: media.romaneo?.tropaCodigo,
+        garron: media.romaneo?.garron,
+        tipoAnimal: media.romaneo?.tipoAnimal,
+        fechaFaena: media.romaneo?.fecha || null,
         diasEnCamara,
-        diasVencimiento: media.diasVencimiento || diasVencimiento,
+        diasVencimiento,
         diasRestantes,
-        fechaVencimiento: media.fechaVencimiento,
+        fechaVencimiento: media.romaneo?.fecha 
+          ? new Date(new Date(media.romaneo.fecha).getTime() + diasVencimiento * 24 * 60 * 60 * 1000).toISOString()
+          : null,
         estadoVencimiento,
         prioridadFIFO: diasEnCamara // Mayor prioridad = más antiguo
       }
@@ -214,8 +219,8 @@ export async function GET(request: NextRequest) {
           diasRestantes: a.diasRestantes,
           id: a.mediaRes.id,
           codigo: a.mediaRes.codigo,
-          tropaCodigo: a.mediaRes.romaneo.tropaCodigo,
-          garron: a.mediaRes.romaneo.garron,
+          tropaCodigo: a.mediaRes.romaneo?.tropaCodigo,
+          garron: a.mediaRes.romaneo?.garron,
           peso: a.mediaRes.peso,
           camara: a.mediaRes.camara?.nombre
         })),
@@ -253,6 +258,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Obtener medias reses según FIFO
+    // MediaRes doesn't have fechaFaena, use createdAt
     const whereMedia: Record<string, unknown> = { 
       estado: 'EN_CAMARA',
       usuarioFaenaId: clienteId 
@@ -261,12 +267,12 @@ export async function POST(request: NextRequest) {
 
     const mediasRes = await db.mediaRes.findMany({
       where: whereMedia,
-      orderBy: { fechaFaena: 'asc' },
+      orderBy: { createdAt: 'asc' },
       take: cantidadMedias,
       include: {
         romaneo: { select: { tropaCodigo: true, garron: true } }
       }
-    })
+    }) as any[]
 
     if (mediasRes.length === 0) {
       return NextResponse.json(
@@ -282,9 +288,11 @@ export async function POST(request: NextRequest) {
     })
     const nuevoNumero = (ultimoDespacho?.numero || 0) + 1
 
+    // Despacho requires: destino (string), numero (int), kgTotal, cantidadMedias, estado
     const despacho = await db.despacho.create({
       data: {
         numero: nuevoNumero,
+        destino: 'Despacho FIFO automático',
         clienteId,
         kgTotal: mediasRes.reduce((acc, m) => acc + m.peso, 0),
         cantidadMedias: mediasRes.length,
@@ -293,8 +301,8 @@ export async function POST(request: NextRequest) {
         items: {
           create: mediasRes.map(m => ({
             mediaResId: m.id,
-            tropaCodigo: m.romaneo.tropaCodigo,
-            garron: m.romaneo.garron,
+            tropaCodigo: m.romaneo?.tropaCodigo,
+            garron: m.romaneo?.garron,
             peso: m.peso
           }))
         }

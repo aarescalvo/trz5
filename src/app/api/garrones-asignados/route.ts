@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
         throw new Error('GARRON_YA_ASIGNADO')
       }
 
-      let animalData = null
+      let animalData: { id: string; codigo: string; tropaCodigo: string; tipoAnimal: string; pesoVivo: number | undefined; numero: number } | null = null
       let animalAsignadoId = animalId || null
 
       // Si se proporciona tropaCodigo pero no animalId, buscar primer animal disponible
@@ -134,8 +134,8 @@ export async function POST(request: NextRequest) {
           animalData = {
             id: animalDisponible.id,
             codigo: animalDisponible.codigo,
-            tropaCodigo: animalDisponible.tropa?.codigo,
-            tipoAnimal: animalDisponible.tipoAnimal?.toString(),
+            tropaCodigo: animalDisponible.tropa?.codigo || '',
+            tipoAnimal: animalDisponible.tipoAnimal?.toString() || '',
             pesoVivo: animalDisponible.pesoVivo || animalDisponible.pesajeIndividual?.peso,
             numero: animalDisponible.numero
           }
@@ -158,8 +158,8 @@ export async function POST(request: NextRequest) {
           animalData = {
             id: animal.id,
             codigo: animal.codigo,
-            tropaCodigo: animal.tropa?.codigo,
-            tipoAnimal: animal.tipoAnimal?.toString(),
+            tropaCodigo: animal.tropa?.codigo || '',
+            tipoAnimal: animal.tipoAnimal?.toString() || '',
             pesoVivo: animal.pesoVivo || animal.pesajeIndividual?.peso,
             numero: animal.numero
           }

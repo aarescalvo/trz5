@@ -17,12 +17,6 @@ export async function GET(request: NextRequest) {
 
     const reportes = await db.reporteAutomatico.findMany({
       where,
-      include: {
-        historial: {
-          orderBy: { fecha: 'desc' },
-          take: 5
-        }
-      },
       orderBy: { nombre: 'asc' }
     });
 

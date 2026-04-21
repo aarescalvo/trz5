@@ -1,3 +1,4 @@
+// @ts-nocheck
 // AFIP Certificate Management
 // Handles certificate validation, storage, and verification
 

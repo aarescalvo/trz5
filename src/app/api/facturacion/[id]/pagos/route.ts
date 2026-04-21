@@ -30,14 +30,14 @@ export async function GET(
       )
     }
 
-    const totalPagado = pagos.reduce((sum, p) => sum + p.monto.toNumber(), 0)
-    const saldoPendiente = factura.total.toNumber() - totalPagado
+    const totalPagado = pagos.reduce((sum, p) => sum + p.monto, 0)
+    const saldoPendiente = factura.total - totalPagado
 
     return NextResponse.json({
       success: true,
       data: pagos,
       resumen: {
-        totalFactura: factura.total.toNumber(),
+        totalFactura: factura.total,
         totalPagado,
         saldoPendiente
       }
@@ -91,8 +91,8 @@ export async function POST(
       )
     }
 
-    const totalPagado = factura.pagos.reduce((sum, p) => sum + p.monto.toNumber(), 0)
-    const saldoPendiente = factura.total.toNumber() - totalPagado
+    const totalPagado = factura.pagos.reduce((sum, p) => sum + p.monto, 0)
+    const saldoPendiente = factura.total - totalPagado
 
     if (monto > saldoPendiente) {
       return NextResponse.json(
@@ -116,12 +116,11 @@ export async function POST(
 
     // Verificar si la factura quedó pagada
     const nuevoTotalPagado = totalPagado + monto
-    if (nuevoTotalPagado >= factura.total.toNumber()) {
+    if (nuevoTotalPagado >= factura.total) {
       await db.factura.update({
         where: { id },
         data: {
           estado: 'PAGADA',
-          fechaPago: new Date()
         }
       })
     } else {

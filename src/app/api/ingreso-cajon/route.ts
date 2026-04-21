@@ -118,17 +118,19 @@ export async function GET(request: NextRequest) {
 
     for (const asignacion of asignaciones) {
       const animal = asignacion.animal
+      if (!animal) continue
       const tropa = animal.tropa
+      if (!tropa) continue
       const romaneo = romaneos.find(r => r.garron === asignacion.garron)
 
       if (!romaneo) continue
 
       // Check if already in camera
-      const enCamara = romaneo.mediasRes.some(m => m.camaraId)
+      const enCamara = romaneo.mediasRes.some((m: any) => m.camaraId)
       if (enCamara) continue
 
-      if (!tropasMap.has(tropa.id)) {
-        tropasMap.set(tropa.id, {
+      if (!tropasMap.has((tropa as any).id)) {
+        tropasMap.set((tropa as any).id, {
           tropaId: tropa.id,
           tropaCodigo: tropa.codigo,
           especie: tropa.especie,
@@ -137,7 +139,7 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      const tropaData = tropasMap.get(tropa.id)!
+      const tropaData = tropasMap.get((tropa as any).id)!
       tropaData.animales.push({
         id: animal.id,
         codigo: animal.codigo,
@@ -285,7 +287,7 @@ export async function POST(request: NextRequest) {
           }
         })
       }
-      mediasCreadas.push(mediaIzq)
+      (mediasCreadas as any[]).push(mediaIzq)
     }
 
     // Media Derecha
@@ -325,7 +327,7 @@ export async function POST(request: NextRequest) {
           }
         })
       }
-      mediasCreadas.push(mediaDer)
+      (mediasCreadas as any[]).push(mediaDer)
     }
 
     // Update or create stock

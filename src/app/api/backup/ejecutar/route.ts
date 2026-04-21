@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         tipo,
         nombreArchivo,
         rutaArchivo,
-        tamano: stats.size,
+        tamanio: stats.size,
         tablasIncluidas: tablasIncluidas.join(','),
         estado: 'COMPLETADO'
       }
@@ -124,9 +124,7 @@ export async function POST(request: NextRequest) {
           backupDiario: true,
           horaBackup: '02:00',
           retenerDias: 30,
-          nubeHabilitado: false,
-          pointInTime: false,
-          activo: true
+          nubeHabilitado: false
         }
       });
     }
@@ -136,7 +134,7 @@ export async function POST(request: NextRequest) {
       historial: {
         id: historial.id,
         nombreArchivo: historial.nombreArchivo,
-        tamano: historial.tamano,
+        tamanio: historial.tamanio,
         fecha: historial.fecha,
         estado: historial.estado
       },
@@ -154,7 +152,7 @@ export async function POST(request: NextRequest) {
           tipo: 'MANUAL',
           nombreArchivo: 'error',
           rutaArchivo: '',
-          tamano: 0,
+          tamanio: 0,
           estado: 'ERROR',
           mensajeError: String(error)
         }

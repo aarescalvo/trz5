@@ -87,6 +87,7 @@ interface Operador {
   nombre: string
   usuario: string
   rol: string
+  nivel?: string
   email?: string
   permisos: {
     puedePesajeCamiones: boolean
@@ -944,19 +945,19 @@ export default function FrigorificoApp() {
       case 'dashboard':
         return <DashboardContent />
       case 'pesajeCamiones':
-        return wrapModule('pesajeCamiones', <PesajeCamionesModule operador={operador} onTropaCreada={fetchTropas} />)
+        return wrapModule('pesajeCamiones', <PesajeCamionesModule operador={operador as any} onTropaCreada={fetchTropas} />)
       case 'pesajeIndividual':
         return wrapModule('pesajeIndividual', <PesajeIndividualModule operador={operador} />)
       case 'movimientoHacienda':
         return wrapModule('movimientoHacienda', <MovimientoHaciendaModule operador={operador} />)
       case 'listaFaena':
-        return wrapModule('listaFaena', <ListaFaenaModule operador={operador} />)
+        return wrapModule('listaFaena', <ListaFaenaModule operador={operador as any} />)
       case 'romaneo':
-        return wrapModule('romaneo', <RomaneoModule operador={operador} />)
+        return wrapModule('romaneo', <RomaneoModule operador={operador as any} />)
       case 'ingresoCajon':
-        return wrapModule('ingresoCajon', <IngresoCajonModule operador={operador} />)
+        return wrapModule('ingresoCajon', <IngresoCajonModule operador={operador as any} />)
       case 'menudencias':
-        return wrapModule('menudencias', <MenudenciasModule operador={operador} />)
+        return wrapModule('menudencias', <MenudenciasModule operador={operador as any} />)
       case 'stockUnificada':
         return wrapModule('stockUnificada', <StockUnificada operador={operador} />)
       case 'stocksCorrales':
@@ -974,7 +975,7 @@ export default function FrigorificoApp() {
       case 'stocksInsumos':
         return wrapModule('stocksInsumos', <StocksInsumosModule operador={operador} />)
       case 'configuracion':
-        return <ConfiguracionModule operador={operador} />
+        return <ConfiguracionModule operador={operador as any} />
       case 'configBalanzas':
         return wrapModule('configBalanzas', <ConfigBalanzasModule operador={operador} />)
       // configImpresoras y configTerminales eliminados
@@ -1070,7 +1071,7 @@ export default function FrigorificoApp() {
       case 'reportesSIGICA':
         return wrapModule('reportesSIGICA', <ReportesSenasaModule operador={operador} />)
       default:
-        return wrapModule('pesajeCamiones', <PesajeCamionesModule operador={operador} onTropaCreada={fetchTropas} />)
+        return wrapModule('pesajeCamiones', <PesajeCamionesModule operador={operador as any} onTropaCreada={fetchTropas} />)
     }
   }
 

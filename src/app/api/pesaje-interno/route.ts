@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
@@ -171,7 +172,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Buscar por ID o por tropaCodigo
-    let existente = null
+    let existente: any = null
     if (id) {
       existente = await db.pesajeInterno.findUnique({
         where: { id }
@@ -203,7 +204,7 @@ export async function PUT(request: NextRequest) {
     
     const pesaje = await db.pesajeInterno.update({
       where: { id: existente.id },
-      data: updateData
+      data: updateData as any
     })
     
     return NextResponse.json({

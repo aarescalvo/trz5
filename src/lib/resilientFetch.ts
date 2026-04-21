@@ -13,7 +13,7 @@ export interface ResilientFetchOptions {
   /** Endpoint de la API (ej: '/api/pesaje-camion') */
   endpoint: string
   /** Método HTTP */
-  method?: 'POST' | 'PUT' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   /** Datos a enviar */
   body?: Record<string, unknown>
   /** Si es true, NO encola cuando está offline (solo lectura) */
@@ -63,12 +63,14 @@ export async function resilientFetch(options: ResilientFetchOptions): Promise<Re
 
   // Si estamos offline y es escritura, encolar
   if (!isOnline && !readOnly) {
+    // method is guaranteed to be POST/PUT/DELETE here since readOnly=false excludes GET
+    const writeMethod = method as 'POST' | 'PUT' | 'DELETE'
     const store = useOfflineStore.getState()
     const queueId = store.addToQueue({
       module,
-      action: method === 'POST' ? 'CREATE' : method === 'PUT' ? 'UPDATE' : 'DELETE',
+      action: writeMethod === 'POST' ? 'CREATE' : writeMethod === 'PUT' ? 'UPDATE' : 'DELETE',
       endpoint,
-      method,
+      method: writeMethod,
       data: body || {},
     })
 
@@ -94,15 +96,16 @@ export async function resilientFetch(options: ResilientFetchOptions): Promise<Re
       onError?.(error)
       return { success: false, error }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Si falla la conexión durante el fetch, encolar si es escritura
     if (!readOnly) {
+      const writeMethod = method as 'POST' | 'PUT' | 'DELETE'
       const store = useOfflineStore.getState()
       const queueId = store.addToQueue({
         module,
-        action: method === 'POST' ? 'CREATE' : method === 'PUT' ? 'UPDATE' : 'DELETE',
+        action: writeMethod === 'POST' ? 'CREATE' : writeMethod === 'PUT' ? 'UPDATE' : 'DELETE',
         endpoint,
-        method,
+        method: writeMethod,
         data: body || {},
       })
 
@@ -110,7 +113,7 @@ export async function resilientFetch(options: ResilientFetchOptions): Promise<Re
       return { success: true, offline: true, queueId }
     }
 
-    const errorMsg = error.message || 'Error de conexión'
+    const errorMsg = error instanceof Error ? error.message : 'Error de conexión'
     onError?.(errorMsg)
     return { success: false, error: errorMsg }
   }

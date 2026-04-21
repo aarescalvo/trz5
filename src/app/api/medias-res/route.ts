@@ -200,7 +200,7 @@ async function actualizarStockCamara(
       where: {
         camaraId_tropaCodigo_especie: {
           camaraId,
-          tropaCodigo: tropa,
+          tropaCodigo: tropa!,
           especie: especie as 'BOVINO' | 'EQUINO'
         }
       }

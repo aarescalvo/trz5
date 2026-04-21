@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
         const romaneos = await db.romaneo.findMany({
           where,
           include: {
-            tropa: { select: { codigo: true, especie: true, cantidadCabezas: true } },
             tipificador: { select: { matricula: true, nombre: true } }
           },
           orderBy: { fecha: 'desc' },
@@ -55,8 +54,8 @@ export async function GET(request: NextRequest) {
           totalRegistros: romaneos.length,
           registros: romaneos.map(r => ({
             garron: r.garron,
-            tropa: r.tropaCodigo || r.tropa?.codigo,
-            especie: r.tropa?.especie || 'BOVINO',
+            tropa: r.tropaCodigo || '-',
+            especie: 'BOVINO',
             fecha: r.fecha,
             pesoVivo: r.pesoVivo,
             pesoTotal: r.pesoTotal,
@@ -83,17 +82,18 @@ export async function GET(request: NextRequest) {
         })
 
         // Calcular stock por cámara
-        const stockData = []
+        const stockData: any[] = []
         for (const camara of camaras) {
           const medias = await db.mediaRes.findMany({
             where: { camaraId: camara.id, estado: 'EN_CAMARA' },
-            select: { peso: true, especie: true }
+            include: { romaneo: true }
           })
 
-          const bovinos = medias.filter(m => !m.especie || m.especie === 'BOVINO')
-          const equinos = medias.filter(m => m.especie === 'EQUINO')
+          // Get especie from romaneo's tropa
+          const bovinos = medias.filter(m => !m.romaneo?.tropaCodigo || !m.romaneo?.tropaCodigo.startsWith('E'))
+          const equinos = medias.filter(m => m.romaneo?.tropaCodigo?.startsWith('E'))
 
-          stockData.push({
+          const stockItem = {
             camaraId: camara.id,
             camaraNombre: camara.nombre,
             tipo: camara.tipo,
@@ -103,7 +103,8 @@ export async function GET(request: NextRequest) {
             bovinosKg: bovinos.reduce((sum, m) => sum + (m.peso || 0), 0),
             equinosMedias: equinos.length,
             equinosKg: equinos.reduce((sum, m) => sum + (m.peso || 0), 0)
-          })
+          }
+          stockData.push(stockItem)
         }
 
         data = {

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       if (hasta) where.fecha.lte = new Date(hasta);
     }
     
-    const asientos = await db.asientoContable.findMany({
+    const asientos = await (db as any).asientoContable.findMany({
       where,
       include: { lineas: true },
       orderBy: { fecha: 'desc' }
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const asiento = await db.asientoContable.create({
+    const asiento = await (db as any).asientoContable.create({
       data: {
         tipoOrigen: tipoOrigen || 'AJUSTE',
         origenId,

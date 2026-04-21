@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         break
 
       case 'romaneos':
-        data = await db.garronAsignado.findMany({
+        data = await (db as any).asignacionGarron.findMany({
           include: {
             animal: { include: { tropa: true } },
             mediaRes: true
@@ -77,7 +77,8 @@ export async function GET(request: NextRequest) {
       case 'produccion':
         const produccion = await db.ingresoDespostada.findMany({
           include: {
-            producto: true
+            camaraOrigen: true,
+            camaraDestino: true
           },
           orderBy: { createdAt: 'desc' },
           take: 500

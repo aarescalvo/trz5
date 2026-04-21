@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const { tipo, filtros = {} } = body
 
     // Importar pdfmake dinámicamente para evitar problemas ESM/CJS en build
-    const PdfPrinter = (await import('pdfmake')).default || (await import('pdfmake'))
+    // @ts-expect-error - pdfmake dynamic import\n    const PdfPrinter = (await import('pdfmake/src/printer')).default
     const printer = new PdfPrinter(fonts)
 
     const docDefinition = await generarDefinicionPDF(tipo, filtros)
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     const chunks: Buffer[] = []
 
-    return new Promise((resolve, reject) => {
+    return new Promise<Response>((resolve, reject) => {
       pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk))
       pdfDoc.on('end', () => {
         const result = Buffer.concat(chunks)
@@ -129,7 +129,6 @@ async function generarDefinicionPDF(tipo: string, filtros: Record<string, any>):
       titulo = 'Reporte de Faena Diaria'
       const fecha = filtros.fecha || new Date().toISOString().split('T')[0]
       const faenas = await db.romaneo.findMany({
-        include: { tropa: { include: { productor: true } } },
         where: {
           createdAt: {
             gte: new Date(fecha + 'T00:00:00'),
@@ -137,14 +136,14 @@ async function generarDefinicionPDF(tipo: string, filtros: Record<string, any>):
           }
         },
         orderBy: { createdAt: 'asc' }
-      })
+      }) as any[]
       tableBody = [
         [{ text: 'Tropa', style: 'tableHeader' }, { text: 'Productor', style: 'tableHeader' },
         { text: 'Media', style: 'tableHeader' }, { text: 'Peso', style: 'tableHeader' },
         { text: 'Clasificación', style: 'tableHeader' }],
         ...faenas.map(f => [
-          f.tropa?.codigo || '-',
-          f.tropa?.productor?.nombre || '-',
+          f.tropaCodigo || '-',
+          '-',
           f.numeroMedia || '-',
           `${f.peso || 0} kg`,
           f.clasificacion || '-'

@@ -47,15 +47,7 @@ export async function GET(request: NextRequest) {
             codigo: true,
             nombre: true,
             unidadMedida: true,
-            costoUnitario: true
-          }
-        },
-        centroCosto: {
-          select: {
-            id: true,
-            codigo: true,
-            nombre: true,
-            tipo: true
+            precioUnitario: true
           }
         }
       },

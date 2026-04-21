@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar que todos los garrones tengan sus medias pesadas
-    const garronesIncompletos = []
+    const garronesIncompletos: number[] = []
     
     for (const asig of listaFaena.asignaciones) {
       const medias = await db.mediaRes.findMany({
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       })
 
       if (medias.length < 2) {
-        garronesIncompletos.push(asig.garron)
+        garronesIncompletos.push(asig.garron as number)
       }
     }
 
@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
 
     for (const asig of listaFaena.asignaciones) {
       const animal = asig.animal
+      if (!animal) continue
       
       // Actualizar estado del animal
       await db.animal.update({
@@ -110,12 +111,12 @@ export async function POST(request: NextRequest) {
       // Actualizar stock del corral (dar de baja)
       if (animal.corralId) {
         const tropa = animal.tropa
-        if (tropa?.especie === 'BOVINO') {
+        if (tropa && tropa.especie === 'BOVINO') {
           await db.corral.update({
             where: { id: animal.corralId },
             data: { stockBovinos: { decrement: 1 } }
           })
-        } else if (tropa?.especie === 'EQUINO') {
+        } else if (tropa && tropa.especie === 'EQUINO') {
           await db.corral.update({
             where: { id: animal.corralId },
             data: { stockEquinos: { decrement: 1 } }

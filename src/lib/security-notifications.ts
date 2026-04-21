@@ -9,7 +9,7 @@ export interface SecurityNotification {
   ip: string
   detalles: string
   severidad: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
-  fecha: Date
+  fecha?: Date
 }
 
 /**
@@ -26,12 +26,12 @@ export async function createSecurityNotification(notification: SecurityNotificat
         entidad: 'NotificacionSeguridad',
         descripcion: `[${notification.severidad}] ${notification.tipo}: ${notification.detalles}`,
         ip: notification.ip,
-        datosDespues: {
+        datosDespues: JSON.stringify({
           tipo: notification.tipo,
           severidad: notification.severidad,
           operadorNombre: notification.operadorNombre,
           detalles: notification.detalles
-        }
+        })
       }
     })
 
@@ -70,7 +70,8 @@ export async function notifyNewIpLogin(params: {
       operadorNombre: params.operadorNombre,
       ip: params.ip,
       detalles: `Login desde IP nueva: ${params.ip}. Usuario: ${params.operadorNombre}`,
-      severidad: 'LOW'
+      severidad: 'LOW',
+      fecha: new Date()
     })
   }
 }
@@ -94,7 +95,8 @@ export async function notifyFailedLoginAttempts(params: {
     operadorNombre: params.usuario,
     ip: params.ip,
     detalles: `${params.cantidadIntentos} intentos fallidos de login desde IP: ${params.ip}. Usuario intentado: ${params.usuario || 'N/A'}`,
-    severidad
+    severidad,
+    fecha: new Date()
   })
 
   // Si hay demasiados intentos, bloquear la IP automáticamente
@@ -118,7 +120,8 @@ export async function notifyPasswordChange(params: {
     operadorNombre: params.operadorNombre,
     ip: params.ip,
     detalles: `Contraseña ${params.forzado ? 'cambiada forzadamente' : 'actualizada'} para usuario: ${params.operadorNombre}`,
-    severidad: 'MEDIUM'
+    severidad: 'MEDIUM',
+    fecha: new Date()
   })
 }
 
@@ -137,7 +140,8 @@ export async function notifyOutOfHoursAccess(params: {
     operadorNombre: params.operadorNombre,
     ip: params.ip,
     detalles: `Acceso fuera de horario permitido por usuario: ${params.operadorNombre} a las ${params.hora}:00 desde IP: ${params.ip}`,
-    severidad: 'MEDIUM'
+    severidad: 'MEDIUM',
+    fecha: new Date()
   })
 }
 
@@ -156,7 +160,8 @@ export async function notifyAccountLocked(params: {
     operadorNombre: params.operadorNombre,
     ip: params.ip,
     detalles: `Cuenta bloqueada para usuario: ${params.operadorNombre}. Motivo: ${params.motivo}`,
-    severidad: 'HIGH'
+    severidad: 'HIGH',
+    fecha: new Date()
   })
 }
 
@@ -196,7 +201,8 @@ async function autoBlockIp(ip: string, motivo: string): Promise<void> {
       tipo: 'SUSPICIOUS_ACTIVITY',
       ip,
       detalles: `IP ${ip} bloqueada automáticamente. Motivo: ${motivo}`,
-      severidad: 'HIGH'
+      severidad: 'HIGH',
+      fecha: new Date()
     })
   } catch (error) {
     console.error('Error bloqueando IP:', error)

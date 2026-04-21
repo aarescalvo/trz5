@@ -53,7 +53,7 @@ async function exportarConPlantilla(codigo: string, datos: Record<string, any>) 
   // Decodificar archivo base64
   const buffer = Buffer.from(plantilla.archivoContenido, 'base64')
   const workbook = new ExcelJS.Workbook()
-  await workbook.xlsx.load(buffer)
+  await workbook.xlsx.load(buffer as any)
   
   // Obtener hoja de datos
   const worksheet = workbook.getWorksheet(plantilla.hojaDatos || 'Datos') || workbook.worksheets[0]
@@ -125,7 +125,7 @@ async function exportarConPlantilla(codigo: string, datos: Record<string, any>) 
         // Usar posición directa
         Object.values(fila).forEach((valor, colIndex) => {
           const cell = worksheet.getCell(rowNum, colIndex + 1)
-          cell.value = valor ?? ''
+          cell.value = (valor as string | number | boolean | null) ?? ''
           
           if (index > 0) {
             const prevCell = worksheet.getCell(rowNum - 1, colIndex + 1)
@@ -246,38 +246,38 @@ async function exportarConExcelJS(tipo: string, filtros: Record<string, any>) {
     case 'stock-camara':
       const stocks = await db.stockMediaRes.findMany({
         include: { camara: true },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { fechaIngreso: 'desc' }
       })
-      columnas = ['Cámara', 'Categoría', 'Cantidad', 'Peso Total', 'Fecha']
+      columnas = ['Cámara', 'Especie', 'Cantidad', 'Peso Total', 'Fecha']
       datos = stocks.map(s => [
         s.camara?.nombre || '-',
-        s.categoria || '-',
+        s.especie || '-',
         s.cantidad || 0,
         `${s.pesoTotal || 0} kg`,
-        s.createdAt?.toLocaleDateString('es-AR') || '-'
+        s.fechaIngreso?.toLocaleDateString('es-AR') || '-'
       ])
       break
       
     case 'faena-diaria':
       const faenas = await db.romaneo.findMany({
-        include: { tropa: { include: { productor: true } } },
+        include: { tipificador: true },
         where: filtros.fecha ? { 
-          createdAt: { 
+          fecha: { 
             gte: new Date(filtros.fecha + 'T00:00:00'),
             lte: new Date(filtros.fecha + 'T23:59:59')
           }
         } : undefined,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { fecha: 'desc' },
         take: 100
       })
-      columnas = ['Tropa', 'Productor', 'Media', 'Peso', 'Clasificación', 'Fecha']
+      columnas = ['Tropa', 'Garrón', 'N° Animal', 'Peso Total', 'Rinde', 'Fecha']
       datos = faenas.map(f => [
-        f.tropa?.codigo || '-',
-        f.tropa?.productor?.nombre || '-',
-        f.numeroMedia || '-',
-        `${f.peso || 0} kg`,
-        f.clasificacion || '-',
-        f.createdAt?.toLocaleDateString('es-AR') || '-'
+        f.tropaCodigo || '-',
+        f.garron || '-',
+        f.numeroAnimal || '-',
+        `${f.pesoTotal || 0} kg`,
+        f.rinde ? `${Math.round(f.rinde * 100) / 100}%` : '-',
+        f.fecha?.toLocaleDateString('es-AR') || '-'
       ])
       break
       

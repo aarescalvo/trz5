@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type': 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${backup.nombreArchivo}"`,
-        'Content-Length': backup.tamano.toString()
+        'Content-Length': (backup.tamanio || 0).toString()
       }
     });
   } catch (error) {

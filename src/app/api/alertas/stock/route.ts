@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const mediasSinMovimiento = await db.mediaRes.count({
       where: {
         estado: 'EN_CAMARA',
-        ingresoCamaraAt: { lte: hace15Dias }
+        createdAt: { lte: hace15Dias }
       }
     })
 
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     }
 
     const cajasDisponibles = await db.cajaEmpaque.count({
-      where: { estado: 'DISPONIBLE' }
+      where: { estado: 'ARMADA' }
     })
 
     if (cajasDisponibles > 50) {

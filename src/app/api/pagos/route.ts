@@ -53,22 +53,7 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         formaPago: true,
-        cheque: true,
-        aplicaciones: {
-          include: {
-            factura: {
-              include: {
-                cliente: {
-                  select: {
-                    id: true,
-                    nombre: true,
-                    cuit: true
-                  }
-                }
-              }
-            }
-          }
-        }
+        cheque: true
       },
       orderBy: { createdAt: 'desc' }
     })
@@ -139,12 +124,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         formaPago: true,
-        cheque: true,
-        aplicaciones: {
-          include: {
-            factura: true
-          }
-        }
+        cheque: true
       }
     })
 
@@ -213,12 +193,7 @@ export async function PUT(request: NextRequest) {
       },
       include: {
         formaPago: true,
-        cheque: true,
-        aplicaciones: {
-          include: {
-            factura: true
-          }
-        }
+        cheque: true
       }
     })
 
@@ -253,10 +228,7 @@ export async function DELETE(request: NextRequest) {
 
     // Verificar que existe
     const pago = await db.pago.findUnique({
-      where: { id },
-      include: {
-        aplicaciones: true
-      }
+      where: { id }
     })
     if (!pago) {
       return NextResponse.json(
@@ -272,34 +244,7 @@ export async function DELETE(request: NextRequest) {
     })
 
     // Actualizar estados de las facturas asociadas
-    for (const aplicacion of pago.aplicaciones) {
-      // Calcular el total pagado de la factura sin este pago
-      const pagosFactura = await db.pagoFactura.findMany({
-        where: { facturaId: aplicacion.facturaId },
-        include: { pago: true }
-      })
-
-      const totalPagado = pagosFactura
-        .filter(pf => pf.pago.estado !== 'ANULADO' && pf.id !== aplicacion.id)
-        .reduce((sum, pf) => sum + pf.monto, 0)
-
-      const factura = await db.factura.findUnique({
-        where: { id: aplicacion.facturaId }
-      })
-
-      if (factura) {
-        const nuevoEstado = totalPagado >= factura.total ? 'PAGADA' : 
-                           totalPagado > 0 ? 'EMITIDA' : 'EMITIDA'
-        
-        await db.factura.update({
-          where: { id: aplicacion.facturaId },
-          data: { 
-            estado: nuevoEstado,
-            fechaPago: totalPagado >= factura.total ? new Date() : null
-          }
-        })
-      }
-    }
+    // Note: PagoFactura does not have a pagoId, so we just anular the Pago record
 
     return NextResponse.json({
       success: true,

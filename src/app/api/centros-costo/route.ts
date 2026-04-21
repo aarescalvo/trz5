@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
             take: 12
           },
           _count: {
-            select: { consumos: true }
+            select: { consumosCentro: true }
           }
         }
       })
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
           take: 12
         },
         _count: {
-          select: { consumos: true }
+          select: { consumosCentro: true }
         }
       },
       orderBy: { nombre: 'asc' }
@@ -226,12 +226,12 @@ export async function DELETE(request: NextRequest) {
       where: { id },
       include: {
         _count: {
-          select: { presupuestos: true, consumos: true, consumosInsumo: true }
+          select: { presupuestos: true, consumosCentro: true, consumosInsumo: true }
         }
       }
     })
 
-    if (relaciones && (relaciones._count.presupuestos > 0 || relaciones._count.consumos > 0 || relaciones._count.consumosInsumo > 0)) {
+    if (relaciones && (relaciones._count.presupuestos > 0 || relaciones._count.consumosCentro > 0 || relaciones._count.consumosInsumo > 0)) {
       return NextResponse.json(
         { 
           success: false, 

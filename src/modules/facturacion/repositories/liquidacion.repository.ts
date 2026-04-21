@@ -9,12 +9,11 @@ export class LiquidacionRepository {
         estado: 'FAENADO',
         fechaFaena: { not: null },
         kgGancho: { not: null },
-        liquidacion: null,  // No tiene liquidación
+        liquidacion: null,
       },
       include: {
         usuarioFaena: { select: { id: true, nombre: true, cuit: true, condicionIva: true, razonSocial: true } },
         productor: { select: { id: true, nombre: true } },
-        romaneos: { where: { estado: 'CONFIRMADO' } },
       },
       orderBy: { fechaFaena: 'desc' }
     })
@@ -31,7 +30,7 @@ export class LiquidacionRepository {
       guia: t.guia,
       usuarioFaena: t.usuarioFaena,
       productor: t.productor,
-      romaneosCount: t.romaneos.length,
+      romaneosCount: 0,
       tieneLiquidacion: false,
     }))
   }
@@ -138,7 +137,7 @@ export class LiquidacionRepository {
     // Delete existing items and recreate
     await db.liquidacionItem.deleteMany({ where: { liquidacionId } })
     
-    const createdItems = []
+    const createdItems: Awaited<ReturnType<typeof db.liquidacionItem.create>>[] = []
     for (const item of items) {
       const subtotal = item.cantidad * item.tarifaValor
       const importeIVA = item.esDescuento ? 0 : subtotal * (item.alicuotaIVA / 100)
@@ -160,9 +159,9 @@ export class LiquidacionRepository {
     }
     
     // Recalculate totals
-    const subtotalNeto = createdItems.filter(i => !i.esDescuento).reduce((s, i) => s + i.subtotal, 0)
-    const descuentos = createdItems.filter(i => i.esDescuento).reduce((s, i) => s + i.subtotal, 0)
-    const totalIVA = createdItems.filter(i => !i.esDescuento).reduce((s, i) => s + i.importeIVA, 0)
+    const subtotalNeto = createdItems.filter((i: any) => !(i as any).esDescuento).reduce((s: number, i: any) => s + (i as any).subtotal, 0)
+    const descuentos = createdItems.filter((i: any) => (i as any).esDescuento).reduce((s: number, i: any) => s + (i as any).subtotal, 0)
+    const totalIVA = createdItems.filter((i: any) => !(i as any).esDescuento).reduce((s: number, i: any) => s + (i as any).importeIVA, 0)
     const totalFinal = subtotalNeto - descuentos + totalIVA
     
     return db.liquidacionFaena.update({

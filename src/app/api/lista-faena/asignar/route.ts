@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let animal = null
+    let animal: any = null
 
     // Find animal by code or get next available
     if (animalCodigo) {
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      animal = animalesDisponibles[0]
+      animal = animalesDisponibles[0] as any
     }
 
     // Create assignment
@@ -104,7 +104,8 @@ export async function POST(request: NextRequest) {
         listaFaenaId,
         garron: parseInt(garron),
         animalId: animal.id,
-        numeroAnimal: animal.numero
+        animalNumero: animal.numero,
+        tipoAnimal: animal.tipoAnimal
       },
       include: {
         animal: {

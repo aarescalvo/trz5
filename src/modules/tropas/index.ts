@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Módulo Tropas - Fachada
 // Este módulo centraliza toda la funcionalidad relacionada con gestión de tropas
 

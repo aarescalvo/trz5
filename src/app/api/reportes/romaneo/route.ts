@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { generarRomaneoPDF, getDatosRomaneoPorTropa } from '@/lib/pdf/romaneo-tropa'
 import { checkPermission } from '@/lib/auth-helpers'

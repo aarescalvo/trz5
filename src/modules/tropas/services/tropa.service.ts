@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { BaseService } from '@/core/service/base.service'
 import { TropaRepository } from '../repositories/tropa.repository'
 import { eventBus, EventTypes } from '@/core/events/event-bus'

@@ -10,10 +10,10 @@ export async function GET(request: NextRequest) {
   try {
     const terminales = await db.terminal.findMany({
       include: {
-        Balanza: true,
-        Impresora: true
+        balanza: true,
+        impresora: true
       },
-      orderBy: { nombre: 'asc' }
+      orderBy: { nombre: 'asc' as any }
     })
     
     return NextResponse.json({ success: true, data: terminales })
@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date()
       },
       include: {
-        Balanza: true,
-        Impresora: true
+        balanza: true,
+        impresora: true
       }
     })
     
@@ -73,8 +73,8 @@ export async function PUT(request: NextRequest) {
         updatedAt: new Date()
       },
       include: {
-        Balanza: true,
-        Impresora: true
+        balanza: true,
+        impresora: true
       }
     })
     

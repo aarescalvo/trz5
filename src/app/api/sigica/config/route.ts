@@ -74,7 +74,7 @@ export async function PUT(request: NextRequest) {
     })
 
     // Si se solicitó probar la conexión
-    let resultadoPrueba = null
+    let resultadoPrueba: any = null
     if (body.probarConexion && config.habilitado) {
       resultadoPrueba = await probarConexionSIGICA()
     }

@@ -34,17 +34,8 @@ export async function GET(request: NextRequest) {
       where.exitoso = false
     }
 
-    const intentos = await db.intentoLogin.findMany({
+    const intentos = await (db as any).intentoLogin.findMany({
       where,
-      include: {
-        operador: operadorId ? {
-          select: {
-            id: true,
-            nombre: true,
-            usuario: true
-          }
-        } : false
-      },
       orderBy: {
         fecha: 'desc'
       },
@@ -52,7 +43,7 @@ export async function GET(request: NextRequest) {
     })
     
     // Estadísticas adicionales
-    const estadisticas = await db.intentoLogin.groupBy({
+    const estadisticas = await (db as any).intentoLogin.groupBy({
       by: ['ip'],
       where: {
         ...where,

@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const config = await db.configuracionFrigorifico.findFirst()
     const establecimiento = config?.nombre || 'Frigorífico'
     const cuit = config?.cuit || ''
-    const habilitacion = config?.numeroHabilitacion || ''
+    const habilitacion = config?.numeroEstablecimiento || ''
 
     // Validar fechas
     const desde = fechaDesde ? new Date(fechaDesde) : new Date(new Date().setHours(0, 0, 0, 0))
@@ -121,41 +121,34 @@ async function generarReporteFaenaDiaria(
   desde: Date, hasta: Date, establecimiento: string, cuit: string, habilitacion: string
 ) {
   // Reporte de faena diaria con detalle de tropas, especies, pesos, destinos
+  // Romaneo doesn't have a tropa relation - it has tropaCodigo as a string field
   const romaneos = await db.romaneo.findMany({
     where: {
       fecha: { gte: desde, lte: hasta },
-      estado: { in: ['CONFIRMADO', 'VISTO_BUENO'] }
+      estado: { in: ['CONFIRMADO'] }
     },
     include: {
-      tropa: {
-        select: {
-          codigo: true,
-          especie: true,
-          cantidadCabezas: true,
-          procedencia: true,
-          propietario: { select: { nombre: true, cuit: true } }
-        }
-      },
-      tipificador: { select: { matricula: true, nombre: true } }
+      tipificador: { select: { matricula: true, nombre: true, apellido: true } }
     },
     orderBy: { fecha: 'asc' }
-  })
+  }) as any[]
 
-  // Agrupar por tropa
+  // Agrupar por tropa (using tropaCodigo string field)
   const porTropa = new Map<string, any>()
   for (const r of romaneos) {
-    const tropaKey = r.tropaCodigo || r.tropa?.codigo || 'Sin tropa'
+    const tropaKey = r.tropaCodigo || 'Sin tropa'
     if (!porTropa.has(tropaKey)) {
       porTropa.set(tropaKey, {
         tropaCodigo: tropaKey,
-        especie: r.tropa?.especie || 'BOVINO',
-        procedencia: r.tropa?.procedencia || '',
-        propietario: r.tropa?.propietario?.nombre || '',
-        propietarioCuit: r.tropa?.propietario?.cuit || '',
-        cantidadCabezas: r.tropa?.cantidadCabezas || 0,
+        especie: 'BOVINO',
+        procedencia: '',
+        propietario: '',
+        propietarioCuit: '',
+        cantidadCabezas: 0,
         animales: []
       })
     }
+    porTropa.get(tropaKey)!.cantidadCabezas++
     porTropa.get(tropaKey)!.animales.push({
       garron: r.garron,
       fecha: r.fecha,
@@ -166,9 +159,7 @@ async function generarReporteFaenaDiaria(
       denticion: r.denticion,
       tipoAnimal: r.tipoAnimal,
       raza: r.raza,
-      sigla: r.sigla,
       tipificador: r.tipificador?.matricula || '',
-      destino: r.destino || 'CONSUMO'
     })
   }
 
@@ -204,23 +195,20 @@ async function generarReporteRendimiento(
   const romaneos = await db.romaneo.findMany({
     where: {
       fecha: { gte: desde, lte: hasta },
-      estado: { in: ['CONFIRMADO', 'VISTO_BUENO'] },
+      estado: { in: ['CONFIRMADO'] },
       pesoVivo: { gt: 0 }
     },
-    include: {
-      tropa: { select: { codigo: true, especie: true, cantidadCabezas: true } }
-    },
     orderBy: { fecha: 'asc' }
-  })
+  }) as any[]
 
   // Agrupar por tropa y calcular rendimientos
   const porTropa = new Map<string, any>()
   for (const r of romaneos) {
-    const key = r.tropaCodigo || r.tropa?.codigo || 'Sin tropa'
+    const key = r.tropaCodigo || 'Sin tropa'
     if (!porTropa.has(key)) {
       porTropa.set(key, {
         tropaCodigo: key,
-        especie: r.tropa?.especie || 'BOVINO',
+        especie: 'BOVINO',
         animales: [],
         totalPesoVivo: 0,
         totalPesoFrio: 0,
@@ -242,7 +230,7 @@ async function generarReporteRendimiento(
   }
 
   // Calcular rendimiento por tropa
-  const rendimientoDetalle = Array.from(porTropa.values()).map(t => ({
+  const rendimientoDetalle = Array.from(porTropa.values()).map((t: any) => ({
     ...t,
     rendimientoPromedio: t.totalPesoVivo > 0
       ? ((t.totalPesoFrio / t.totalPesoVivo) * 100).toFixed(2) + '%'
@@ -252,7 +240,7 @@ async function generarReporteRendimiento(
       : 0
   }))
 
-  const totalGeneral = rendimientoDetalle.reduce((s, t) => ({
+  const totalGeneral = rendimientoDetalle.reduce((s: any, t: any) => ({
     pesoVivo: s.pesoVivo + t.totalPesoVivo,
     pesoFrio: s.pesoFrio + t.totalPesoFrio,
     cantidad: s.cantidad + t.cantidad
@@ -285,38 +273,27 @@ async function generarReporteDesposte(
   desde: Date, hasta: Date, establecimiento: string, cuit: string, habilitacion: string
 ) {
   // Reporte de desposte/despostada con cortes y rendimientos
+  // IngresoDespostada has: tropaCodigo, pesoKg (not pesoTotal), no detalles, no merma
   const despostadas = await db.ingresoDespostada.findMany({
     where: {
       fecha: { gte: desde, lte: hasta }
     },
-    include: {
-      detalles: {
-        include: {
-          producto: { select: { nombre: true, codigo: true } }
-        }
-      }
-    },
     orderBy: { fecha: 'desc' }
-  })
+  }) as any[]
 
-  // Si no hay modelo de detalle, generar reporte básico
+  // Generar reporte básico con available fields
   const detalleDesposte = despostadas.map(d => ({
     id: d.id,
     fecha: d.fecha,
     tropa: d.tropaCodigo || '',
-    pesoTotalIngreso: d.pesoTotal || 0,
-    pesoTotalDesposte: d.detalles?.reduce((s: number, det: any) => s + (det.peso || 0), 0) || 0,
-    merma: d.merma || 0,
-    porcentajeMerma: d.pesoTotal > 0 ? (((d.merma || 0) / d.pesoTotal) * 100).toFixed(2) + '%' : '0%',
-    productos: d.detalles?.map((det: any) => ({
-      producto: det.producto?.nombre || det.producto?.codigo || '',
-      peso: det.peso || 0,
-      rendimiento: d.pesoTotal > 0 ? (((det.peso || 0) / d.pesoTotal) * 100).toFixed(2) + '%' : '0%'
-    })) || []
+    pesoTotalIngreso: d.pesoKg || 0,
+    tipoMedia: d.tipoMedia || '',
+    estado: d.estado || '',
+    camaraOrigen: d.camaraOrigen?.nombre || '',
+    camaraDestino: d.camaraDestino?.nombre || '',
   }))
 
-  const totalPesoIngreso = despostadas.reduce((s, d) => s + (d.pesoTotal || 0), 0)
-  const totalMerma = despostadas.reduce((s, d) => s + (d.merma || 0), 0)
+  const totalPesoIngreso = despostadas.reduce((s: number, d: any) => s + (d.pesoKg || 0), 0)
 
   return {
     titulo: 'Reporte de Desposte - SIF',
@@ -329,10 +306,6 @@ async function generarReporteDesposte(
     resumen: {
       totalDespostadas: despostadas.length,
       totalPesoIngreso: Math.round(totalPesoIngreso * 100) / 100,
-      totalMerma: Math.round(totalMerma * 100) / 100,
-      porcentajeMerma: totalPesoIngreso > 0
-        ? ((totalMerma / totalPesoIngreso) * 100).toFixed(2) + '%'
-        : '0%'
     },
     detalle: detalleDesposte
   }
@@ -342,36 +315,39 @@ async function generarReporteStockCamaras(
   establecimiento: string, cuit: string, habilitacion: string
 ) {
   // Reporte de stock actual en cámaras
+  // Camara doesn't have temperatura field
   const camaras = await db.camara.findMany({
     where: { activo: true },
     orderBy: { nombre: 'asc' }
   })
 
-  const stockDetalle = []
+  // MediaRes doesn't have especie or ingresoCamaraAt fields
+  const stockDetalle: Array<{
+    camaraId: string
+    camaraNombre: string
+    tipo: string
+    totalMedias: number
+    totalKg: number
+    mediasAntiguas: number
+    alertaStock: boolean
+  }> = []
+
   for (const camara of camaras) {
     const medias = await db.mediaRes.findMany({
       where: { camaraId: camara.id, estado: 'EN_CAMARA' },
-      select: { peso: true, especie: true, ingresoCamaraAt: true }
+      select: { peso: true, createdAt: true }
     })
 
-    const bovinos = medias.filter(m => !m.especie || m.especie === 'BOVINO')
-    const equinos = medias.filter(m => m.especie === 'EQUINO')
-
-    // Detectar medias con más de 15 días en cámara
+    // Detectar medias con más de 15 días en cámara (use createdAt as proxy)
     const hace15Dias = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
-    const mediasAntiguas = medias.filter(m => m.ingresoCamaraAt && m.ingresoCamaraAt < hace15Dias)
+    const mediasAntiguas = medias.filter(m => m.createdAt && m.createdAt < hace15Dias)
 
     stockDetalle.push({
       camaraId: camara.id,
       camaraNombre: camara.nombre,
       tipo: camara.tipo,
-      temperatura: camara.temperatura || null,
       totalMedias: medias.length,
       totalKg: Math.round(medias.reduce((s, m) => s + (m.peso || 0), 0) * 100) / 100,
-      bovinosMedias: bovinos.length,
-      bovinosKg: Math.round(bovinos.reduce((s, m) => s + (m.peso || 0), 0) * 100) / 100,
-      equinosMedias: equinos.length,
-      equinosKg: Math.round(equinos.reduce((s, m) => s + (m.peso || 0), 0) * 100) / 100,
       mediasAntiguas: mediasAntiguas.length,
       alertaStock: mediasAntiguas.length > 0
     })
@@ -404,24 +380,25 @@ async function generarReporteStockCamaras(
 async function generarReporteDecomisos(
   desde: Date, hasta: Date, establecimiento: string, cuit: string, habilitacion: string
 ) {
-  // Reporte de decomisos / decomisos
+  // Reporte de decomisos
+  // Decomiso has: motivo (not causa), peso, tipo, tropaCodigo - no especie, no destino
   const decomisos = await db.decomiso.findMany({
     where: {
       fecha: { gte: desde, lte: hasta }
     },
     orderBy: { fecha: 'desc' }
-  })
+  }) as any[]
 
   // Agrupar por motivo
   const porMotivo = new Map<string, { motivo: string; cantidad: number; peso: number }>()
   for (const d of decomisos) {
-    const motivo = d.motivo || d.causa || 'Sin especificar'
+    const motivo = d.motivo || 'Sin especificar'
     if (!porMotivo.has(motivo)) {
       porMotivo.set(motivo, { motivo, cantidad: 0, peso: 0 })
     }
     const entry = porMotivo.get(motivo)!
     entry.cantidad++
-    entry.peso += d.peso || 0
+    entry.peso += d.peso || d.pesoKg || 0
   }
 
   return {
@@ -434,19 +411,18 @@ async function generarReporteDecomisos(
     periodo: { desde: desde.toISOString().slice(0, 10), hasta: hasta.toISOString().slice(0, 10) },
     resumen: {
       totalDecomisos: decomisos.length,
-      totalPeso: Math.round(decomisos.reduce((s, d) => s + (d.peso || 0), 0) * 100) / 100,
+      totalPeso: Math.round(decomisos.reduce((s, d) => s + (d.peso || d.pesoKg || 0), 0) * 100) / 100,
       motivosUnicos: porMotivo.size
     },
     porMotivo: Array.from(porMotivo.values()),
     detalle: decomisos.map(d => ({
       id: d.id,
       fecha: d.fecha,
-      especie: d.especie || 'BOVINO',
+      tipo: d.tipo || '',
       tropa: d.tropaCodigo || '',
       garron: d.garron || null,
-      motivo: d.motivo || d.causa || '',
-      peso: d.peso || 0,
-      destino: d.destino || 'DESTRUCCION',
+      motivo: d.motivo || '',
+      peso: d.peso || d.pesoKg || 0,
       observaciones: d.observaciones || ''
     }))
   }
@@ -456,17 +432,17 @@ async function generarReporteMovimientoHacienda(
   desde: Date, hasta: Date, establecimiento: string, cuit: string, habilitacion: string
 ) {
   // Reporte de movimiento de hacienda (ingresos de tropas)
+  // Tropa has: fechaRecepcion (not fechaIngreso), productor (not propietario), corral
   const tropas = await db.tropa.findMany({
     where: {
-      fechaIngreso: { gte: desde, lte: hasta }
+      fechaRecepcion: { gte: desde, lte: hasta }
     },
     include: {
-      procedencia: { select: { nombre: true } },
-      propietario: { select: { nombre: true, cuit: true } },
+      productor: { select: { nombre: true, cuit: true } },
       corral: { select: { nombre: true } }
     },
-    orderBy: { fechaIngreso: 'desc' }
-  })
+    orderBy: { fechaRecepcion: 'desc' }
+  }) as any[]
 
   // Agrupar por especie
   const porEspecie = new Map<string, { especie: string; cantidad: number; cabezas: number }>()
@@ -496,11 +472,10 @@ async function generarReporteMovimientoHacienda(
     detalle: tropas.map(t => ({
       tropaCodigo: t.codigo,
       especie: t.especie || 'BOVINO',
-      fechaIngreso: t.fechaIngreso,
+      fechaIngreso: t.fechaRecepcion,
       cantidadCabezas: t.cantidadCabezas || 0,
-      procedencia: t.procedencia?.nombre || '',
-      propietario: t.propietario?.nombre || '',
-      propietarioCuit: t.propietario?.cuit || '',
+      productor: t.productor?.nombre || '',
+      propietarioCuit: t.productor?.cuit || '',
       corral: t.corral?.nombre || '',
       estado: t.estado || ''
     }))
@@ -511,6 +486,7 @@ async function generarReporteExpedicion(
   desde: Date, hasta: Date, establecimiento: string, cuit: string, habilitacion: string
 ) {
   // Reporte de expedición/despachos
+  // Despacho has: estado (EstadoDespacho enum), items, operador
   const despachos = await db.despacho.findMany({
     where: {
       fecha: { gte: desde, lte: hasta },
@@ -526,7 +502,7 @@ async function generarReporteExpedicion(
       operador: { select: { nombre: true } }
     },
     orderBy: { fecha: 'desc' }
-  })
+  }) as any[]
 
   return {
     titulo: 'Reporte de Expedición - SIF',
@@ -546,7 +522,7 @@ async function generarReporteExpedicion(
       fecha: d.fecha,
       destino: d.destino || '',
       patenteCamion: d.patenteCamion || '',
-      chofer: d.chofer || '',
+      chofer: d.chofer || d.choferNombre || '',
       remito: d.remito || '',
       cantidadMedias: d.cantidadMedias || 0,
       kgTotal: d.kgTotal || 0,

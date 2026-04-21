@@ -43,11 +43,7 @@ export async function GET(request: NextRequest) {
     const movimientos = await db.movimientoInsumo.findMany({
       where,
       include: {
-        insumo: {
-          include: {
-            categoria: true
-          }
-        },
+        insumo: true,
         depositoOrigen: true,
         depositoDestino: true
       },
@@ -73,7 +69,7 @@ async function actualizarStock(
   // Buscar o crear registro de stock
   let stock = await db.stockInsumo.findUnique({
     where: {
-      insumoId_depositoId: { insumoId, depositoId }
+      stockInsumo_insumo_deposito: { insumoId, depositoId }
     }
   });
 
@@ -327,7 +323,7 @@ export async function DELETE(request: NextRequest) {
         if (movimiento.depositoDestinoId) {
           const stock = await db.stockInsumo.findUnique({
             where: {
-              insumoId_depositoId: {
+              stockInsumo_insumo_deposito: {
                 insumoId: movimiento.insumoId,
                 depositoId: movimiento.depositoDestinoId
               }
@@ -351,7 +347,7 @@ export async function DELETE(request: NextRequest) {
         if (movimiento.depositoOrigenId) {
           const stock = await db.stockInsumo.findUnique({
             where: {
-              insumoId_depositoId: {
+              stockInsumo_insumo_deposito: {
                 insumoId: movimiento.insumoId,
                 depositoId: movimiento.depositoOrigenId
               }
@@ -379,7 +375,7 @@ export async function DELETE(request: NextRequest) {
         if (movimiento.depositoOrigenId) {
           const stockOrigen = await db.stockInsumo.findUnique({
             where: {
-              insumoId_depositoId: {
+              stockInsumo_insumo_deposito: {
                 insumoId: movimiento.insumoId,
                 depositoId: movimiento.depositoOrigenId
               }
@@ -403,7 +399,7 @@ export async function DELETE(request: NextRequest) {
         if (movimiento.depositoDestinoId) {
           const stockDestino = await db.stockInsumo.findUnique({
             where: {
-              insumoId_depositoId: {
+              stockInsumo_insumo_deposito: {
                 insumoId: movimiento.insumoId,
                 depositoId: movimiento.depositoDestinoId
               }
@@ -423,7 +419,7 @@ export async function DELETE(request: NextRequest) {
         if (movimiento.depositoDestinoId) {
           const stock = await db.stockInsumo.findUnique({
             where: {
-              insumoId_depositoId: {
+              stockInsumo_insumo_deposito: {
                 insumoId: movimiento.insumoId,
                 depositoId: movimiento.depositoDestinoId
               }
@@ -443,7 +439,7 @@ export async function DELETE(request: NextRequest) {
         if (movimiento.depositoOrigenId) {
           const stock = await db.stockInsumo.findUnique({
             where: {
-              insumoId_depositoId: {
+              stockInsumo_insumo_deposito: {
                 insumoId: movimiento.insumoId,
                 depositoId: movimiento.depositoOrigenId
               }
@@ -471,7 +467,7 @@ export async function DELETE(request: NextRequest) {
         if (movimiento.depositoOrigenId) {
           const stock = await db.stockInsumo.findUnique({
             where: {
-              insumoId_depositoId: {
+              stockInsumo_insumo_deposito: {
                 insumoId: movimiento.insumoId,
                 depositoId: movimiento.depositoOrigenId
               }

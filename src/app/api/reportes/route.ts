@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { Especie } from '@prisma/client'
+import { Especie, EstadoTropa } from '@prisma/client'
 import { checkPermission } from '@/lib/auth-helpers'
 
 // GET - Obtener datos de reportes con filtros avanzados
@@ -44,21 +44,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Construir where clause para romaneos
+    // Romaneo doesn't have a tropa relation - it has tropaCodigo as a string field
     const whereClause: Record<string, unknown> = {
       ...(Object.keys(dateFilter).length > 0 && { fecha: dateFilter }),
       ...(Object.keys(fechaFaenaFilter).length > 0 && { fecha: fechaFaenaFilter })
     }
     
-    // Filtros de tropa anidados
-    if (tipo !== 'todos' || tropaCodigo || clienteId || corralId || estado) {
-      whereClause.tropa = {
-        ...(tipo !== 'todos' && { especie: tipo.toUpperCase() as Especie }),
-        ...(tropaCodigo && { codigo: { contains: tropaCodigo.toUpperCase() } }),
-        ...(clienteId && { productorId: clienteId }),
-        ...(corralId && { corralId }),
-        ...(estado && { estado })
-      }
-    }
     if (tipificadorId) {
       whereClause.tipificadorId = tipificadorId
     }
@@ -67,11 +58,10 @@ export async function GET(request: NextRequest) {
       where: whereClause,
       include: {
         tipificador: true,
-        tropa: { include: { productor: true, corral: true } }
       },
       orderBy: { fecha: 'desc' },
       take: 500
-    })
+    }) as any[]
 
     // RESUMEN - Estadísticas generales
     const totalAnimalesFaenados = romaneos.length
@@ -116,15 +106,16 @@ export async function GET(request: NextRequest) {
       } else {
         acc.push({
           tropaCodigo: codigo,
-          productor: r.tropa?.productor?.nombre || '-',
+          productor: '-',
           cantidad: 1,
           pesoVivo: r.pesoVivo || 0,
           pesoFaena: r.pesoTotal || 0,
-          tipoAnimal: r.tipoAnimal || '-'
+          tipoAnimal: r.tipoAnimal || '-',
+          rinde: r.pesoVivo && r.pesoTotal ? (r.pesoTotal / r.pesoVivo) * 100 : 0
         })
       }
       return acc
-    }, [] as { tropaCodigo: string; productor: string; cantidad: number; pesoVivo: number; pesoFaena: number; tipoAnimal: string }[])
+    }, [] as { tropaCodigo: string; productor: string; cantidad: number; pesoVivo: number; pesoFaena: number; tipoAnimal: string; rinde: number }[])
 
     // Calcular rinde por tropa
     rendimientoPorTropa.forEach(t => {
@@ -145,11 +136,12 @@ export async function GET(request: NextRequest) {
           nombre,
           cantidad: 1,
           pesoVivo: r.pesoVivo || 0,
-          pesoFaena: r.pesoTotal || 0
+          pesoFaena: r.pesoTotal || 0,
+          rinde: r.pesoVivo && r.pesoTotal ? (r.pesoTotal / r.pesoVivo) * 100 : 0
         })
       }
       return acc
-    }, [] as { nombre: string; cantidad: number; pesoVivo: number; pesoFaena: number }[])
+    }, [] as { nombre: string; cantidad: number; pesoVivo: number; pesoFaena: number; rinde: number }[])
 
     rendimientoPorTipificador.forEach(t => {
       t.rinde = t.pesoVivo > 0 ? (t.pesoFaena / t.pesoVivo) * 100 : 0
@@ -168,19 +160,27 @@ export async function GET(request: NextRequest) {
       pesoMediaDer: r.pesoMediaDer,
       rinde: r.rinde || (r.pesoVivo && r.pesoTotal ? (r.pesoTotal / r.pesoVivo) * 100 : 0),
       tipificador: r.tipificador?.nombre,
-      corral: r.tropa?.corral?.nombre,
-      estado: r.tropa?.estado
+      estado: r.estado
     }))
 
     // Reporte de Rendimiento por Tropa (completo)
-    // Obtener tropas y sus romaneos por tropaCodigo
+    // Build tropa where clause with proper types
+    const tropaWhere: Record<string, unknown> = {}
+    if (tipo !== 'todos') {
+      tropaWhere.especie = tipo.toUpperCase() as Especie
+    }
+    if (tropaCodigo) {
+      tropaWhere.codigo = { contains: tropaCodigo.toUpperCase() }
+    }
+    if (clienteId) {
+      tropaWhere.productorId = clienteId
+    }
+    if (estado) {
+      tropaWhere.estado = estado as EstadoTropa
+    }
+
     const tropasConRomaneo = await db.tropa.findMany({
-      where: {
-        ...(tipo !== 'todos' && { especie: tipo.toUpperCase() as Especie }),
-        ...(tropaCodigo && { codigo: { contains: tropaCodigo.toUpperCase() } }),
-        ...(clienteId && { productorId: clienteId }),
-        ...(estado && { estado })
-      },
+      where: tropaWhere,
       include: {
         productor: true,
         corral: true,
@@ -188,10 +188,10 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { createdAt: 'desc' },
       take: 100
-    })
+    }) as any[]
 
     // Obtener todos los romaneos que corresponden a estas tropas para calcular pesos reales
-    const tropaCodigos = tropasConRomaneo.map(t => t.codigo)
+    const tropaCodigos = tropasConRomaneo.map((t: any) => t.codigo)
     const romaneosTropas = await db.romaneo.findMany({
       where: {
         tropaCodigo: { in: tropaCodigos }

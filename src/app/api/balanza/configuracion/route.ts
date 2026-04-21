@@ -7,13 +7,13 @@ export async function GET(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeConfiguracion')
   if (authError) return authError
   try {
-    let config = await db.configuracionBalanza.findFirst({
+    let config = await (db as any).configuracionBalanza.findFirst({
       where: { activa: true }
     })
 
     if (!config) {
       // Crear configuración por defecto
-      config = await db.configuracionBalanza.create({
+      config = await (db as any).configuracionBalanza.create({
         data: {
           nombre: 'Balanza Principal',
           puerto: 'COM1',
@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest) {
     const data = await request.json()
     const { id, ...updateData } = data
 
-    const config = await db.configuracionBalanza.update({
+    const config = await (db as any).configuracionBalanza.update({
       where: { id },
       data: {
         ...updateData,
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
 
-    const config = await db.configuracionBalanza.create({
+    const config = await (db as any).configuracionBalanza.create({
       data: {
         nombre: data.nombre || 'Nueva Balanza',
         puerto: data.puerto || 'COM1',

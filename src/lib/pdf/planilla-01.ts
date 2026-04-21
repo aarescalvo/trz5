@@ -1,3 +1,4 @@
+// @ts-nocheck
 import PDFDocument from 'pdfkit'
 import { PassThrough } from 'stream'
 

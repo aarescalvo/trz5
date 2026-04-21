@@ -110,8 +110,9 @@ export async function exportReportToFile(payload: ExportReportPayload): Promise<
   })
 
   sheet.columns.forEach((column) => {
-    const maxLength = column.values.reduce((max, cellValue) => {
-      const text = cellValue ? String(cellValue) : ''
+    const values = column.values || []
+    const maxLength = values.reduce((max: number, cellValue) => {
+      const text = cellValue != null ? String(cellValue) : ''
       return Math.max(max, text.length)
     }, 10)
     column.width = Math.min(Math.max(maxLength + 2, 12), 30)
@@ -152,8 +153,9 @@ export async function exportReportToFile(payload: ExportReportPayload): Promise<
     })
 
     camaraSheet.columns.forEach((column) => {
-      const maxLength = column.values.reduce((max, cellValue) => {
-        const text = cellValue ? String(cellValue) : ''
+      const values = column.values || []
+      const maxLength = values.reduce((max: number, cellValue) => {
+        const text = cellValue != null ? String(cellValue) : ''
         return Math.max(max, text.length)
       }, 10)
       column.width = Math.min(Math.max(maxLength + 2, 12), 30)
@@ -185,7 +187,11 @@ function formatCellValue(value: unknown): string | number | boolean | null {
     return JSON.stringify(value)
   }
 
-  return value
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'string') {
+    return value
+  }
+
+  return String(value)
 }
 
 function getReportTitle(tipo: string) {

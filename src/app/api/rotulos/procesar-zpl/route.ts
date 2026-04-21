@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (rotulo.tipoPlantilla !== 'ZPL' || !rotulo.contenidoZPL) {
+    if (rotulo.tipoImpresora !== 'ZEBRA' || !rotulo.contenido) {
       return NextResponse.json(
         { error: 'El rótulo no es de tipo ZPL o no tiene contenido' },
         { status: 400 }
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Procesar el ZPL reemplazando las variables
-    const zplProcesado = procesarZPL(rotulo.contenidoZPL, datos, rotulo.camposZPL)
+    const zplProcesado = procesarZPL(rotulo.contenido, datos, rotulo.variables)
 
     return NextResponse.json({
       zpl: zplProcesado,
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    if (rotulo.tipoPlantilla !== 'ZPL' || !rotulo.contenidoZPL) {
+    if (rotulo.tipoImpresora !== 'ZEBRA' || !rotulo.contenido) {
       return NextResponse.json(
         { error: 'El rótulo no es de tipo ZPL o no tiene contenido' },
         { status: 400 }
@@ -96,14 +96,14 @@ export async function GET(request: NextRequest) {
     const datosPrueba = generarDatosPrueba()
     
     // Procesar el ZPL con datos de prueba
-    const zplProcesado = procesarZPL(rotulo.contenidoZPL, datosPrueba, rotulo.camposZPL)
+    const zplProcesado = procesarZPL(rotulo.contenido, datosPrueba, rotulo.variables)
 
     // Obtener variables detectadas
-    const variablesDetectadas = rotulo.camposZPL ? JSON.parse(rotulo.camposZPL) : []
+    const variablesDetectadas = rotulo.variables ? JSON.parse(rotulo.variables) : []
 
     return NextResponse.json({
       zpl: zplProcesado,
-      zplOriginal: rotulo.contenidoZPL,
+      zplOriginal: rotulo.contenido,
       variables: variablesDetectadas,
       rotulo: {
         id: rotulo.id,

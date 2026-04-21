@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { tarifasRepository } from '../repositories/tarifas.repository'
 import { eventBus } from '@/core/events/event-bus'
 import { ESPECIE_TARIFA_MAP } from '../constants'

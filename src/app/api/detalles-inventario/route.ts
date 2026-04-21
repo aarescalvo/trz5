@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
             codigo: true,
             nombre: true,
             unidadMedida: true,
-            costoUnitario: true
+            precioUnitario: true
           }
         }
       },
@@ -92,12 +92,10 @@ export async function POST(request: NextRequest) {
     }
     
     // Verificar que no exista ya este insumo en el inventario
-    const existente = await db.detalleInventario.findUnique({
+    const existente = await db.detalleInventario.findFirst({
       where: {
-        inventarioId_insumoId: {
-          inventarioId,
-          insumoId
-        }
+        inventarioId,
+        insumoId
       }
     })
     

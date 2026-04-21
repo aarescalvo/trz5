@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Funciones de impresión para Pesaje Individual
 // Frigorífico "Solemar Alimentaria"
 

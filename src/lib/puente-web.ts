@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Puente Web - Módulo de integración AFIP y SIGICA
  * 

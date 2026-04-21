@@ -15,10 +15,16 @@ const logger = createLogger('AuthHelpers')
 export async function validarPermiso(operadorId: string | null | undefined, permiso: string): Promise<boolean> {
   if (!operadorId) return false
 
+  type OperadorPermCheck = {
+    rol: string
+    activo: boolean
+    [key: string]: unknown
+  }
+
   const operador = await db.operador.findUnique({
     where: { id: operadorId },
     select: { rol: true, activo: true, [permiso]: true }
-  })
+  }) as OperadorPermCheck | null
 
   if (!operador) return false
   if (!operador.activo) return false
@@ -27,7 +33,7 @@ export async function validarPermiso(operadorId: string | null | undefined, perm
   if (operador.rol === 'ADMINISTRADOR') return true
 
   // Verificar el permiso específico
-  return operador[permiso as keyof typeof operador] === true
+  return operador[permiso] === true
 }
 
 /**

@@ -287,7 +287,7 @@ export function validateOrError<T>(
   const result = schema.safeParse(data)
   
   if (!result.success) {
-    const errors = result.error.errors.map(e => ({
+    const errors = result.error.issues.map(e => ({
       field: e.path.join('.'),
       message: e.message,
     }))

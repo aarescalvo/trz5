@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     if (tipo) where.tipo = tipo;
     if (imputable !== null) where.imputable = imputable === 'true';
     
-    const cuentas = await db.planCuenta.findMany({
+    const cuentas = await (db as any).planCuenta.findMany({
       where,
       orderBy: { codigo: 'asc' }
     });
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const cuenta = await db.planCuenta.create({
+    const cuenta = await (db as any).planCuenta.create({
       data: {
         codigo,
         nombre,

@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import { checkPermission } from '@/lib/auth-helpers'
 
 // GET - Listar autorizaciones pendientes
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeReportes')
   if (authError) return authError
   try {
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 }
 
 // POST - Crear nueva solicitud de autorización
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeReportes')
   if (authError) return authError
   try {
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
 }
 
 // PUT - Autorizar o rechazar
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeReportes')
   if (authError) return authError
   try {
@@ -113,10 +113,10 @@ export async function PUT(request: Request) {
     // Verificar que el operador puede autorizar
     const operador = await db.operador.findUnique({
       where: { id: autorizadoPorId },
-      select: { puedeAutorizarReportes: true, activo: true }
+      select: { puedeReportes: true, activo: true }
     })
 
-    if (!operador?.activo || !operador.puedeAutorizarReportes) {
+    if (!operador?.activo || !operador.puedeReportes) {
       return NextResponse.json({ 
         success: false, 
         error: 'No tiene permisos para autorizar reportes' 

@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
     
     if (submodulo) {
-      where.submodulo = submodulo
+      where.modulo = submodulo
     }
     
     if (accion) {
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     if (busquedaTexto) {
       where.OR = [
         { descripcion: { contains: busquedaTexto } },
-        { entidadNombre: { contains: busquedaTexto } },
+        { entidad: { contains: busquedaTexto } },
         { operador: { nombre: { contains: busquedaTexto } } },
         { operador: { usuario: { contains: busquedaTexto } } }
       ]

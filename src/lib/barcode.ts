@@ -38,7 +38,7 @@ export function generateBarcodeSVG(code: string, options: BarcodeOptions = {}): 
       margin: opts.margin,
     });
     
-    return canvas.toBuffer('image/svg+xml').toString('utf-8');
+    return canvas.toBuffer('image/svg+xml' as any).toString('utf-8');
   } catch (error) {
     throw new Error(`Error generando código de barras: ${error}`);
   }
@@ -246,13 +246,14 @@ export function generateBarcodeClient(
 export function generateBarcodeSVGClient(code: string, options: BarcodeOptions = {}): string {
   const opts = { ...defaultOptions, ...options };
   
-  return JsBarcode({}, code, {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  JsBarcode(svg, code, {
     format: opts.format,
     width: opts.width,
     height: opts.height,
     displayValue: opts.displayValue,
     fontSize: opts.fontSize,
     margin: opts.margin,
-    xmlDocument: document,
   });
+  return svg.outerHTML;
 }

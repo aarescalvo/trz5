@@ -8,8 +8,9 @@ import { checkPermission } from '@/lib/auth-helpers'
 export async function POST(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeConfiguracion')
   if (authError) return authError
+  let data: any
   try {
-    const data = await request.json()
+    data = await request.json()
     
     // Validar datos requeridos
     if (!data.destinatarios || data.destinatarios.length === 0) {
@@ -125,11 +126,11 @@ export async function POST(request: NextRequest) {
     console.error('Error al enviar email:', error)
     
     // Registrar error en historial si hay destinatarios
-    if (data.destinatarios) {
+    if (data?.destinatarios) {
       try {
-        const destinatarioEmails = Array.isArray(data.destinatarios) 
-          ? data.destinatarios 
-          : data.destinatarios.split(',').map((d: string) => d.trim())
+        const destinatarioEmails = Array.isArray(data?.destinatarios) 
+          ? data?.destinatarios 
+          : data?.destinatarios.split(',').map((d: string) => d.trim())
         
         for (const email of destinatarioEmails) {
           const destinatario = await db.destinatarioReporte.findFirst({
@@ -138,10 +139,10 @@ export async function POST(request: NextRequest) {
           
           await db.historialEnvio.create({
             data: {
-              programacionId: data.programacionId || null,
+              programacionId: data?.programacionId || null,
               destinatarioId: destinatario?.id || null,
-              tipoReporte: data.tipoReporte || TipoReporteEmail.PERSONALIZADO,
-              asunto: data.asunto || 'Sin asunto',
+              tipoReporte: data?.tipoReporte || TipoReporteEmail.PERSONALIZADO,
+              asunto: data?.asunto || 'Sin asunto',
               destinatarioEmail: email,
               estado: EstadoEnvioEmail.ERROR,
               error: error instanceof Error ? error.message : 'Error desconocido',

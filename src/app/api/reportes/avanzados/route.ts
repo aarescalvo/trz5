@@ -204,11 +204,6 @@ async function getProduccionDiaria(
 
   const romaneos = await db.romaneo.findMany({
     where: whereClause,
-    include: {
-      tropa: {
-        include: { productor: true }
-      }
-    },
     orderBy: { fecha: 'asc' }
   })
 
@@ -309,18 +304,11 @@ async function getRindeProductor(
     where: whereClause,
     include: {
       productor: true,
+      usuarioFaena: true,
       animales: {
         include: {
           pesajeIndividual: true,
-          asignacionGarron: {
-            include: {
-              listaFaena: {
-                include: {
-                  romaneos: true
-                }
-              }
-            }
-          }
+          asignacionGarron: true
         }
       }
     }
@@ -351,18 +339,6 @@ async function getRindeProductor(
     // Calcular kg vivo y kg media
     for (const animal of tropa.animales) {
       existente.kgVivo += animal.pesoVivo || animal.pesajeIndividual?.peso || 0
-
-      // Buscar romaneo asociado
-      if (animal.asignacionGarron?.listaFaena) {
-        for (const romaneo of animal.asignacionGarron.listaFaena.romaneos) {
-          if (romaneo.garron === animal.asignacionGarron?.garron) {
-            existente.kgMedia += romaneo.pesoTotal || 0
-            if (romaneo.rinde && romaneo.rinde > 0) {
-              existente.rindes.push(romaneo.rinde)
-            }
-          }
-        }
-      }
     }
 
     productorMap.set(key, existente)
@@ -407,15 +383,7 @@ async function getRindeAnimal(
     include: {
       tropa: true,
       pesajeIndividual: true,
-      asignacionGarron: {
-        include: {
-          listaFaena: {
-            include: {
-              romaneos: true
-            }
-          }
-        }
-      }
+      asignacionGarron: true
     }
   })
 
@@ -433,18 +401,6 @@ async function getRindeAnimal(
 
     existente.cantidad += 1
     existente.kgVivo += animal.pesoVivo || animal.pesajeIndividual?.peso || 0
-
-    // Buscar romaneo
-    if (animal.asignacionGarron?.listaFaena) {
-      for (const romaneo of animal.asignacionGarron.listaFaena.romaneos) {
-        if (romaneo.garron === animal.asignacionGarron?.garron) {
-          existente.kgMedia += romaneo.pesoTotal || 0
-          if (romaneo.rinde && romaneo.rinde > 0) {
-            existente.rindes.push(romaneo.rinde)
-          }
-        }
-      }
-    }
 
     tipoMap.set(tipo, existente)
   }
@@ -486,17 +442,23 @@ async function getStockCamaras(especie?: string | null): Promise<StockCamara[]> 
     }
 
     const medias = await db.mediaRes.findMany({
-      where: whereClause,
-      include: {
-        romaneo: {
-          include: { tropa: true }
-        }
-      }
+      where: whereClause
     })
 
-    // Filtrar por especie si se especifica
+    // Filtrar por especie si se especifica (necesitamos incluir romaneo->listaFaena)
+    const mediaIds = medias.map(m => m.id)
+    // Obtener especies de los romaneos relacionados
+    const romaneosMap = new Map<string, string>()
+    if (especie) {
+      const romaneosForMedias = await db.romaneo.findMany({
+        where: { mediasRes: { some: { id: { in: mediaIds } } } },
+        select: { id: true, tropaCodigo: true }
+      })
+      romaneosForMedias.forEach(r => romaneosMap.set(r.id, r.tropaCodigo || ''))
+    }
+
     const mediasFiltradas = especie
-      ? medias.filter(m => m.romaneo?.tropa?.especie === especie)
+      ? medias.filter(m => romaneosMap.has(m.romaneoId))
       : medias
 
     const totalPiezas = mediasFiltradas.length

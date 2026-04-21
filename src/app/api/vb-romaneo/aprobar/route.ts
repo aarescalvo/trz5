@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const resultados = []
+    const resultados: any[] = []
 
     for (const garron of garrones) {
       // Buscar el romaneo
@@ -98,9 +98,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const aprobados = resultados.filter(r => r.success && r.estado === 'CONFIRMADO').length
-    const rechazados = resultados.filter(r => r.success && r.estado === 'ANULADO').length
-    const errores = resultados.filter(r => !r.success).length
+    const aprobados = resultados.filter((r: any) => r.success && r.estado === 'CONFIRMADO').length
+    const rechazados = resultados.filter((r: any) => r.success && r.estado === 'ANULADO').length
+    const errores = resultados.filter((r: any) => !r.success).length
 
     return NextResponse.json({
       success: true,

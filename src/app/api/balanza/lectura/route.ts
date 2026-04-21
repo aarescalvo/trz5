@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Obtener configuración de balanza
-    const config = await db.configuracionBalanza.findFirst({
+    const config = await (db as any).configuracionBalanza.findFirst({
       where: { activa: true }
     })
 

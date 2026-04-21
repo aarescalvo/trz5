@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const estado = searchParams.get('estado')
     const limit = parseInt(searchParams.get('limit') || '100')
 
-    const where: Record<string, unknown> = {}
+    const where: any = {}
 
     if (garron) where.garron = parseInt(garron)
     if (tropaCodigo) where.tropaCodigo = tropaCodigo

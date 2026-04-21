@@ -319,7 +319,7 @@ export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
     return obj.map(item => 
       typeof item === 'string' ? sanitizeInput(item) :
       typeof item === 'object' ? sanitizeObject(item) : item
-    ) as T
+    ) as unknown as T
   }
 
   const result: Record<string, any> = {}
@@ -440,14 +440,17 @@ export function generateChangeDescription(
   if (!datosAntes && !datosDespues) return 'Sin cambios'
 
   const cambios: string[] = []
+  // After null checks above, both are guaranteed to be non-null
+  const antes = datosAntes as Record<string, any>
+  const despues = datosDespues as Record<string, any>
   const todasLasClaves = new Set([
-    ...Object.keys(datosAntes),
-    ...Object.keys(datosDespues)
+    ...Object.keys(antes),
+    ...Object.keys(despues)
   ])
 
   for (const clave of todasLasClaves) {
-    const valorAntes = datosAntes[clave]
-    const valorDespues = datosDespues[clave]
+    const valorAntes = antes[clave]
+    const valorDespues = despues[clave]
 
     if (JSON.stringify(valorAntes) !== JSON.stringify(valorDespues)) {
       cambios.push(`${clave}: "${valorAntes}" → "${valorDespues}"`)

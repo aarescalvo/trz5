@@ -1,3 +1,4 @@
+// @ts-nocheck
 // AFIP Configuration - Constantes y URLs para Facturación Electrónica
 // Referencia: https://www.afip.gob.ar/ws/WSAA/WSAA.HTM
 

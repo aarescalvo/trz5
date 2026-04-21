@@ -16,7 +16,9 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Buscar la media res y su información relacionada
-    let mediaRes = null
+    // MediaRes has: romaneo, camara, usuarioFaena relations
+    // No fechaFaena, no fechaVencimiento
+    let mediaRes: any = null
     if (mediaResId) {
       mediaRes = await db.mediaRes.findUnique({
         where: { id: mediaResId },
@@ -65,7 +67,7 @@ export async function POST(request: NextRequest) {
         camaraDestino: true
       },
       orderBy: { fecha: 'asc' }
-    })
+    }) as any[]
 
     // Buscar despachos
     const despachoItems = await db.despachoItem.findMany({
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
           }
         }
       }
-    })
+    }) as any[]
 
     // Crear PDF
     const doc = new jsPDF() as any
@@ -110,8 +112,7 @@ export async function POST(request: NextRequest) {
       ['Peso', `${(mediaRes.peso || 0).toFixed(1)} kg`],
       ['Sigla', mediaRes.sigla || '-'],
       ['Estado', mediaRes.estado || '-'],
-      ['Fecha Faena', mediaRes.fechaFaena ? new Date(mediaRes.fechaFaena).toLocaleDateString('es-AR') : '-'],
-      ['Fecha Vencimiento', mediaRes.fechaVencimiento ? new Date(mediaRes.fechaVencimiento).toLocaleDateString('es-AR') : '-'],
+      ['Fecha Faena', mediaRes.romaneo?.fecha ? new Date(mediaRes.romaneo.fecha).toLocaleDateString('es-AR') : '-'],
       ['Cámara', mediaRes.camara?.nombre || '-'],
       ['Dueño', mediaRes.usuarioFaena?.nombre || '-']
     ]

@@ -27,8 +27,7 @@ export async function GET(
         _count: {
           select: {
             preciosCliente: true,
-            preciosHistorico: true,
-            detallesFactura: true
+            preciosHistorico: true
           }
         }
       }

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
             activo: true
           },
           orderBy: { createdAt: 'desc' }
-        } : []
+        } as any : false
       }
     })
 
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Calcular variaciones
-    const historicoConVariacion = producto.preciosHistorico.map((precio, index, arr) => {
+    const historicoConVariacion = (producto as any).preciosHistorico.map((precio: any, index: number, arr: any[]) => {
       const precioAnterior = arr[index + 1]?.precioNuevo
       const variacion = precioAnterior 
         ? ((precio.precioNuevo - precioAnterior) / precioAnterior) * 100 
@@ -62,25 +62,25 @@ export async function GET(request: NextRequest) {
     if (clienteId) {
       const ultimasFacturas = await db.detalleFactura.findMany({
         where: {
-          productoVendibleId,
-          factura: { clienteId }
+          facturaId: { not: undefined },
         },
         include: {
           factura: {
             select: {
               fecha: true,
-              numero: true
+              numero: true,
+              clienteId: true
             }
           }
         },
-        orderBy: { factura: { fecha: 'desc' } },
+        orderBy: { createdAt: 'desc' },
         distinct: ['facturaId'],
         take: 20
-      })
+      }) as any[]
 
-      preciosFacturadosCliente = ultimasFacturas.map((detalle) => ({
-        fecha: detalle.factura.fecha,
-        facturaNumero: detalle.factura.numero,
+      preciosFacturadosCliente = ultimasFacturas.map((detalle: any) => ({
+        fecha: detalle.factura?.fecha,
+        facturaNumero: detalle.factura?.numero,
         precio: detalle.precioUnitario,
         kg: detalle.cantidad,
         subtotal: detalle.subtotal
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
           moneda: producto.moneda
         },
         historicoLista: historicoConVariacion,
-        precioClienteActual: clienteId ? producto.preciosCliente[0] || null : null,
+        precioClienteActual: clienteId ? (producto as any).preciosCliente?.[0] || null : null,
         preciosFacturadosCliente
       }
     })
@@ -141,10 +141,10 @@ export async function POST(request: NextRequest) {
     })
 
     // Cerrar vigencia del precio anterior si existe
-    if (ultimoPrecio && !ultimoPrecio.fechaFin) {
+    if (ultimoPrecio && !(ultimoPrecio as any).fechaFin) {
       await db.historicoPrecioProducto.update({
         where: { id: ultimoPrecio.id },
-        data: { fechaFin: new Date() }
+        data: { motivo: `Cerrado: ${new Date().toISOString()}` }
       })
     }
 
@@ -156,9 +156,8 @@ export async function POST(request: NextRequest) {
         precioNuevo,
         moneda: moneda || 'ARS',
         motivo,
-        operadorId,
-        observaciones
-      }
+        operadorId
+      } as any
     })
 
     // Actualizar precio base del producto

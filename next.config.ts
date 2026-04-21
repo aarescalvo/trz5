@@ -1,14 +1,27 @@
 import type { NextConfig } from "next";
 
-// Version: 2.0.1 - Force rebuild
+// Obtener origins permitidos desde variable de entorno, con fallback para desarrollo
+const getAllowedOrigins = (): string[] => {
+  const envOrigins = process.env.NEXT_PUBLIC_APP_URL;
+  if (envOrigins) {
+    return envOrigins.split(',').map(o => o.trim());
+  }
+  // En desarrollo permitir localhost
+  return [
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ];
+};
+
+// Version: 3.18.0 - Security hardening + quality improvements
 const nextConfig: NextConfig = {
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
-  reactStrictMode: false,
+  reactStrictMode: true,
   experimental: {
     serverActions: {
-      allowedOrigins: ['*'],
+      allowedOrigins: getAllowedOrigins(),
     },
   },
 };

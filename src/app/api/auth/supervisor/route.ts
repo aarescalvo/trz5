@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { pin, password, usuario } = body
 
-    let operador = null
+    let operador: any = null
 
     // Validar con PIN
     if (pin) {

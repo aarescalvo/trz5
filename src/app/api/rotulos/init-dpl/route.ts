@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeConfiguracion')
   if (authError) return authError
   try {
-    const rotulosCreados = []
+    const rotulosCreados: Awaited<ReturnType<typeof db.rotulo.create>>[] = []
 
     // ========================================
     // RÓTULO PESAJE INDIVIDUAL - EAN-128 con Application Identifiers
@@ -84,12 +84,11 @@ E
           dpi: 203,
           activo: true,
           esDefault: true,
-          descripcion: 'Rótulo 9x6cm con código EAN-128 (GS1). Application Identifiers: (10) Tropa, (21) N° Animal, (3100) Peso kg.',
           variables: JSON.stringify([
-            { variable: 'CODIGO_EAN128', campo: 'codigo_ean128', descripcion: 'Código EAN-128 completo (10+Tropa+21+Numero+3100+Peso)' },
-            { variable: 'TROPA', campo: 'tropa', descripcion: 'Número de tropa (sin espacios, max 20 chars)' },
-            { variable: 'NUMERO', campo: 'numero', descripcion: 'Número de animal (3 dígitos)' },
-            { variable: 'PESO', campo: 'peso', descripcion: 'Peso en kg (sin decimales)' }
+            { variable: 'CODIGO_EAN128', campo: 'codigo_ean128' },
+            { variable: 'TROPA', campo: 'tropa' },
+            { variable: 'NUMERO', campo: 'numero' },
+            { variable: 'PESO', campo: 'peso' }
           ])
         }
       })
@@ -150,11 +149,10 @@ E
           dpi: 203,
           activo: true,
           esDefault: false,
-          descripcion: 'Rótulo compacto 9x6cm - Número grande centrado, tropa y peso.',
           variables: JSON.stringify([
-            { variable: 'NUMERO', campo: 'numero', descripcion: 'Número de animal' },
-            { variable: 'TROPA', campo: 'tropa', descripcion: 'Código de tropa' },
-            { variable: 'PESO', campo: 'peso', descripcion: 'Peso en kg' }
+            { variable: 'NUMERO', campo: 'numero' },
+            { variable: 'TROPA', campo: 'tropa' },
+            { variable: 'PESO', campo: 'peso' }
           ])
         }
       })
@@ -255,14 +253,13 @@ E
           activo: true,
           esDefault: true,
           diasConsumo: 30,
-          descripcion: 'Rótulo para medias reses con código EAN-128 (GS1). Garrón, tropa, peso, lado y código de barras.',
           variables: JSON.stringify([
-            { variable: 'GARRON', campo: 'garron', descripcion: 'Número de garrón' },
-            { variable: 'TROPA', campo: 'tropa', descripcion: 'Código de tropa' },
-            { variable: 'PESO', campo: 'peso', descripcion: 'Peso en kg' },
-            { variable: 'LADO', campo: 'lado', descripcion: 'Lado (D/I)' },
-            { variable: 'FECHA', campo: 'fecha', descripcion: 'Fecha' },
-            { variable: 'CODIGO_EAN128', campo: 'codigo_ean128', descripcion: 'Código EAN-128 completo' }
+            { variable: 'GARRON', campo: 'garron' },
+            { variable: 'TROPA', campo: 'tropa' },
+            { variable: 'PESO', campo: 'peso' },
+            { variable: 'LADO', campo: 'lado' },
+            { variable: 'FECHA', campo: 'fecha' },
+            { variable: 'CODIGO_EAN128', campo: 'codigo_ean128' }
           ])
         }
       })

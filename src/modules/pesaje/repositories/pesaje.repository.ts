@@ -4,7 +4,7 @@ import { PesajeCamion, TipoPesaje, EstadoPesaje } from '../types'
 import { Prisma } from '@prisma/client'
 
 export class PesajeRepository extends BaseRepository<PesajeCamion> {
-  protected model = db.pesajeCamion
+  protected model: any = db.pesajeCamion
 
   /**
    * Busca todos los pesajes abiertos
@@ -25,7 +25,7 @@ export class PesajeRepository extends BaseRepository<PesajeCamion> {
         operador: true
       },
       orderBy: { fecha: 'desc' }
-    }) as Promise<PesajeCamion[]>
+    }) as unknown as Promise<PesajeCamion[]>
   }
 
   /**
@@ -47,7 +47,7 @@ export class PesajeRepository extends BaseRepository<PesajeCamion> {
         operador: true
       },
       orderBy: { fecha: 'desc' }
-    }) as Promise<PesajeCamion[]>
+    }) as unknown as Promise<PesajeCamion[]>
   }
 
   /**
@@ -68,7 +68,7 @@ export class PesajeRepository extends BaseRepository<PesajeCamion> {
         },
         operador: true
       }
-    }) as Promise<PesajeCamion | null>
+    }) as unknown as Promise<PesajeCamion | null>
   }
 
   /**
@@ -100,7 +100,7 @@ export class PesajeRepository extends BaseRepository<PesajeCamion> {
         operador: true
       },
       orderBy: { fecha: 'desc' }
-    }) as Promise<PesajeCamion[]>
+    }) as unknown as Promise<PesajeCamion[]>
   }
 
   /**
@@ -127,7 +127,7 @@ export class PesajeRepository extends BaseRepository<PesajeCamion> {
         operador: true
       },
       orderBy: { fecha: 'desc' }
-    }) as Promise<PesajeCamion[]>
+    }) as unknown as Promise<PesajeCamion[]>
   }
 
   /**
@@ -135,7 +135,7 @@ export class PesajeRepository extends BaseRepository<PesajeCamion> {
    */
   async findByTipo(tipo: TipoPesaje): Promise<PesajeCamion[]> {
     return this.model.findMany({
-      where: { tipo: tipo as Prisma.TipoPesajeCamion },
+      where: { tipo: tipo as string },
       include: {
         transportista: true,
         tropa: {
@@ -149,7 +149,7 @@ export class PesajeRepository extends BaseRepository<PesajeCamion> {
         operador: true
       },
       orderBy: { fecha: 'desc' }
-    }) as Promise<PesajeCamion[]>
+    }) as unknown as Promise<PesajeCamion[]>
   }
 
   /**
@@ -176,7 +176,7 @@ export class PesajeRepository extends BaseRepository<PesajeCamion> {
         },
         operador: true
       }
-    }) as Promise<PesajeCamion>
+    }) as unknown as Promise<PesajeCamion>
   }
 
   /**
@@ -189,7 +189,7 @@ export class PesajeRepository extends BaseRepository<PesajeCamion> {
         transportista: true,
         operador: true
       }
-    }) as Promise<PesajeCamion>
+    }) as unknown as Promise<PesajeCamion>
   }
 
   /**
@@ -199,7 +199,7 @@ export class PesajeRepository extends BaseRepository<PesajeCamion> {
     return this.model.update({
       where: { id },
       data: { estado: 'ANULADO' as EstadoPesaje }
-    }) as Promise<PesajeCamion>
+    }) as unknown as Promise<PesajeCamion>
   }
 }
 

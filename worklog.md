@@ -1,3 +1,58 @@
+
+---
+Task ID: MEJORAS-1-11
+Agent: main
+Task: Implementar 11 mejoras UX de personalización y reportes + fix overlay gris
+
+Work Log:
+
+#### Mejora #1: PreferenciasUI Prisma model (commit c6686de)
+- Nuevo modelo Prisma `PreferenciasUI` con relación 1:1 a `Operador`
+- Campos: tema, tamanoFuente, densidad, moduloOrden, moduloVisible, moduloColor, sidebarExpandido, gruposExpandidos, columnasReporte
+- Migración generada y aplicada
+- Preferencias persisten por usuario en base de datos
+
+#### Mejora #2: Selector de columnas reutilizable (commit 3a5b33b)
+- Componente `ColumnSelector` reutilizable para todos los reportes
+- Drag & drop para reordenar columnas
+- Toggle visibilidad por columna
+- Guardar preferencias en PreferenciasUI.columnasReporte
+- Integrado en reportes principales
+
+#### Mejora #3: Paginación server-side (commit e656cb7)
+- Hook `usePagination` reutilizable
+- Paginación en todos los endpoints de reportes
+- Parámetros: page, pageSize, sortField, sortOrder
+- Metadata de paginación: totalItems, totalPages, currentPage
+
+#### Mejora #4: 4 reportes gerenciales (commit 98c4a8a)
+- Consumo de Insumos: insumos por tropa/fecha con costos
+- Cuentas Corrientes: saldos de clientes/proveedores
+- Cajas Producidas: resumen de cajas por tipo/producto
+- Rendimientos Gerenciales: KPIs de rendimiento por período
+
+#### Mejoras #5-7: Exportar gráficos + Fuente/Densidad (commit b768f43)
+- Exportación de gráficos Recharts a PDF (canvas-based)
+- CSS variables para tamaño de fuente (small/normal/large)
+- CSS variables para densidad UI (compact/normal/comfortable)
+- Selectores de preferencia accesibles desde menú
+
+#### Mejoras #8-11: Server-side export + Favoritos + Preview + SENASA (commit b5af353)
+- Export server-side para datasets grandes (streaming)
+- Filtros favoritos guardados en PreferenciasUI
+- Vista previa de reportes antes de exportar
+- Reportes SENASA reales en formato PDF oficial
+
+#### Fix: Overlay gris post-login (commit 6568eda)
+- Bug: Dialog/Sheet de Radix UI se auto-abría después del login
+- Solución: CSS para ocultar Dialogs cerrados correctamente
+- Verificado: dashboard carga sin overlay gris
+
+Stage Summary:
+- **11/11 mejoras implementadas y funcionales** ✅
+- **Build exitoso sin errores TypeScript** ✅
+- **Todo subido a GitHub (origin/master)** ✅
+- **Overlay gris corregido** ✅
 ---
 Task ID: 1601
 Agent: main
