@@ -1004,6 +1004,23 @@ model MedicionPH {
   @@unique([mediaResId, numeroMedicion]) // Solo una medición N por media res
 }
 
+// ==================== pH - CONFIGURACIÓN DE UMBRALES ====================
+
+model ConfiguracionPH {
+  id String @id @default(cuid())
+
+  // Umbrales de clasificación
+  umbralPSE     Float @default(5.4)   // pH < este valor → ALTO (PSE)
+  umbralNormMax Float @default(5.7)   // pH <= este valor → NORMAL
+  umbralIntMax  Float @default(5.9)   // pH <= este valor → INTERMEDIO
+  // pH > umbralIntMax → DFD
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("configuracion_ph")
+}
+
 // ==================== STOCK CÁMARA ====================
 
 model StockMediaRes {

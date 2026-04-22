@@ -3,13 +3,17 @@ import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
 
 // ============================================
-// Clasificación automática de pH según umbrales
+// Clasificación automática de pH según umbrales configurables
 // ============================================
-function clasificarPH(valorPH: number): string {
-  if (valorPH < 5.4) return 'ALTO'        // PSE
-  if (valorPH <= 5.7) return 'NORMAL'
-  if (valorPH <= 5.9) return 'INTERMEDIO'
-  return 'DFD'                              // >= 6.0
+async function clasificarPH(valorPH: number): Promise<string> {
+  let config = await db.configuracionPH.findFirst()
+  if (!config) {
+    config = await db.configuracionPH.create({ data: { umbralPSE: 5.4, umbralNormMax: 5.7, umbralIntMax: 5.9 } })
+  }
+  if (valorPH < config.umbralPSE) return 'ALTO'          // PSE
+  if (valorPH <= config.umbralNormMax) return 'NORMAL'
+  if (valorPH <= config.umbralIntMax) return 'INTERMEDIO'
+  return 'DFD'
 }
 
 // ============================================
@@ -121,7 +125,7 @@ export async function POST(request: NextRequest) {
 
       if (existente) {
         // Actualizar si ya existe
-        const clasificacion = clasificarPH(valorPH) as any
+        const clasificacion = await clasificarPH(valorPH) as any
         const mediaRes = await db.mediaRes.findUnique({
           where: { id: mediaResId },
           include: {
@@ -167,7 +171,7 @@ export async function POST(request: NextRequest) {
         resultados.push({ success: true, data: actualizada, accion: 'actualizada' })
       } else {
         // Crear nueva medición
-        const clasificacion = clasificarPH(valorPH) as any
+        const clasificacion = await clasificarPH(valorPH) as any
 
         // Buscar datos denormalizados
         const mediaRes = await db.mediaRes.findUnique({
@@ -255,7 +259,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'ID requerido' }, { status: 400 })
     }
 
-    const clasificacion = valorPH !== undefined ? clasificarPH(valorPH) as any : undefined
+    const clasificacion = valorPH !== undefined ? await clasificarPH(valorPH) as any : undefined
 
     const data: any = {}
     if (valorPH !== undefined) data.valorPH = valorPH

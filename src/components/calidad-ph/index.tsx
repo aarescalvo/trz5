@@ -87,6 +87,46 @@ interface TropaItem {
 }
 
 // ============================================
+// Configuración de rangos (compartida entre componentes)
+// ============================================
+interface ConfigPH {
+  umbralPSE: number
+  umbralNormMax: number
+  umbralIntMax: number
+  rangos?: {
+    ALTO: string
+    NORMAL: string
+    INTERMEDIO: string
+    DFD: string
+  }
+}
+
+// Cache de configuración accesible globalmente en el cliente
+let configCache: ConfigPH | null = null
+let configFetchPromise: Promise<ConfigPH | null> | null = null
+
+export async function fetchConfigPH(): Promise<ConfigPH> {
+  if (configCache) return configCache
+  if (configFetchPromise) return configFetchPromise.then(c => c!)
+  configFetchPromise = fetch('/api/calidad-ph/config')
+    .then(r => r.json())
+    .then(json => {
+      if (json.success && json.data) {
+        configCache = json.data
+        return configCache!
+      }
+      return { umbralPSE: 5.4, umbralNormMax: 5.7, umbralIntMax: 5.9 }
+    })
+    .catch(() => ({ umbralPSE: 5.4, umbralNormMax: 5.7, umbralIntMax: 5.9 }))
+  return configFetchPromise as Promise<ConfigPH>
+}
+
+export function invalidateConfigCache() {
+  configCache = null
+  configFetchPromise = null
+}
+
+// ============================================
 // Colores y utilidades de clasificación
 // ============================================
 function getColorClasificacion(clasificacion: string) {
@@ -99,20 +139,22 @@ function getColorClasificacion(clasificacion: string) {
   }
 }
 
-function getLabelClasificacion(clasificacion: string) {
+function getLabelClasificacion(clasificacion: string, config?: ConfigPH | null) {
+  const c = config || configCache
   switch (clasificacion) {
-    case 'NORMAL': return 'Normal (5.4-5.7)'
-    case 'INTERMEDIO': return 'Intermedio (5.8-5.9)'
-    case 'DFD': return 'DFD (>=6.0)'
-    case 'ALTO': return 'Alto (<5.4) PSE'
+    case 'NORMAL': return `Normal (${c?.umbralPSE || 5.4}-${c?.umbralNormMax || 5.7})`
+    case 'INTERMEDIO': return `Intermedio (${Number(((c?.umbralNormMax || 5.7) + 0.1).toFixed(1))}-${c?.umbralIntMax || 5.9})`
+    case 'DFD': return `DFD (>${c?.umbralIntMax || 5.9})`
+    case 'ALTO': return `Alto (<${c?.umbralPSE || 5.4}) PSE`
     default: return 'Sin clasificar'
   }
 }
 
-function clasificarPHLocal(valorPH: number): string {
-  if (valorPH < 5.4) return 'ALTO'
-  if (valorPH <= 5.7) return 'NORMAL'
-  if (valorPH <= 5.9) return 'INTERMEDIO'
+async function clasificarPHLocal(valorPH: number): Promise<string> {
+  const config = await fetchConfigPH()
+  if (valorPH < config.umbralPSE) return 'ALTO'
+  if (valorPH <= config.umbralNormMax) return 'NORMAL'
+  if (valorPH <= config.umbralIntMax) return 'INTERMEDIO'
   return 'DFD'
 }
 
@@ -139,14 +181,18 @@ export function CalidadPHModule({ operador }: CalidadPHModuleProps) {
       </div>
 
       <Tabs defaultValue="registro" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full grid-cols-3 max-w-lg">
           <TabsTrigger value="registro" className="flex items-center gap-2">
             <Thermometer className="h-4 w-4" />
-            Registro de pH
+            Registro
           </TabsTrigger>
           <TabsTrigger value="reportes" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Reportes
+          </TabsTrigger>
+          <TabsTrigger value="config" className="flex items-center gap-2">
+            <Save className="h-4 w-4" />
+            Config
           </TabsTrigger>
         </TabsList>
 
@@ -156,9 +202,22 @@ export function CalidadPHModule({ operador }: CalidadPHModuleProps) {
         <TabsContent value="reportes">
           <ReportesPHTab />
         </TabsContent>
+        <TabsContent value="config">
+          <ConfigPHTab />
+        </TabsContent>
       </Tabs>
     </div>
   )
+}
+
+// Clasificación síncrona usando el cache (debe llamarse después de fetchConfigPH)
+function clasificarPHSync(valorPH: number, config?: ConfigPH | null): string {
+  const c = config || configCache
+  if (!c) return 'SIN_CLASIFICAR'
+  if (valorPH < c.umbralPSE) return 'ALTO'
+  if (valorPH <= c.umbralNormMax) return 'NORMAL'
+  if (valorPH <= c.umbralIntMax) return 'INTERMEDIO'
+  return 'DFD'
 }
 
 // ============================================
@@ -170,6 +229,7 @@ function RegistroPHTab({ operador }: { operador: Operador }) {
   const [mediasRes, setMediasRes] = useState<MediaResItem[]>([])
   const [loading, setLoading] = useState(false)
   const [guardando, setGuardando] = useState(false)
+  const [configPH, setConfigPH] = useState<ConfigPH | null>(null)
 
   // Formularios de pH por media res
   const [valoresPH, setValoresPH] = useState<Record<string, string>>({})
@@ -190,9 +250,10 @@ function RegistroPHTab({ operador }: { operador: Operador }) {
   const [detalleOpen, setDetalleOpen] = useState(false)
   const [medicionDetalle, setMedicionDetalle] = useState<MedicionPH | null>(null)
 
-  // Cargar tropas faenadas (últimos 30 días)
+  // Cargar tropas faenadas (últimos 30 días) y configuración de pH
   useEffect(() => {
     cargarTropas()
+    fetchConfigPH().then(setConfigPH)
   }, [])
 
   const cargarTropas = async () => {
@@ -398,8 +459,8 @@ function RegistroPHTab({ operador }: { operador: Operador }) {
   const kpis = mediasRes.length > 0 ? (() => {
     const conPH = Object.entries(valoresPH as Record<string, string>).filter(([_, v]) => !isNaN(parseFloat(v as string)) && parseFloat(v as string) > 0)
     const valores = conPH.map(([_, v]) => parseFloat(v as string))
-    const dfd = valores.filter(v => clasificarPHLocal(v) === 'DFD').length
-    const normal = valores.filter(v => clasificarPHLocal(v) === 'NORMAL').length
+    const dfd = valores.filter(v => clasificarPHSync(v, configPH) === 'DFD').length
+    const normal = valores.filter(v => clasificarPHSync(v, configPH) === 'NORMAL').length
     return {
       totalMedias: mediasRes.length,
       medidasConPH: conPH.length,
@@ -526,7 +587,7 @@ function RegistroPHTab({ operador }: { operador: Operador }) {
                   ) : (
                     mediasRes.map((mr) => {
                       const ph1 = valoresPH[mr.id] || ''
-                      const clasif1 = ph1 ? clasificarPHLocal(parseFloat(ph1)) : ''
+                      const clasif1 = ph1 ? clasificarPHSync(parseFloat(ph1), configPH) : ''
                       return (
                         <TableRow key={mr.id} className={clasif1 === 'DFD' ? 'bg-red-50' : clasif1 === 'ALTO' ? 'bg-orange-50' : ''}>
                           <TableCell className="text-xs font-mono">{mr.romaneo?.garron || '-'}</TableCell>
@@ -643,15 +704,15 @@ function RegistroPHTab({ operador }: { operador: Operador }) {
         </Card>
       )}
 
-      {/* Leyenda de clasificación */}
-      {tropaSeleccionada && (
+      {/* Leyenda de clasificación dinámica */}
+      {tropaSeleccionada && configPH && (
         <Card className="p-3">
           <div className="flex flex-wrap gap-4 text-xs">
             <span className="font-semibold text-stone-600">Leyenda:</span>
-            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Normal: 5.4 - 5.7</Badge>
-            <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Intermedio: 5.8 - 5.9</Badge>
-            <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">DFD: &gt;= 6.0</Badge>
-            <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">Alto (PSE): &lt; 5.4</Badge>
+            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Normal: {configPH.umbralPSE} - {configPH.umbralNormMax}</Badge>
+            <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Intermedio: {Number((configPH.umbralNormMax + 0.1).toFixed(1))} - {configPH.umbralIntMax}</Badge>
+            <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">DFD: &gt; {configPH.umbralIntMax}</Badge>
+            <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">Alto (PSE): &lt; {configPH.umbralPSE}</Badge>
           </div>
         </Card>
       )}
@@ -1478,6 +1539,211 @@ function ReportesPHTab() {
           ) : null}
         </TabsContent>
       </Tabs>
+    </div>
+  )
+}
+
+// ============================================
+// TAB 3: CONFIGURACIÓN DE UMBRALES pH
+// ============================================
+function ConfigPHTab() {
+  const [loading, setLoading] = useState(true)
+  const [guardando, setGuardando] = useState(false)
+  const [umbralPSE, setUmbralPSE] = useState('5.4')
+  const [umbralNormMax, setUmbralNormMax] = useState('5.7')
+  const [umbralIntMax, setUmbralIntMax] = useState('5.9')
+
+  useEffect(() => {
+    const cargar = async () => {
+      try {
+        const config = await fetchConfigPH()
+        setUmbralPSE(String(config.umbralPSE))
+        setUmbralNormMax(String(config.umbralNormMax))
+        setUmbralIntMax(String(config.umbralIntMax))
+      } finally {
+        setLoading(false)
+      }
+    }
+    cargar()
+  }, [])
+
+  const guardar = async () => {
+    const pse = parseFloat(umbralPSE)
+    const norm = parseFloat(umbralNormMax)
+    const inter = parseFloat(umbralIntMax)
+
+    if (isNaN(pse) || isNaN(norm) || isNaN(inter)) {
+      toast.error('Todos los valores deben ser numéricos')
+      return
+    }
+    if (pse > norm) {
+      toast.error('El umbral PSE debe ser menor o igual al umbral Normal')
+      return
+    }
+    if (norm >= inter) {
+      toast.error('El umbral Normal debe ser menor al umbral Intermedio')
+      return
+    }
+
+    setGuardando(true)
+    try {
+      const res = await fetch('/api/calidad-ph/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ umbralPSE: pse, umbralNormMax: norm, umbralIntMax: inter })
+      })
+      const json = await res.json()
+      if (json.success) {
+        toast.success('Configuración guardada correctamente')
+        invalidateConfigCache()
+      } else {
+        toast.error(json.error || 'Error al guardar')
+      }
+    } catch {
+      toast.error('Error de conexión')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  const restablecer = () => {
+    setUmbralPSE('5.4')
+    setUmbralNormMax('5.7')
+    setUmbralIntMax('5.9')
+    toast.info('Valores restablecidos a los defaults')
+  }
+
+  // Preview de rangos en base a los valores actuales
+  const pse = parseFloat(umbralPSE) || 5.4
+  const norm = parseFloat(umbralNormMax) || 5.7
+  const inter = parseFloat(umbralIntMax) || 5.9
+  const interMin = parseFloat((norm + 0.1).toFixed(1))
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto" />
+          <p className="text-stone-500 mt-2">Cargando configuración...</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Save className="h-5 w-5 text-emerald-600" />
+            Umbrales de Clasificación de pH
+          </CardTitle>
+          <p className="text-sm text-stone-500">
+            Configure los rangos de pH para la clasificación automática. Los cambios aplican a nuevas mediciones.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Inputs de umbrales */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-orange-500" />
+                <Label className="font-semibold text-orange-700">Umbral PSE (Alto)</Label>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-stone-500">pH menor a este valor se clasifica como PSE/ALTO</p>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="14"
+                  value={umbralPSE}
+                  onChange={e => setUmbralPSE(e.target.value)}
+                  className="text-lg font-mono"
+                />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+                <Label className="font-semibold text-green-700">Umbral Normal Max</Label>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-stone-500">pH desde {umbralPSE} hasta este valor = NORMAL</p>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="14"
+                  value={umbralNormMax}
+                  onChange={e => setUmbralNormMax(e.target.value)}
+                  className="text-lg font-mono"
+                />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                <Label className="font-semibold text-yellow-700">Umbral Intermedio Max</Label>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-stone-500">pH por encima de este valor = DFD</p>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="14"
+                  value={umbralIntMax}
+                  onChange={e => setUmbralIntMax(e.target.value)}
+                  className="text-lg font-mono"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Preview visual de rangos */}
+          <div className="bg-stone-50 rounded-lg p-4 space-y-3">
+            <p className="text-sm font-semibold text-stone-600">Vista previa de clasificación:</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-orange-100 border border-orange-300 rounded-lg p-3 text-center">
+                <p className="text-xs font-semibold text-orange-700">ALTO (PSE)</p>
+                <p className="text-lg font-bold text-orange-800">pH &lt; {umbralPSE}</p>
+              </div>
+              <div className="bg-green-100 border border-green-300 rounded-lg p-3 text-center">
+                <p className="text-xs font-semibold text-green-700">NORMAL</p>
+                <p className="text-lg font-bold text-green-800">pH {umbralPSE} - {umbralNormMax}</p>
+              </div>
+              <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3 text-center">
+                <p className="text-xs font-semibold text-yellow-700">INTERMEDIO</p>
+                <p className="text-lg font-bold text-yellow-800">pH {interMin} - {umbralIntMax}</p>
+              </div>
+              <div className="bg-red-100 border border-red-300 rounded-lg p-3 text-center">
+                <p className="text-xs font-semibold text-red-700">DFD</p>
+                <p className="text-lg font-bold text-red-800">pH &gt; {umbralIntMax}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Nota informativa */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <p className="text-xs text-amber-800">
+              <strong>Nota:</strong> Los cambios en los umbrales solo aplican a las nuevas mediciones que se guarden.
+              Las mediciones ya registradas mantienen la clasificación que tenían al momento de su carga.
+              Los valores por defecto son los estándar de la industria cárnica argentina.
+            </p>
+          </div>
+
+          {/* Botones */}
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={restablecer}>
+              Restablecer defaults
+            </Button>
+            <Button onClick={guardar} disabled={guardando} className="bg-emerald-600 hover:bg-emerald-700">
+              {guardando ? 'Guardando...' : 'Guardar Configuración'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
