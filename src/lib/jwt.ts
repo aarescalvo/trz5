@@ -6,8 +6,8 @@ const getJwtSecret = (): Uint8Array => {
   if (!secret) {
     throw new Error(
       'JWT_SECRET environment variable is not set. ' +
-      'Please set it in your .env file with a secure random string (min 32 characters). ' +
-      'Example: JWT_SECRET=your-secure-random-secret-key-here'
+      'Please set it in your .env file. ' +
+      'Example: JWT_SECRET=traza123'
     );
   }
   return new TextEncoder().encode(secret);
