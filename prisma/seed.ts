@@ -134,7 +134,7 @@ async function main() {
   // 3. Crear clientes (productores y usuarios de faena)
   console.log('👥 Creando clientes...')
   
-  // Productores
+  // Productores (se crean como USUARIO_FAENA - el modelo Cliente unifica productores y usuarios de faena)
   const prod1 = await prisma.cliente.upsert({
     where: { id: 'prod-001' },
     update: {},
@@ -145,8 +145,7 @@ async function main() {
       direccion: 'Campo La Esperanza, Ruta 9 KM 150',
       telefono: '0351-1112222',
       email: 'esperanza@campo.com.ar',
-      esProductor: true,
-      esUsuarioFaena: false
+      tipo: 'USUARIO_FAENA'
     }
   })
   
@@ -160,8 +159,7 @@ async function main() {
       direccion: 'Ruta 34 KM 500, Santiago del Estero',
       telefono: '0385-3334444',
       email: 'contacto@ganadera-norte.com.ar',
-      esProductor: true,
-      esUsuarioFaena: false
+      tipo: 'USUARIO_FAENA'
     }
   })
   
@@ -174,8 +172,7 @@ async function main() {
       cuit: '30-33333333-3',
       direccion: 'Campo Los Álamos, Ruta 158 KM 80',
       telefono: '0343-5556666',
-      esProductor: true,
-      esUsuarioFaena: false
+      tipo: 'USUARIO_FAENA'
     }
   })
 
@@ -195,8 +192,7 @@ async function main() {
       telefono: '0351-7778888',
       email: 'juan.matarife@email.com',
       condicionIva: 'RI',
-      esProductor: false,
-      esUsuarioFaena: true
+      tipo: 'USUARIO_FAENA'
     }
   })
   
@@ -215,8 +211,7 @@ async function main() {
       telefono: '0353-9990000',
       email: 'jose.rodriguez@email.com',
       condicionIva: 'MT',
-      esProductor: false,
-      esUsuarioFaena: true
+      tipo: 'USUARIO_FAENA'
     }
   })
   
@@ -237,8 +232,7 @@ async function main() {
       email: 'maria.gonzalez@email.com',
       razonSocial: 'Supermercados del Valle',
       condicionIva: 'RI',
-      esProductor: false,
-      esUsuarioFaena: true
+      tipo: 'USUARIO_FAENA'
     }
   })
   
@@ -258,12 +252,11 @@ async function main() {
       email: 'pedro.fernandez@email.com',
       razonSocial: 'Exportadora Pampeana SA',
       condicionIva: 'RI',
-      esProductor: false,
-      esUsuarioFaena: true
+      tipo: 'USUARIO_FAENA'
     }
   })
 
-  // Cliente que es ambos (productor y usuario de faena)
+  // Cliente mixto (productor y usuario de faena)
   const mixto = await prisma.cliente.upsert({
     where: { id: 'mix-001' },
     update: {},
@@ -280,8 +273,7 @@ async function main() {
       email: 'santarosa@agro.com.ar',
       razonSocial: 'Agropecuaria Santa Rosa',
       condicionIva: 'RI',
-      esProductor: true,
-      esUsuarioFaena: true
+      tipo: 'USUARIO_FAENA'
     }
   })
 
