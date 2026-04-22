@@ -22,3 +22,27 @@ Stage Summary:
 - Commit: d0bcaa1 "feat: modulo Control de pH en Calidad"
 - Push exitoso a origin/master
 - El usuario necesita ejecutar en su servidor: bun install && bun run db:push para aplicar el schema
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Integrar módulo de pH con el módulo de Cuarteo
+
+Work Log:
+- Verificado que los módulos pH y Cuarteo estaban completamente separados (sin integración)
+- Modificado API Cuarteo GET (src/app/api/cuarteo/route.ts): al pedir includeCuartos=true ahora también trae medicionesPH agrupadas por MediaRes con clasificación y valor
+- Modificado componente Cuarteo (src/components/cuarteo/index.tsx):
+  - Nuevas interfaces: MedicionPHData, DatosPH; RegistroCuarteo ampliado con datosPH
+  - Nuevo state: medicionesPHActuales
+  - Nueva función fetchPHByMediaRes() que al buscar una MediaRes también trae sus mediciones pH
+  - Función colorClasificacionPH() para badges por clasificación (NORMAL/verde, INTERMEDIO/amarillo, DFD/rojo, ALTO/naranja)
+  - Card de MediaRes: badge de pH con valor y clasificación + detalle de todas las mediciones (#, valor, clasif, temp, hora, operador)
+  - Tabla de registros: nueva columna "pH" con badge de clasificación
+  - Dialog detalle: sección "Mediciones de pH" con todas las mediciones
+- Commit b22f4ea pusheado a GitHub
+
+Stage Summary:
+- Archivos modificados: src/app/api/cuarteo/route.ts, src/components/cuarteo/index.tsx
+- Commit: b22f4ea "feat: integracion pH en modulo Cuarteo"
+- Push exitoso a origin/master
+- El usuario necesita ejecutar en su servidor: git pull origin master && bun run db:push
