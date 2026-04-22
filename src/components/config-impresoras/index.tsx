@@ -433,7 +433,7 @@ export function ConfigImpresorasModule({ operador }: Props) {
 
       {/* Modal: Nueva/Editar Impresora */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>{editando ? 'Editar Impresora' : 'Nueva Impresora'}</DialogTitle>
           </DialogHeader>
@@ -518,7 +518,7 @@ export function ConfigImpresorasModule({ operador }: Props) {
 
       {/* Modal: Vista Previa ZPL */}
       <Dialog open={modalPreviewOpen} onOpenChange={setModalPreviewOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" maximizable>
           <DialogHeader>
             <DialogTitle>Vista Previa - {plantillaSeleccionada?.nombre}</DialogTitle>
           </DialogHeader>
@@ -540,7 +540,7 @@ export function ConfigImpresorasModule({ operador }: Props) {
 
       {/* Modal: Prueba de Impresión */}
       <Dialog open={modalPruebaOpen} onOpenChange={setModalPruebaOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>Enviar a Imprimir</DialogTitle>
             <DialogDescription>

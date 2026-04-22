@@ -1218,7 +1218,7 @@ export function TrazabilidadModule({ operador }: Props) {
 
         {/* Email Dialog */}
         <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Mail className="w-5 h-5 text-amber-500" />

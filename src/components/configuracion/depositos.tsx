@@ -222,7 +222,7 @@ export function Depositos({ operador }: Props) {
       </CardContent>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>
               {editingDeposito ? 'Editar Depósito' : 'Nuevo Depósito'}

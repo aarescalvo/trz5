@@ -398,7 +398,7 @@ export function Cheques({ operador }: Props) {
 
       {/* Dialog Nuevo/Editar Cheque */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" maximizable>
           <DialogHeader>
             <DialogTitle>
               {editingCheque ? 'Editar Cheque' : 'Nuevo Cheque'}
@@ -576,7 +576,7 @@ export function Cheques({ operador }: Props) {
 
       {/* Dialog Detalle */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>Detalle del Cheque</DialogTitle>
           </DialogHeader>

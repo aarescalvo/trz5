@@ -546,7 +546,7 @@ export function ConfigBalanzasModule({ operador }: Props) {
 
       {/* Modal Balanza */}
       <Dialog open={modalBalanza} onOpenChange={setModalBalanza}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>{editandoBalanza ? 'Editar Balanza' : 'Nueva Balanza'}</DialogTitle>
           </DialogHeader>
@@ -661,7 +661,7 @@ export function ConfigBalanzasModule({ operador }: Props) {
 
       {/* Modal Puesto */}
       <Dialog open={modalPuesto} onOpenChange={setModalPuesto}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>{editandoPuesto ? 'Editar Puesto' : 'Nuevo Puesto de Trabajo'}</DialogTitle>
           </DialogHeader>

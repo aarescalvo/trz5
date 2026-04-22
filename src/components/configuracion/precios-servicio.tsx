@@ -344,7 +344,7 @@ export function PreciosServicioConfig({ operador }: Props) {
 
       {/* Dialog Nuevo/Editar */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-amber-600" />
@@ -434,7 +434,7 @@ export function PreciosServicioConfig({ operador }: Props) {
 
       {/* Dialog Eliminar */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" maximizable>
           <DialogHeader>
             <DialogTitle className="text-red-600">Eliminar Precio</DialogTitle>
           </DialogHeader>

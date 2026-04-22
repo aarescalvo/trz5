@@ -228,7 +228,7 @@ export function Subproductos({ operador }: Props) {
       </CardContent>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>
               {editingSubproducto ? 'Editar Subproducto' : 'Nuevo Subproducto'}

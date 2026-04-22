@@ -878,7 +878,7 @@ export function ConfigSubproductosModule({ operador }: { operador: Operador }) {
 
         {/* Dialog Detalle */}
         <Dialog open={detalleOpen} onOpenChange={setDetalleOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Eye className="w-5 h-5 text-amber-500" />

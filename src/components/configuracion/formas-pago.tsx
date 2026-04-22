@@ -242,7 +242,7 @@ export function FormasPago({ operador }: Props) {
       </CardContent>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>
               {editingFormaPago ? 'Editar Forma de Pago' : 'Nueva Forma de Pago'}

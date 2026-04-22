@@ -817,7 +817,7 @@ export function SeguridadConfig() {
 
       {/* Dialog agregar IP bloqueada */}
       <Dialog open={addIpDialogOpen} onOpenChange={setAddIpDialogOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>Bloquear Dirección IP</DialogTitle>
           </DialogHeader>

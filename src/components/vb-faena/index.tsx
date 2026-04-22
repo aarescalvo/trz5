@@ -569,7 +569,7 @@ export function VBFaenaModule({ operador }: { operador: Operador }) {
 
       {/* Dialog para cambiar animal */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle>
               <TextoEditable id="vbfaena-dialog-cambiar-title" original="Cambiar Animal Asignado" tag="span" />
@@ -603,7 +603,7 @@ export function VBFaenaModule({ operador }: { operador: Operador }) {
 
       {/* Dialog para intercambiar garrones */}
       <Dialog open={intercambiarDialogOpen} onOpenChange={setIntercambiarDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle>
               <TextoEditable id="vbfaena-dialog-intercambiar-title" original="Intercambiar Garrones" tag="span" />

@@ -246,7 +246,7 @@ export function LiquidacionForm({ operador, liquidacionId, onClose }: Props) {
 
       {/* PIN Dialog */}
       <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Shield className="w-5 h-5 text-amber-500" />Autorización Supervisor</DialogTitle>
           </DialogHeader>
@@ -263,7 +263,7 @@ export function LiquidacionForm({ operador, liquidacionId, onClose }: Props) {
 
       {/* Add Item Dialog */}
       <Dialog open={addItemOpen} onOpenChange={setAddItemOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader><DialogTitle>Agregar Concepto</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="space-y-2">

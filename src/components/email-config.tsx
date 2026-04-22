@@ -922,7 +922,7 @@ export function EmailConfig() {
 
       {/* Dialog Destinatario */}
       <Dialog open={destinatarioDialogOpen} onOpenChange={setDestinatarioDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle>
               {editandoDestinatario ? 'Editar Destinatario' : 'Nuevo Destinatario'}
@@ -1017,7 +1017,7 @@ export function EmailConfig() {
 
       {/* Dialog Programación */}
       <Dialog open={programacionDialogOpen} onOpenChange={setProgramacionDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>
               {editandoProgramacion ? 'Editar Programación' : 'Nueva Programación'}
@@ -1198,7 +1198,7 @@ export function EmailConfig() {
 
       {/* Dialog Envío Manual */}
       <Dialog open={envioManualDialogOpen} onOpenChange={setEnvioManualDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>Envío Manual de Email</DialogTitle>
             <DialogDescription>

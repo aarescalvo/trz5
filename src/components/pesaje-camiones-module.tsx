@@ -1371,7 +1371,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
 
       {/* Dialog Registrar Tara */}
       <Dialog open={cerrarOpen} onOpenChange={setCerrarOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>Registrar Peso Tara</DialogTitle>
             <DialogDescription>
@@ -1418,7 +1418,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
 
       {/* Dialog Editar (placeholder) */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>Editar Pesaje</DialogTitle>
             <DialogDescription>Función en desarrollo</DialogDescription>
@@ -1434,7 +1434,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
 
       {/* Dialog Eliminar */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>Eliminar Pesaje</DialogTitle>
             <DialogDescription>Esta acción no se puede deshacer. Se requiere PIN de supervisor.</DialogDescription>
@@ -1471,7 +1471,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
 
       {/* Dialog Advertencia de Capacidad */}
       <Dialog open={capacidadWarningOpen} onOpenChange={setCapacidadWarningOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-600">
               <AlertTriangle className="w-5 h-5" />

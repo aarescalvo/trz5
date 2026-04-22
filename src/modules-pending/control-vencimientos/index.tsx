@@ -454,7 +454,7 @@ export function ControlVencimientosModule({ operador }: Props) {
 
         {/* Discard Dialog */}
         <Dialog open={!!descartarDialog} onOpenChange={() => setDescartarDialog(null)}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-red-600">
                 <Trash2 className="w-5 h-5" />
@@ -502,7 +502,7 @@ export function ControlVencimientosModule({ operador }: Props) {
 
         {/* Extend Dialog */}
         <Dialog open={!!extenderDialog} onOpenChange={() => setExtenderDialog(null)}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-blue-600">
                 <ArrowRight className="w-5 h-5" />

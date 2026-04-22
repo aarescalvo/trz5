@@ -367,7 +367,7 @@ export function CotizacionesConfig({ operador }: { operador: Operador }) {
 
       {/* Dialog de nueva cotización */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>Nueva Cotización</DialogTitle>
           </DialogHeader>

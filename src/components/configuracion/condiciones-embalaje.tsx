@@ -367,7 +367,7 @@ export function CondicionesEmbalaje({ operador }: { operador: Operador }) {
 
       {/* Dialog Nuevo/Editar */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Box className="w-5 h-5 text-amber-600" />
@@ -560,7 +560,7 @@ export function CondicionesEmbalaje({ operador }: { operador: Operador }) {
 
       {/* Dialog Eliminar */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <Trash2 className="w-5 h-5" />

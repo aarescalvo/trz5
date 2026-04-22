@@ -580,7 +580,7 @@ export function ConfigInsumosModule({ operador }: Props) {
 
         {/* Modal Crear/Editar */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" maximizable>
             <DialogHeader>
               <DialogTitle>{editando ? 'Editar Insumo' : 'Nuevo Insumo'}</DialogTitle>
             </DialogHeader>
@@ -671,7 +671,7 @@ export function ConfigInsumosModule({ operador }: Props) {
 
         {/* Modal Ajustar Stock */}
         <Dialog open={modalStockOpen} onOpenChange={setModalStockOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Package className="w-5 h-5 text-amber-500" />
@@ -731,7 +731,7 @@ export function ConfigInsumosModule({ operador }: Props) {
 
         {/* Modal Ver Movimientos */}
         <Dialog open={modalMovimientosOpen} onOpenChange={setModalMovimientosOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <History className="w-5 h-5 text-blue-500" />

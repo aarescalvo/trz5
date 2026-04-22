@@ -560,7 +560,7 @@ export function MovimientoCamarasModule({ operador }: { operador: Operador }) {
 
       {/* Dialog Mover Medias */}
       <Dialog open={moverOpen} onOpenChange={setMoverOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Move className="w-5 h-5" />

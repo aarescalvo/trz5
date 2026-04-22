@@ -171,7 +171,7 @@ export function ReportFavorites({
             <BookmarkPlus className="w-4 h-4" />
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle>Guardar filtros</DialogTitle>
             <DialogDescription>

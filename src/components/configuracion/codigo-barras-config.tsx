@@ -300,7 +300,7 @@ export function CodigoBarrasConfig({ operador }: { operador: Operador }) {
 
       {/* Dialog para crear/editar */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" maximizable>
           <DialogHeader>
             <DialogTitle>{editingConfig ? 'Editar Configuración' : 'Nueva Configuración'}</DialogTitle>
             <DialogDescription>

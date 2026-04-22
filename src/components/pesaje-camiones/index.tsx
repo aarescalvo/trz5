@@ -612,7 +612,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: PesajeCamiones
 
       {/* Dialog Registrar Tara */}
       <Dialog open={cerrarOpen} onOpenChange={setCerrarOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>Registrar Peso Tara</DialogTitle>
             <DialogDescription>Ingrese el peso del camión vacío para cerrar el pesaje</DialogDescription>
@@ -659,7 +659,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: PesajeCamiones
 
       {/* Dialog Eliminar */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>Eliminar Pesaje</DialogTitle>
             <DialogDescription>Esta acción no se puede deshacer. Se requiere PIN de supervisor.</DialogDescription>

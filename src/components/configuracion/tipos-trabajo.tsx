@@ -360,7 +360,7 @@ export function TiposTrabajo({ operador }: { operador: Operador }) {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>
               {editingTipo ? 'Editar Tipo de Trabajo' : 'Nuevo Tipo de Trabajo'}

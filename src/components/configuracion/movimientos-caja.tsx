@@ -291,7 +291,7 @@ export function MovimientosCaja({ operador }: Props) {
 
       {/* Dialog Nuevo Movimiento */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>Nuevo Movimiento de Caja</DialogTitle>
           </DialogHeader>
@@ -386,7 +386,7 @@ export function MovimientosCaja({ operador }: Props) {
 
       {/* Dialog Detalle */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>Detalle del Movimiento</DialogTitle>
           </DialogHeader>

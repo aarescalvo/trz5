@@ -278,7 +278,7 @@ export function CuentasBancarias({ operador }: Props) {
       </CardContent>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" maximizable>
           <DialogHeader>
             <DialogTitle>
               {editingCuenta ? 'Editar Cuenta Bancaria' : 'Nueva Cuenta Bancaria'}

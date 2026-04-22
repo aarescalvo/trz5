@@ -325,7 +325,7 @@ export function ConfigCondicionesEmbalajeModule({ operador }: Props) {
 
         {/* Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" maximizable>
             <DialogHeader>
               <DialogTitle>{editando ? 'Editar Condición' : 'Nueva Condición de Embalaje'}</DialogTitle>
             </DialogHeader>

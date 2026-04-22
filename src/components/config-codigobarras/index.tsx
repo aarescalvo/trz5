@@ -318,7 +318,7 @@ export function ConfigCodigobarrasModule({ operador }: Props) {
 
         {/* Modal */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle>{editando ? 'Editar Formato' : 'Nuevo Formato de Código'}</DialogTitle>
             </DialogHeader>

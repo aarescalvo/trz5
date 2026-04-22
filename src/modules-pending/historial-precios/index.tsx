@@ -683,7 +683,7 @@ export function HistorialPreciosModule({ operador }: Props) {
 
         {/* Register Price Dialog */}
         <Dialog open={registroDialog} onOpenChange={setRegistroDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Plus className="w-5 h-5" />

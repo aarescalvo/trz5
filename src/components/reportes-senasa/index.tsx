@@ -413,7 +413,7 @@ export function ReportesSenasaModule({ operador }: { operador: Operador }) {
 
         {/* Dialog Nuevo Reporte */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-amber-500" />
@@ -466,7 +466,7 @@ export function ReportesSenasaModule({ operador }: { operador: Operador }) {
 
         {/* Dialog Detalle */}
         <Dialog open={!!detalleOpen} onOpenChange={() => setDetalleOpen(null)}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle>Detalle del Reporte</DialogTitle>
             </DialogHeader>

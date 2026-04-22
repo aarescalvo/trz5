@@ -513,7 +513,7 @@ export function ConfigPlantillasModule({ operador }: Props) {
 
       {/* Modal Preview */}
       <Dialog open={modalPreview} onOpenChange={setModalPreview}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle>Configuración de Plantilla</DialogTitle>
           </DialogHeader>

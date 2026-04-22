@@ -414,7 +414,7 @@ export function Articulos({ operador }: { operador: Operador }) {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>
               {editingArticulo ? 'Editar Articulo' : 'Nuevo Articulo'}

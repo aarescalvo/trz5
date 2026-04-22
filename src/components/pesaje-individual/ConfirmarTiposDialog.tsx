@@ -72,7 +72,7 @@ function ConfirmarTiposDialogContent({ tropa, onConfirm, loading, onClose }: {
   }
 
   return (
-    <DialogContent className="max-w-lg">
+    <DialogContent className="max-w-lg" maximizable>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-amber-500" />

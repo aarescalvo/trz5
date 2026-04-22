@@ -78,7 +78,7 @@ export function ConnectionIndicator() {
         </button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" maximizable>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {online ? (

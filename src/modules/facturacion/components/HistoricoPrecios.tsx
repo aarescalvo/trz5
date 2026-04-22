@@ -295,7 +295,7 @@ export function HistoricoPrecios({ operador }: Props) {
 
       {/* Nueva Tarifa Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Shield className="w-5 h-5 text-amber-500" />Nueva Tarifa</DialogTitle>
           </DialogHeader>

@@ -299,7 +299,7 @@ export function MovimientosInsumos({ operador }: Props) {
       </CardContent>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>Registrar Movimiento</DialogTitle>
           </DialogHeader>

@@ -613,7 +613,7 @@ export function StockCamarasModule({ operador }: { operador: Operador }) {
 
         {/* Modal de Movimiento */}
         <Dialog open={showMovimientoModal} onOpenChange={setShowMovimientoModal}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle><TextoEditable id="titulo-modal-movimiento" original="Registrar Movimiento" tag="span" /></DialogTitle>
               <DialogDescription>

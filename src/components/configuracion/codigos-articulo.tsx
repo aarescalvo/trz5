@@ -402,7 +402,7 @@ export function CodigosArticulo() {
         setDialogOpen(open)
         if (!open) resetForm()
       }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>
               {editando ? 'Editar Código' : 'Nuevo Código de Artículo'}

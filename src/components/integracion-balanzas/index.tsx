@@ -847,7 +847,7 @@ export function IntegracionBalanzasModule({ operador }: Props) {
 
         {/* Dialog Eliminar */}
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-red-600">
                 <Trash2 className="w-5 h-5" />

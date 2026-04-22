@@ -1783,7 +1783,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
                                       <Eye className="w-3.5 h-3.5" />
                                     </Button>
                                   </DialogTrigger>
-                                  <DialogContent className="max-w-md">
+                                  <DialogContent className="max-w-md" maximizable>
                                     <DialogHeader>
                                       <DialogTitle className="flex items-center gap-2">
                                         <ArrowLeftRight className={`w-5 h-5 ${nota.tipo === 'CREDITO' ? 'text-blue-500' : 'text-red-500'}`} />
@@ -2205,7 +2205,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
         {/* Dialog Ver Detalle */}
         <Dialog open={viewOpen} onOpenChange={setViewOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2"><Eye className="w-5 h-5 text-amber-600" />Detalle de Factura</DialogTitle>
             </DialogHeader>
@@ -2313,7 +2313,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
         {/* Dialog Pago */}
         <Dialog open={pagoOpen} onOpenChange={setPagoOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5 text-amber-600" />Registrar Pago</DialogTitle>
             </DialogHeader>
@@ -2357,7 +2357,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
         {/* Dialog Anular */}
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-          <DialogContent className="max-w-sm">
+          <DialogContent className="max-w-sm" maximizable>
             <DialogHeader><DialogTitle className="text-red-600 flex items-center gap-2"><XCircle className="w-5 h-5" />Anular Factura</DialogTitle></DialogHeader>
             <p className="text-sm text-stone-500">¿Está seguro que desea anular la factura {facturaSeleccionada?.numero}? Esta acción no se puede deshacer.</p>
             <DialogFooter className="flex gap-2">
@@ -2369,7 +2369,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
         {/* Dialog Editar Precios Tropa */}
         <Dialog open={precioEditOpen} onOpenChange={setPrecioEditOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-amber-600" />
@@ -2511,7 +2511,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
         {/* Dialog Nueva Nota C/D */}
         <Dialog open={notaDialogOpen} onOpenChange={setNotaDialogOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2"><ArrowLeftRight className="w-5 h-5 text-amber-600" />Nueva Nota de Crédito / Débito</DialogTitle>
               <DialogDescription>Genere una nota asociada a una factura existente</DialogDescription>
@@ -2610,7 +2610,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
         {/* Dialog Anular Nota */}
         <Dialog open={notaAnularOpen} onOpenChange={setNotaAnularOpen}>
-          <DialogContent className="max-w-sm">
+          <DialogContent className="max-w-sm" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Ban className="w-5 h-5 text-red-500" />Anular Nota
@@ -2643,7 +2643,7 @@ ${factura.iva > 0 ? `<p>IVA (${factura.porcentajeIva}%): $${factura.iva?.toLocal
 
         {/* Dialog Agregar Tributo */}
         <Dialog open={tributoDialogOpen} onOpenChange={setTributoDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2"><DollarSign className="w-5 h-5 text-orange-600" />Agregar Retención / Percepción</DialogTitle>
               <DialogDescription>Agregue tributos a la factura seleccionada</DialogDescription>

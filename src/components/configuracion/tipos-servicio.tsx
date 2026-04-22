@@ -310,7 +310,7 @@ export function TiposServicioConfig({ operador }: Props) {
 
       {/* Dialog Nuevo/Editar */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="w-5 h-5 text-amber-600" />
@@ -433,7 +433,7 @@ export function TiposServicioConfig({ operador }: Props) {
 
       {/* Dialog Eliminar */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" maximizable>
           <DialogHeader>
             <DialogTitle className="text-red-600">Eliminar Tipo de Servicio</DialogTitle>
           </DialogHeader>

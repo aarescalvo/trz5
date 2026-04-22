@@ -777,7 +777,7 @@ export function StockCuartosModule({ operador }: Props) {
 
       {/* Dialog: Mover a otra cámara */}
       <Dialog open={dialogMoverOpen} onOpenChange={setDialogMoverOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>Mover Cuarto a Otra Cámara</DialogTitle>
             <DialogDescription>
@@ -823,7 +823,7 @@ export function StockCuartosModule({ operador }: Props) {
 
       {/* Dialog: Enviar a despostada */}
       <Dialog open={dialogEnviarOpen} onOpenChange={setDialogEnviarOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>Enviar a Despostada</DialogTitle>
             <DialogDescription>
@@ -864,7 +864,7 @@ export function StockCuartosModule({ operador }: Props) {
 
       {/* Dialog: Detalle del cuarto */}
       <Dialog open={dialogDetalleOpen} onOpenChange={setDialogDetalleOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>Detalle del Cuarto</DialogTitle>
           </DialogHeader>

@@ -445,7 +445,7 @@ export function ConfigTiposProductoModule({ operador }: { operador: Operador }) 
 
         {/* Dialog Nuevo/Editar Tipo de Producto */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Tag className="w-5 h-5 text-amber-500" />

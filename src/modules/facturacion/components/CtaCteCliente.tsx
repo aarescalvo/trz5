@@ -453,7 +453,7 @@ export function CtaCteCliente({ operador }: Props) {
 
       {/* Dialog Pago Simple */}
       <Dialog open={pagoOpen} onOpenChange={setPagoOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-emerald-500" />

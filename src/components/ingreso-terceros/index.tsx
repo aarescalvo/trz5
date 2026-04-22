@@ -243,7 +243,7 @@ export function IngresoTercerosModule({ operador }: { operador: Operador }) {
 
       {/* Dialog Nuevo Ingreso */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>Nuevo Ingreso de Terceros</DialogTitle>
           </DialogHeader>

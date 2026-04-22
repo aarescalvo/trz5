@@ -869,7 +869,7 @@ export function CalidadRegistroUsuariosModule({ operador }: Props) {
 
         {/* Dialog: Nuevo Reclamo */}
         <Dialog open={dialogReclamoOpen} onOpenChange={setDialogReclamoOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" maximizable>
             <DialogHeader>
               <DialogTitle>
                 <TextoEditable id="calidad-dialog-nuevo-title" original="Registrar Reclamo/Queja" tag="span" />
@@ -970,7 +970,7 @@ export function CalidadRegistroUsuariosModule({ operador }: Props) {
 
         {/* Dialog: Responder Reclamo */}
         <Dialog open={dialogRespuestaOpen} onOpenChange={setDialogRespuestaOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" maximizable>
             <DialogHeader>
               <DialogTitle>
                 <TextoEditable id="calidad-dialog-responder-title" original="Responder Reclamo" tag="span" />

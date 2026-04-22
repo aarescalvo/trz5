@@ -273,7 +273,7 @@ export function ArqueosCaja({ operador }: Props) {
 
       {/* Dialog Nuevo Arqueo */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>Nuevo Arqueo de Caja</DialogTitle>
           </DialogHeader>
@@ -365,7 +365,7 @@ export function ArqueosCaja({ operador }: Props) {
 
       {/* Dialog Detalle */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>Detalle del Arqueo</DialogTitle>
           </DialogHeader>

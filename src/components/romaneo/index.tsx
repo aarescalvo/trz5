@@ -1236,7 +1236,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
 
       {/* Diálogo de Configuración */}
       <Dialog open={configOpen} onOpenChange={setConfigOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>Configuración de Romaneo</DialogTitle>
           </DialogHeader>
@@ -1268,7 +1268,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
 
       {/* Diálogo de Decomiso - Simplificado */}
       <Dialog open={decomisoOpen} onOpenChange={setDecomisoOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle className="text-red-600 flex items-center gap-2"><AlertOctagon className="w-5 h-5" />Decomiso</DialogTitle>
             <DialogDescription>Garrón #{garronActual} - {ladoActual}</DialogDescription>
@@ -1293,7 +1293,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
 
       {/* Diálogo Fin de Faena */}
       <Dialog open={finFaenaOpen} onOpenChange={setFinFaenaOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>Â¿Terminar Faena?</DialogTitle>
             <DialogDescription>
@@ -1316,7 +1316,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
 
       {/* Diálogo Supervisor */}
       <Dialog open={supervisorOpen} onOpenChange={setSupervisorOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Lock className="w-5 h-5" />Autorización de Supervisor</DialogTitle>
             <DialogDescription>Ingrese la clave de supervisor para editar la faena</DialogDescription>
@@ -1493,7 +1493,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
       )}
 
       <Dialog open={configImpresoraOpen} onOpenChange={setConfigImpresoraOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Printer className="w-5 h-5 text-amber-600" />

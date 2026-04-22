@@ -622,7 +622,7 @@ export function ConfigProductosModule({ operador }: { operador: Operador }) {
 
         {/* Dialog Nuevo/Editar Producto */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Package className="w-5 h-5 text-amber-500" />
@@ -731,7 +731,7 @@ export function ConfigProductosModule({ operador }: { operador: Operador }) {
 
         {/* Dialog Ver Precios */}
         <Dialog open={preciosDialogOpen} onOpenChange={setPreciosDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-amber-500" />

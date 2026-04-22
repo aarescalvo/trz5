@@ -837,7 +837,7 @@ export function ListaFaenaModule({ operador }: { operador: Operador }) {
 
         {/* Dialog Nueva Lista */}
         <Dialog open={nuevaListaOpen} onOpenChange={setNuevaListaOpen}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle>
                 <TextoEditable id="dialog-nueva-lista-titulo" original="Nueva Lista de Faena" tag="span" />
@@ -864,7 +864,7 @@ export function ListaFaenaModule({ operador }: { operador: Operador }) {
 
         {/* Dialog Reabrir Lista */}
         <Dialog open={reabrirListaOpen} onOpenChange={setReabrirListaOpen}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-amber-600">
                 <Unlock className="w-5 h-5" />
@@ -901,7 +901,7 @@ export function ListaFaenaModule({ operador }: { operador: Operador }) {
 
         {/* Dialog Quitar Tropa con Garrones */}
         <Dialog open={quitarTropaOpen} onOpenChange={setQuitarTropaOpen}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-red-600">
                 <AlertTriangle className="w-5 h-5" />
@@ -954,7 +954,7 @@ export function ListaFaenaModule({ operador }: { operador: Operador }) {
 
         {/* Dialog Cerrar Lista */}
         <Dialog open={cerrarListaOpen} onOpenChange={setCerrarListaOpen}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-green-600">
                 <Lock className="w-5 h-5" />
@@ -994,7 +994,7 @@ export function ListaFaenaModule({ operador }: { operador: Operador }) {
 
         {/* Dialog Restar Cantidad */}
         <Dialog open={restarCantidadOpen} onOpenChange={setRestarCantidadOpen}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-amber-600">
                 <Minus className="w-5 h-5" />

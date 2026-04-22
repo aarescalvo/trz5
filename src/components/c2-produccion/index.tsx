@@ -744,7 +744,7 @@ export default function C2ProduccionModule({ operador }: { operador: Operador })
 
         {/* Dialog Degradación */}
         <Dialog open={degradDialogOpen} onOpenChange={setDegradDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <TrendingDown className="w-5 h-5 text-red-500" />

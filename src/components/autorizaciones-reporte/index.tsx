@@ -412,7 +412,7 @@ export function AutorizacionesReportesModule({ operador }: Props) {
 
         {/* Dialog Ver Detalle */}
         <Dialog open={detalleOpen} onOpenChange={setDetalleOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Eye className="w-5 h-5 text-amber-600" />
@@ -499,7 +499,7 @@ export function AutorizacionesReportesModule({ operador }: Props) {
 
         {/* Dialog Rechazo */}
         <Dialog open={rechazoOpen} onOpenChange={setRechazoOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-red-600">
                 <XCircle className="w-5 h-5" />

@@ -244,7 +244,7 @@ export function MovimientosCamaraModule({ operador }: { operador: Operador }) {
 
       {/* Dialog Nuevo Movimiento */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle>Nueva Transferencia</DialogTitle>
           </DialogHeader>

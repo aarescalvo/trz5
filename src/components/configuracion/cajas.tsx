@@ -241,7 +241,7 @@ export function Cajas({ operador }: Props) {
       </CardContent>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>
               {editingCaja ? 'Editar Caja' : 'Nueva Caja'}

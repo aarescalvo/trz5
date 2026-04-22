@@ -699,7 +699,7 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
 
         {/* Dialog Ver Detalle */}
         <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Eye className="w-5 h-5 text-amber-500" />
@@ -814,7 +814,7 @@ export function ConfigUsuariosModule({ operador }: { operador: Operador }) {
 
         {/* Dialog Eliminar */}
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-          <DialogContent>
+          <DialogContent maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-red-600">
                 <Trash2 className="w-5 h-5" />

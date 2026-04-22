@@ -298,7 +298,7 @@ export function Balanzas({ operador }: { operador: Operador }) {
 
       {/* Dialog para crear/editar */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>{editingBalanza ? 'Editar Balanza' : 'Nueva Balanza'}</DialogTitle>
             <DialogDescription>

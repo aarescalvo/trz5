@@ -417,7 +417,7 @@ export function InsumosModule({ operador }: Props) {
 
         {/* Modal Nuevo/Editar */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" maximizable>
             <DialogHeader>
               <DialogTitle>
                 {editando ? 'Editar Insumo' : 'Nuevo Insumo'}

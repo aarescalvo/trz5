@@ -299,7 +299,7 @@ export function AuditoriaModule() {
 
         {/* Dialog Detalle */}
         <Dialog open={detalleOpen} onOpenChange={setDetalleOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" maximizable>
             <DialogHeader>
               <DialogTitle>Detalle de Operación</DialogTitle>
             </DialogHeader>

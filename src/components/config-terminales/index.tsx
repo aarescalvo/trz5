@@ -109,7 +109,7 @@ export function ConfigTerminalesModule({ operador }: Props) {
       </Card>
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader><DialogTitle>{editando ? 'Editar Terminal' : 'Nueva Terminal'}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">

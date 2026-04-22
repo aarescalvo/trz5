@@ -579,7 +579,7 @@ export function MovimientoHaciendaModule({ operador }: { operador: Operador }) {
 
       {/* Dialog Mover Animales */}
       <Dialog open={moverOpen} onOpenChange={setMoverOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Move className="w-5 h-5" />
@@ -661,7 +661,7 @@ export function MovimientoHaciendaModule({ operador }: { operador: Operador }) {
 
       {/* Dialog Advertencia de Capacidad */}
       <Dialog open={capacidadWarningOpen} onOpenChange={setCapacidadWarningOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-600">
               <AlertTriangle className="w-5 h-5" />
@@ -693,7 +693,7 @@ export function MovimientoHaciendaModule({ operador }: { operador: Operador }) {
 
       {/* Dialog Baja Animal */}
       <Dialog open={bajaOpen} onOpenChange={setBajaOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <Skull className="w-5 h-5" />

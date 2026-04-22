@@ -310,7 +310,7 @@ export function MonedasConfig({ operador }: { operador: Operador }) {
 
       {/* Dialog de edición/creación */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent maximizable>
           <DialogHeader>
             <DialogTitle>
               {selectedMoneda ? 'Editar Moneda' : 'Nueva Moneda'}

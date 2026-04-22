@@ -524,7 +524,7 @@ export function ObservacionesUsuario({ operador }: { operador: Operador }) {
 
       {/* Diálogo Nueva Observación */}
       <Dialog open={dialogNuevoOpen} onOpenChange={setDialogNuevoOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle>Nueva Observación</DialogTitle>
             <DialogDescription>
@@ -601,7 +601,7 @@ export function ObservacionesUsuario({ operador }: { operador: Operador }) {
 
       {/* Diálogo Resolver */}
       <Dialog open={dialogResolverOpen} onOpenChange={setDialogResolverOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle>Resolver Observación</DialogTitle>
             <DialogDescription>
@@ -644,7 +644,7 @@ export function ObservacionesUsuario({ operador }: { operador: Operador }) {
 
       {/* Diálogo Ver Detalles */}
       <Dialog open={dialogVerOpen} onOpenChange={setDialogVerOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" maximizable>
           <DialogHeader>
             <DialogTitle>Detalle de Observación</DialogTitle>
           </DialogHeader>

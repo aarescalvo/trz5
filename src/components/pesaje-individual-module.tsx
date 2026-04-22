@@ -1906,7 +1906,7 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
 
       {/* DIÁLOGO DE VALIDACIÓN */}
       <Dialog open={validacionDialogOpen} onOpenChange={setValidacionDialogOpen}>
-        <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <ClipboardCheck className="w-5 h-5 text-amber-600" />
@@ -2033,7 +2033,7 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" maximizable>
           <DialogHeader>
             <DialogTitle>Editar Animal #{editingAnimal?.numero}</DialogTitle>
           </DialogHeader>
@@ -2082,7 +2082,7 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
 
       {/* Diálogo de configuración de impresora */}
       <Dialog open={configImpresoraOpen} onOpenChange={setConfigImpresoraOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Printer className="w-5 h-5 text-amber-600" />
