@@ -1,7 +1,7 @@
 // Script para crear datos de prueba
 // Ejecutar con: bun run db:seed
 
-import { PrismaClient, Especie, RolOperador, TipoAnimal } from '@prisma/client'
+import { PrismaClient, Especie, RolOperador, TipoAnimal, TipoProductor } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -94,7 +94,7 @@ async function main() {
 
   // 2. Crear transportistas
   console.log('🚛 Creando transportistas...')
-  const trans1 = await prisma.transportista.upsert({
+  await prisma.transportista.upsert({
     where: { id: 'trans-001' },
     update: {},
     create: {
@@ -106,7 +106,7 @@ async function main() {
     }
   })
   
-  const trans2 = await prisma.transportista.upsert({
+  await prisma.transportista.upsert({
     where: { id: 'trans-002' },
     update: {},
     create: {
@@ -118,7 +118,7 @@ async function main() {
     }
   })
   
-  const trans3 = await prisma.transportista.upsert({
+  await prisma.transportista.upsert({
     where: { id: 'trans-003' },
     update: {},
     create: {
@@ -131,52 +131,9 @@ async function main() {
   })
   console.log(`   ✓ 3 transportistas creados`)
 
-  // 3. Crear clientes (productores y usuarios de faena)
-  console.log('👥 Creando clientes...')
+  // 3. Crear usuarios de faena (matarifes) como Cliente
+  console.log('👥 Creando clientes (usuarios de faena)...')
   
-  // Productores (se crean como USUARIO_FAENA - el modelo Cliente unifica productores y usuarios de faena)
-  const prod1 = await prisma.cliente.upsert({
-    where: { id: 'prod-001' },
-    update: {},
-    create: {
-      id: 'prod-001',
-      nombre: 'Estancia La Esperanza',
-      cuit: '30-11111111-1',
-      direccion: 'Campo La Esperanza, Ruta 9 KM 150',
-      telefono: '0351-1112222',
-      email: 'esperanza@campo.com.ar',
-      tipo: 'USUARIO_FAENA'
-    }
-  })
-  
-  const prod2 = await prisma.cliente.upsert({
-    where: { id: 'prod-002' },
-    update: {},
-    create: {
-      id: 'prod-002',
-      nombre: 'Ganadera del Norte SA',
-      cuit: '30-22222222-2',
-      direccion: 'Ruta 34 KM 500, Santiago del Estero',
-      telefono: '0385-3334444',
-      email: 'contacto@ganadera-norte.com.ar',
-      tipo: 'USUARIO_FAENA'
-    }
-  })
-  
-  const prod3 = await prisma.cliente.upsert({
-    where: { id: 'prod-003' },
-    update: {},
-    create: {
-      id: 'prod-003',
-      nombre: 'Los Alamos Agropecuaria',
-      cuit: '30-33333333-3',
-      direccion: 'Campo Los Álamos, Ruta 158 KM 80',
-      telefono: '0343-5556666',
-      tipo: 'USUARIO_FAENA'
-    }
-  })
-
-  // Usuarios de Faena (Matarifes)
   const uf1 = await prisma.cliente.upsert({
     where: { id: 'uf-001' },
     update: {},
@@ -255,31 +212,60 @@ async function main() {
       tipo: 'USUARIO_FAENA'
     }
   })
+  console.log(`   ✓ 4 usuarios de faena creados`)
 
-  // Cliente mixto (productor y usuario de faena)
-  const mixto = await prisma.cliente.upsert({
-    where: { id: 'mix-001' },
+  // 3b. Crear productores/consignatarios (tabla ProductorConsignatario)
+  console.log('🤠 Creando productores/consignatarios...')
+  
+  const prod1 = await prisma.productorConsignatario.upsert({
+    where: { id: 'prod-001' },
     update: {},
     create: {
-      id: 'mix-001',
-      nombre: 'Roberto Santa Rosa',
-      dni: '56789012',
-      cuit: '20567890123',
-      matricula: 'MAT-005',
-      direccion: 'Campo Santa Rosa, Ruta 9 KM 200',
-      localidad: 'Córdoba',
-      provincia: 'Córdoba',
-      telefono: '0351-1234567',
-      email: 'santarosa@agro.com.ar',
-      razonSocial: 'Agropecuaria Santa Rosa',
-      condicionIva: 'RI',
-      tipo: 'USUARIO_FAENA'
+      id: 'prod-001',
+      nombre: 'Estancia La Esperanza',
+      cuit: '30-11111111-1',
+      direccion: 'Campo La Esperanza, Ruta 9 KM 150',
+      telefono: '0351-1112222',
+      email: 'esperanza@campo.com.ar',
+      tipo: TipoProductor.PRODUCTOR,
+      numeroRenspa: '12.345.6.78901/12',
+      localidad: 'Río Segundo',
+      provincia: 'Córdoba'
     }
   })
-
-  console.log(`   ✓ 3 productores creados`)
-  console.log(`   ✓ 4 usuarios de faena creados`)
-  console.log(`   ✓ 1 cliente mixto creado`)
+  
+  const prod2 = await prisma.productorConsignatario.upsert({
+    where: { id: 'prod-002' },
+    update: {},
+    create: {
+      id: 'prod-002',
+      nombre: 'Ganadera del Norte SA',
+      cuit: '30-22222222-2',
+      direccion: 'Ruta 34 KM 500, Santiago del Estero',
+      telefono: '0385-3334444',
+      email: 'contacto@ganadera-norte.com.ar',
+      tipo: TipoProductor.PRODUCTOR,
+      numeroRenspa: '22.345.6.78902/22',
+      localidad: 'Santiago del Estero',
+      provincia: 'Santiago del Estero'
+    }
+  })
+  
+  const prod3 = await prisma.productorConsignatario.upsert({
+    where: { id: 'prod-003' },
+    update: {},
+    create: {
+      id: 'prod-003',
+      nombre: 'Los Alamos Agropecuaria',
+      cuit: '30-33333333-3',
+      direccion: 'Campo Los Álamos, Ruta 158 KM 80',
+      telefono: '0343-5556666',
+      tipo: TipoProductor.PRODUCTOR,
+      localidad: 'Esquina',
+      provincia: 'Córdoba'
+    }
+  })
+  console.log(`   ✓ 3 productores/consignatarios creados`)
 
   // 4. Crear corrales
   console.log('🏠 Creando corrales...')
@@ -317,38 +303,20 @@ async function main() {
 
   // 5. Crear tipificadores
   console.log('🔬 Creando tipificadores...')
-  const tipificador1 = await prisma.tipificador.upsert({
+  await prisma.tipificador.upsert({
     where: { matricula: 'TIP-001' },
     update: {},
-    create: {
-      nombre: 'Carlos',
-      apellido: 'López',
-      numero: '1',
-      matricula: 'TIP-001',
-      activo: true
-    }
+    create: { nombre: 'Carlos', apellido: 'López', numero: '1', matricula: 'TIP-001', activo: true }
   })
-  const tipificador2 = await prisma.tipificador.upsert({
+  await prisma.tipificador.upsert({
     where: { matricula: 'TIP-002' },
     update: {},
-    create: {
-      nombre: 'Roberto',
-      apellido: 'Fernández',
-      numero: '2',
-      matricula: 'TIP-002',
-      activo: true
-    }
+    create: { nombre: 'Roberto', apellido: 'Fernández', numero: '2', matricula: 'TIP-002', activo: true }
   })
-  const tipificador3 = await prisma.tipificador.upsert({
+  await prisma.tipificador.upsert({
     where: { matricula: 'TIP-003' },
     update: {},
-    create: {
-      nombre: 'Ana',
-      apellido: 'Martínez',
-      numero: '3',
-      matricula: 'TIP-003',
-      activo: true
-    }
+    create: { nombre: 'Ana', apellido: 'Martínez', numero: '3', matricula: 'TIP-003', activo: true }
   })
   console.log(`   ✓ 3 tipificadores creados`)
 
@@ -376,7 +344,7 @@ async function main() {
   })
   console.log(`   ✓ 4 cámaras creadas`)
 
-  // 6. Crear tropas con animales ya pesados individualmente
+  // 7. Crear tropas con animales ya pesados individualmente
   console.log('🐄 Creando tropas con pesaje individual completo...')
   const year = new Date().getFullYear()
   
@@ -390,20 +358,19 @@ async function main() {
       productorId: prod1.id,
       usuarioFaenaId: uf1.id,
       especie: Especie.BOVINO,
-      dte: 'DTE-2024-0001',
-      guia: 'GUIA-2024-001',
+      dte: `DTE-${year}-0001`,
+      guia: `GUIA-${year}-001`,
       cantidadCabezas: 20,
       corralId: corralA.id,
       estado: 'PESADO',
       pesoBruto: 15000,
       pesoTara: 10000,
       pesoNeto: 5000,
-      pesoTotalIndividual: 9450, // Suma de animales
+      pesoTotalIndividual: 9450,
       operadorId: admin.id
     }
   })
 
-  // Tipos de animales tropa 1
   await prisma.tropaAnimalCantidad.upsert({
     where: { tropaId_tipoAnimal: { tropaId: tropa1.id, tipoAnimal: 'NO' } },
     update: { cantidad: 10 },
@@ -415,28 +382,17 @@ async function main() {
     create: { tropaId: tropa1.id, tipoAnimal: 'VA', cantidad: 10 }
   })
 
-  // Animales pesados tropa 1
   const animalesTropa1: { tipo: TipoAnimal; peso: number; raza: string }[] = [
-    { tipo: 'NO', peso: 485, raza: 'Angus' },
-    { tipo: 'NO', peso: 510, raza: 'Angus' },
-    { tipo: 'NO', peso: 495, raza: 'Hereford' },
-    { tipo: 'NO', peso: 520, raza: 'Angus' },
-    { tipo: 'NO', peso: 478, raza: 'Brangus' },
-    { tipo: 'NO', peso: 502, raza: 'Angus' },
-    { tipo: 'NO', peso: 488, raza: 'Hereford' },
-    { tipo: 'NO', peso: 515, raza: 'Angus' },
-    { tipo: 'NO', peso: 492, raza: 'Brangus' },
-    { tipo: 'NO', peso: 505, raza: 'Angus' },
-    { tipo: 'VA', peso: 420, raza: 'Angus' },
-    { tipo: 'VA', peso: 435, raza: 'Hereford' },
-    { tipo: 'VA', peso: 410, raza: 'Angus' },
-    { tipo: 'VA', peso: 445, raza: 'Brangus' },
-    { tipo: 'VA', peso: 428, raza: 'Angus' },
-    { tipo: 'VA', peso: 440, raza: 'Hereford' },
-    { tipo: 'VA', peso: 418, raza: 'Angus' },
-    { tipo: 'VA', peso: 452, raza: 'Brangus' },
-    { tipo: 'VA', peso: 425, raza: 'Angus' },
-    { tipo: 'VA', peso: 437, raza: 'Hereford' },
+    { tipo: 'NO', peso: 485, raza: 'Angus' }, { tipo: 'NO', peso: 510, raza: 'Angus' },
+    { tipo: 'NO', peso: 495, raza: 'Hereford' }, { tipo: 'NO', peso: 520, raza: 'Angus' },
+    { tipo: 'NO', peso: 478, raza: 'Brangus' }, { tipo: 'NO', peso: 502, raza: 'Angus' },
+    { tipo: 'NO', peso: 488, raza: 'Hereford' }, { tipo: 'NO', peso: 515, raza: 'Angus' },
+    { tipo: 'NO', peso: 492, raza: 'Brangus' }, { tipo: 'NO', peso: 505, raza: 'Angus' },
+    { tipo: 'VA', peso: 420, raza: 'Angus' }, { tipo: 'VA', peso: 435, raza: 'Hereford' },
+    { tipo: 'VA', peso: 410, raza: 'Angus' }, { tipo: 'VA', peso: 445, raza: 'Brangus' },
+    { tipo: 'VA', peso: 428, raza: 'Angus' }, { tipo: 'VA', peso: 440, raza: 'Hereford' },
+    { tipo: 'VA', peso: 418, raza: 'Angus' }, { tipo: 'VA', peso: 452, raza: 'Brangus' },
+    { tipo: 'VA', peso: 425, raza: 'Angus' }, { tipo: 'VA', peso: 437, raza: 'Hereford' },
   ]
 
   for (let i = 0; i < animalesTropa1.length; i++) {
@@ -446,25 +402,15 @@ async function main() {
       where: { codigo },
       update: {},
       create: {
-        tropaId: tropa1.id,
-        numero: i + 1,
-        codigo,
-        tipoAnimal: a.tipo,
-        raza: a.raza,
-        pesoVivo: a.peso,
-        estado: 'PESADO',
-        corralId: corralA.id
+        tropaId: tropa1.id, numero: i + 1, codigo,
+        tipoAnimal: a.tipo, raza: a.raza,
+        pesoVivo: a.peso, estado: 'PESADO', corralId: corralA.id
       }
     })
-    // Crear pesaje individual
     await prisma.pesajeIndividual.upsert({
       where: { animalId: animal.id },
       update: {},
-      create: {
-        animalId: animal.id,
-        peso: a.peso,
-        operadorId: admin.id
-      }
+      create: { animalId: animal.id, peso: a.peso, operadorId: admin.id }
     })
   }
 
@@ -473,21 +419,13 @@ async function main() {
     where: { codigo: `B ${year} 0002` },
     update: {},
     create: {
-      codigo: `B ${year} 0002`,
-      numero: 2,
-      productorId: prod2.id,
-      usuarioFaenaId: uf2.id,
+      codigo: `B ${year} 0002`, numero: 2,
+      productorId: prod2.id, usuarioFaenaId: uf2.id,
       especie: Especie.BOVINO,
-      dte: 'DTE-2024-0002',
-      guia: 'GUIA-2024-002',
-      cantidadCabezas: 15,
-      corralId: corralB.id,
-      estado: 'PESADO',
-      pesoBruto: 12000,
-      pesoTara: 8000,
-      pesoNeto: 4000,
-      pesoTotalIndividual: 7230,
-      operadorId: admin.id
+      dte: `DTE-${year}-0002`, guia: `GUIA-${year}-002`,
+      cantidadCabezas: 15, corralId: corralB.id,
+      estado: 'PESADO', pesoBruto: 12000, pesoTara: 8000,
+      pesoNeto: 4000, pesoTotalIndividual: 7230, operadorId: admin.id
     }
   })
 
@@ -503,20 +441,13 @@ async function main() {
   })
 
   const animalesTropa2: { tipo: TipoAnimal; peso: number; raza: string }[] = [
-    { tipo: 'VQ', peso: 395, raza: 'Angus' },
-    { tipo: 'VQ', peso: 410, raza: 'Hereford' },
-    { tipo: 'VQ', peso: 385, raza: 'Angus' },
-    { tipo: 'VQ', peso: 420, raza: 'Brangus' },
-    { tipo: 'VQ', peso: 398, raza: 'Angus' },
-    { tipo: 'VQ', peso: 412, raza: 'Hereford' },
-    { tipo: 'VQ', peso: 390, raza: 'Angus' },
-    { tipo: 'VQ', peso: 425, raza: 'Brangus' },
-    { tipo: 'NT', peso: 460, raza: 'Angus' },
-    { tipo: 'NT', peso: 475, raza: 'Hereford' },
-    { tipo: 'NT', peso: 455, raza: 'Angus' },
-    { tipo: 'NT', peso: 480, raza: 'Brangus' },
-    { tipo: 'NT', peso: 468, raza: 'Angus' },
-    { tipo: 'NT', peso: 482, raza: 'Hereford' },
+    { tipo: 'VQ', peso: 395, raza: 'Angus' }, { tipo: 'VQ', peso: 410, raza: 'Hereford' },
+    { tipo: 'VQ', peso: 385, raza: 'Angus' }, { tipo: 'VQ', peso: 420, raza: 'Brangus' },
+    { tipo: 'VQ', peso: 398, raza: 'Angus' }, { tipo: 'VQ', peso: 412, raza: 'Hereford' },
+    { tipo: 'VQ', peso: 390, raza: 'Angus' }, { tipo: 'VQ', peso: 425, raza: 'Brangus' },
+    { tipo: 'NT', peso: 460, raza: 'Angus' }, { tipo: 'NT', peso: 475, raza: 'Hereford' },
+    { tipo: 'NT', peso: 455, raza: 'Angus' }, { tipo: 'NT', peso: 480, raza: 'Brangus' },
+    { tipo: 'NT', peso: 468, raza: 'Angus' }, { tipo: 'NT', peso: 482, raza: 'Hereford' },
     { tipo: 'NT', peso: 470, raza: 'Angus' },
   ]
 
@@ -527,24 +458,15 @@ async function main() {
       where: { codigo },
       update: {},
       create: {
-        tropaId: tropa2.id,
-        numero: i + 1,
-        codigo,
-        tipoAnimal: a.tipo,
-        raza: a.raza,
-        pesoVivo: a.peso,
-        estado: 'PESADO',
-        corralId: corralB.id
+        tropaId: tropa2.id, numero: i + 1, codigo,
+        tipoAnimal: a.tipo, raza: a.raza,
+        pesoVivo: a.peso, estado: 'PESADO', corralId: corralB.id
       }
     })
     await prisma.pesajeIndividual.upsert({
       where: { animalId: animal.id },
       update: {},
-      create: {
-        animalId: animal.id,
-        peso: a.peso,
-        operadorId: admin.id
-      }
+      create: { animalId: animal.id, peso: a.peso, operadorId: admin.id }
     })
   }
 
@@ -553,18 +475,12 @@ async function main() {
     where: { codigo: `B ${year} 0003` },
     update: {},
     create: {
-      codigo: `B ${year} 0003`,
-      numero: 3,
-      productorId: prod3.id,
-      usuarioFaenaId: uf3.id,
+      codigo: `B ${year} 0003`, numero: 3,
+      productorId: prod3.id, usuarioFaenaId: uf3.id,
       especie: Especie.BOVINO,
-      dte: 'DTE-2024-0003',
-      guia: 'GUIA-2024-003',
-      cantidadCabezas: 12,
-      corralId: corralC.id,
-      estado: 'PESADO',
-      pesoTotalIndividual: 5680,
-      operadorId: admin.id
+      dte: `DTE-${year}-0003`, guia: `GUIA-${year}-003`,
+      cantidadCabezas: 12, corralId: corralC.id,
+      estado: 'PESADO', pesoTotalIndividual: 5680, operadorId: admin.id
     }
   })
 
@@ -580,18 +496,12 @@ async function main() {
   })
 
   const animalesTropa3: { tipo: TipoAnimal; peso: number; raza: string }[] = [
-    { tipo: 'NO', peso: 490, raza: 'Angus' },
-    { tipo: 'NO', peso: 505, raza: 'Hereford' },
-    { tipo: 'NO', peso: 478, raza: 'Angus' },
-    { tipo: 'NO', peso: 512, raza: 'Brangus' },
-    { tipo: 'NO', peso: 495, raza: 'Angus' },
-    { tipo: 'NO', peso: 508, raza: 'Hereford' },
-    { tipo: 'MEJ', peso: 380, raza: 'Angus' },
-    { tipo: 'MEJ', peso: 395, raza: 'Hereford' },
-    { tipo: 'MEJ', peso: 372, raza: 'Angus' },
-    { tipo: 'MEJ', peso: 388, raza: 'Brangus' },
-    { tipo: 'MEJ', peso: 402, raza: 'Angus' },
-    { tipo: 'MEJ', peso: 378, raza: 'Hereford' },
+    { tipo: 'NO', peso: 490, raza: 'Angus' }, { tipo: 'NO', peso: 505, raza: 'Hereford' },
+    { tipo: 'NO', peso: 478, raza: 'Angus' }, { tipo: 'NO', peso: 512, raza: 'Brangus' },
+    { tipo: 'NO', peso: 495, raza: 'Angus' }, { tipo: 'NO', peso: 508, raza: 'Hereford' },
+    { tipo: 'MEJ', peso: 380, raza: 'Angus' }, { tipo: 'MEJ', peso: 395, raza: 'Hereford' },
+    { tipo: 'MEJ', peso: 372, raza: 'Angus' }, { tipo: 'MEJ', peso: 388, raza: 'Brangus' },
+    { tipo: 'MEJ', peso: 402, raza: 'Angus' }, { tipo: 'MEJ', peso: 378, raza: 'Hereford' },
   ]
 
   for (let i = 0; i < animalesTropa3.length; i++) {
@@ -601,24 +511,15 @@ async function main() {
       where: { codigo },
       update: {},
       create: {
-        tropaId: tropa3.id,
-        numero: i + 1,
-        codigo,
-        tipoAnimal: a.tipo,
-        raza: a.raza,
-        pesoVivo: a.peso,
-        estado: 'PESADO',
-        corralId: corralC.id
+        tropaId: tropa3.id, numero: i + 1, codigo,
+        tipoAnimal: a.tipo, raza: a.raza,
+        pesoVivo: a.peso, estado: 'PESADO', corralId: corralC.id
       }
     })
     await prisma.pesajeIndividual.upsert({
       where: { animalId: animal.id },
       update: {},
-      create: {
-        animalId: animal.id,
-        peso: a.peso,
-        operadorId: admin.id
-      }
+      create: { animalId: animal.id, peso: a.peso, operadorId: admin.id }
     })
   }
 
@@ -627,20 +528,13 @@ async function main() {
     where: { codigo: `B ${year} 0004` },
     update: {},
     create: {
-      codigo: `B ${year} 0004`,
-      numero: 4,
-      productorId: prod1.id,
-      usuarioFaenaId: uf1.id,
+      codigo: `B ${year} 0004`, numero: 4,
+      productorId: prod1.id, usuarioFaenaId: uf1.id,
       especie: Especie.BOVINO,
-      dte: 'DTE-2024-0004',
-      guia: 'GUIA-2024-004',
-      cantidadCabezas: 10,
-      corralId: corralD.id,
-      estado: 'EN_CORRAL',
-      pesoBruto: 8000,
-      pesoTara: 5500,
-      pesoNeto: 2500,
-      operadorId: admin.id
+      dte: `DTE-${year}-0004`, guia: `GUIA-${year}-004`,
+      cantidadCabezas: 10, corralId: corralD.id,
+      estado: 'EN_CORRAL', pesoBruto: 8000, pesoTara: 5500,
+      pesoNeto: 2500, operadorId: admin.id
     }
   })
 
@@ -660,18 +554,12 @@ async function main() {
     where: { codigo: `B ${year} 0005` },
     update: {},
     create: {
-      codigo: `B ${year} 0005`,
-      numero: 5,
-      productorId: prod2.id,
-      usuarioFaenaId: uf2.id,
+      codigo: `B ${year} 0005`, numero: 5,
+      productorId: prod2.id, usuarioFaenaId: uf2.id,
       especie: Especie.BOVINO,
-      dte: 'DTE-2024-0005',
-      guia: 'GUIA-2024-005',
-      cantidadCabezas: 8,
-      corralId: corralE1.id,
-      estado: 'RECIBIDO',
-      pesoBruto: 6500,
-      operadorId: admin.id
+      dte: `DTE-${year}-0005`, guia: `GUIA-${year}-005`,
+      cantidadCabezas: 8, corralId: corralE1.id,
+      estado: 'RECIBIDO', pesoBruto: 6500, operadorId: admin.id
     }
   })
 
@@ -683,7 +571,7 @@ async function main() {
 
   console.log(`   ✓ 5 tropas creadas (3 con pesaje individual completo)`)
 
-  // 7. Configuración del frigorífico
+  // 8. Configuración del frigorífico
   console.log('⚙️ Creando configuración del frigorífico...')
   await prisma.configuracionFrigorifico.upsert({
     where: { id: 'config-main' },
@@ -699,28 +587,13 @@ async function main() {
   })
   console.log(`   ✓ Configuración del frigorífico creada`)
 
-  // 8. Actualizar stock de corrales
+  // 9. Actualizar stock de corrales
   try {
-    await prisma.corral.update({
-      where: { id: corralA.id },
-      data: { stockBovinos: 20 }
-    })
-    await prisma.corral.update({
-      where: { id: corralB.id },
-      data: { stockBovinos: 15 }
-    })
-    await prisma.corral.update({
-      where: { id: corralC.id },
-      data: { stockBovinos: 12 }
-    })
-    await prisma.corral.update({
-      where: { id: corralD.id },
-      data: { stockBovinos: 10 }
-    })
-    await prisma.corral.update({
-      where: { id: corralE1.id },
-      data: { stockBovinos: 8 }
-    })
+    await prisma.corral.update({ where: { id: corralA.id }, data: { stockBovinos: 20 } })
+    await prisma.corral.update({ where: { id: corralB.id }, data: { stockBovinos: 15 } })
+    await prisma.corral.update({ where: { id: corralC.id }, data: { stockBovinos: 12 } })
+    await prisma.corral.update({ where: { id: corralD.id }, data: { stockBovinos: 10 } })
+    await prisma.corral.update({ where: { id: corralE1.id }, data: { stockBovinos: 8 } })
   } catch (e) {
     // Ignore if corral not found
   }
@@ -731,11 +604,11 @@ async function main() {
   console.log('   Balanza: balanza / balanza123 (PIN: 1111)')
   console.log('   Supervisor: supervisor / super123 (PIN: 2222)')
   console.log('\n📊 Tropas creadas:')
-  console.log('   - B 2025 0001: 20 animales PESADOS (9,450 kg total)')
-  console.log('   - B 2025 0002: 15 animales PESADOS (7,230 kg total)')
-  console.log('   - B 2025 0003: 12 animales PESADOS (5,680 kg total)')
-  console.log('   - B 2025 0004: 10 animales EN_CORRAL (listo para pesaje)')
-  console.log('   - B 2025 0005: 8 animales RECIBIDO (pendiente tara)')
+  console.log(`   - B ${year} 0001: 20 animales PESADOS (9,450 kg total)`)
+  console.log(`   - B ${year} 0002: 15 animales PESADOS (7,230 kg total)`)
+  console.log(`   - B ${year} 0003: 12 animales PESADOS (5,680 kg total)`)
+  console.log(`   - B ${year} 0004: 10 animales EN_CORRAL (listo para pesaje)`)
+  console.log(`   - B ${year} 0005: 8 animales RECIBIDO (pendiente tara)`)
 }
 
 main()
