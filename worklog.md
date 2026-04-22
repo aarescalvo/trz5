@@ -4734,3 +4734,63 @@ Stage Summary:
 - **install/ sincronizada** con 39 archivos nuevos/actualizados
 - **0 errores TypeScript** en compilacion final
 - **114 archivos modificados** listos para commit
+---
+Task ID: AUDIT-v3.17.1-POST
+Agent: main (con subagentes paralelos)
+Task: Barrido post-auditoria: seguridad, dead code, as any, lint
+
+Work Log:
+
+#### 1. TypeScript Build
+- **Resultado**: 0 errores TypeScript (compilacion limpia)
+- Build exitoso con todas las dependencias instaladas
+
+#### 2. Seguridad (2 bugs criticos corregidos)
+**2a. JWT Secret Fallback (CRITICO)**
+- Archivo: `src/lib/jwt.ts`
+- Problema: `process.env.JWT_SECRET || 'produccion4z-secret-key-change-in-production'`
+- Fix: Funcion `getJwtSecret()` que lanza error descriptivo si no esta seteado
+- Impacto: Imposible forjar tokens sin JWT_SECRET en .env
+
+**2b. actividad-operador POST sin permisos (HIGH)**
+- Archivo: `src/app/api/actividad-operador/route.ts`
+- Problema: Aceptaba operadorId del body (spoofing de auditoria)
+- Fix: Fuerza operadorId desde header `x-operador-id`, verifica autenticacion
+- Impacto: Audit trail ahora es inmutable desde el frontend
+
+#### 3. Refinamiento `as any` (23+ eliminados)
+| Archivo | Eliminados | Metodo |
+|---------|-----------|--------|
+| `lib/puente-web.ts` | 5 | Cast unico en declaracion con tipo explicito |
+| `api/reportes/conciliacion-faena-factura/route.ts` | 14 | 4 type aliases (ListaFaenaRow, MediaResRow, RomaneoRow, FacturaRow) |
+| `api/pesaje-camion/route.ts` | 1 | `as const` en vez de `as any` |
+| `api/pagos-factura/route.ts` | 2 | `as const` en branches |
+| `api/reportes/romaneo-pdf/route.ts` | 2 | `as const` + removal redundant cast |
+
+#### 4. Dead Code Eliminado (25 archivos, -5542 lineas)
+| Directorio | Archivos | Razon |
+|-----------|----------|--------|
+| `src/modules/pesaje/` | 12 | Modulo nuevo sin imports (legacy components activos) |
+| `src/modules/tropas/` | 8 | Modulo nuevo sin imports |
+| `src/shared/` | 5 | Types/utils sin consumidores |
+
+- 15 componentes unused marcados con nota de uso futuro
+- `src/lib/offline/` NO eliminado (ResilienceProvider lo consume)
+
+#### 5. Lint y Calidad
+- `crypto.ts`: 3x `require()` reemplazados por `import` ESM
+- ESLint auto-fix: 30+ warnings corregidas
+- `install/`: 2 parsing errors corregidos (missing bracket + extra parenthesis)
+- Resultado final: **0 errores TS, 0 errores ESLint, 1 warning (alt-text shadcn/ui)**
+
+#### 6. Commit y Push
+- Commit: `86fa496` - `fix: seguridad, limpieza dead code, refinamiento TypeScript`
+- 64 archivos modificados, 126 insertiones, 5542 deleciones
+- Push exitoso a `origin/master`
+
+Stage Summary:
+- **2 bugs de seguridad corregidos** (JWT fallback + actividad spoofing)
+- **23+ as any eliminados** (de 67 a ~44 restantes)
+- **25 archivos dead code eliminados** (-5542 lineas)
+- **0 errores TypeScript / 0 errores ESLint**
+- **Push a GitHub completado**
