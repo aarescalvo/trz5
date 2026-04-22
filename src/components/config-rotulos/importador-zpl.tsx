@@ -200,7 +200,7 @@ export function ImportadorZPL({ onImportSuccess }: Props) {
         setModalOpen(open)
         if (!open) resetForm()
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent className="max-w-4xl max-h-[90vh]" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-500" />

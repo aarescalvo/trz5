@@ -440,7 +440,7 @@ export function StocksInsumosModule({ operador }: Props) {
 
         {/* Modal */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" maximizable>
             <DialogHeader>
               <DialogTitle>{editando ? <TextoEditable id="titulo-editar-insumo" original="Editar Insumo" tag="span" /> : <TextoEditable id="titulo-nuevo-insumo" original="Nuevo Insumo" tag="span" />}</DialogTitle>
               <DialogDescription>

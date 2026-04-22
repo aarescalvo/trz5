@@ -565,7 +565,7 @@ export function ExpedicionModule({ operador }: Props) {
 
       {/* Dialog Nuevo Despacho */}
       <Dialog open={showNewDespacho} onOpenChange={setShowNewDespacho}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Truck className="w-5 h-5 text-amber-500" />

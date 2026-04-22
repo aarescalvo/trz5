@@ -340,7 +340,7 @@ export function ConfigPlantillasModule({ operador }: Props) {
         setModalSubir(open)
         if (!open) resetForm()
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh]">
+        <DialogContent className="max-w-2xl max-h-[90vh]" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="w-5 h-5 text-green-500" />

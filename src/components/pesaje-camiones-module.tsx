@@ -1503,7 +1503,7 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
 
         {/* PC1: Visual Summary Confirmation Dialog */}
         <Dialog open={showResumen} onOpenChange={setShowResumen}>
-          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-xl">
                 <ClipboardCheck className="w-6 h-6 text-amber-600" />

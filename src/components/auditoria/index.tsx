@@ -598,7 +598,7 @@ export function AuditoriaViewer() {
 
         {/* Dialog Detalle */}
         <Dialog open={detalleOpen} onOpenChange={setDetalleOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col" maximizable>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5" />

@@ -386,7 +386,7 @@ export default function ProductosModule() {
 
       {/* Modal de edición/creación */}
       <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
-        <DialogContent className="max-w-5xl max-h-[95vh] p-0 overflow-hidden">
+        <DialogContent className="max-w-5xl max-h-[95vh] p-0 overflow-hidden" maximizable>
           <DialogHeader className="bg-gradient-to-r from-emerald-800 to-emerald-700 text-white p-4">
             <DialogTitle className="text-xl flex items-center gap-2">
               <Package className="h-5 w-5" />

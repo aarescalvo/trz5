@@ -521,7 +521,7 @@ export function CtaCteCliente({ operador }: Props) {
 
       {/* Dialog Imputación Múltiple */}
       <Dialog open={imputacionOpen} onOpenChange={setImputacionOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-emerald-500" />

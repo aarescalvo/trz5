@@ -97,7 +97,7 @@ export function PreviewZPL({ rotuloId, rotuloNombre, tipoPlantilla }: Props) {
       </Button>
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh]">
+        <DialogContent className="max-w-5xl max-h-[90vh]" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-500" />

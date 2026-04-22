@@ -1332,7 +1332,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
 
       {/* DiÃ¡logo de ReimpresiÃ³n por Fecha */}
       <Dialog open={reimpresionOpen} onOpenChange={setReimpresionOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className="max-w-4xl max-h-[80vh]" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Printer className="w-5 h-5" />

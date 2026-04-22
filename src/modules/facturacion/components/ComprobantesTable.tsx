@@ -214,7 +214,7 @@ export function ComprobantesTable({ operador }: Props) {
 
       {/* View Dialog - Profesional */}
       <Dialog open={!!viewFactura} onOpenChange={() => setViewFactura(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">

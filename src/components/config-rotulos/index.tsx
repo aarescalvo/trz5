@@ -1167,7 +1167,7 @@ OPCIÓN 3 - Exportar desde Zebra Designer:
 
       {/* Modal Preview */}
       <Dialog open={modalPreview} onOpenChange={setModalPreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent className="max-w-4xl max-h-[90vh]" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="w-5 h-5 text-blue-500" />
@@ -1382,7 +1382,7 @@ OPCIÓN 3 - Exportar desde Zebra Designer:
 
       {/* Modal Editar */}
       <Dialog open={modalEditar} onOpenChange={setModalEditar}>
-        <DialogContent className="max-w-6xl max-h-[90vh]">
+        <DialogContent className="max-w-6xl max-h-[90vh]" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Edit className="w-5 h-5 text-amber-500" />

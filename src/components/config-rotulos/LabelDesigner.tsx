@@ -435,7 +435,7 @@ export function LabelDesigner({
       
       {/* Modal Vista Previa */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl" maximizable>
           <DialogHeader>
             <DialogTitle>Vista Previa del Código</DialogTitle>
           </DialogHeader>
