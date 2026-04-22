@@ -436,7 +436,7 @@ export async function POST(request: NextRequest) {
               numero: animalData.numero,
               codigo: animalData.codigo,
               tipoAnimal: animalData.tipoAnimal,
-              estado: 'RECIBIDO' as any,
+              estado: 'RECIBIDO' as const,
               corralId: animalData.corralId || null
             }
           })

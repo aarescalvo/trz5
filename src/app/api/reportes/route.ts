@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { fecha: 'desc' },
       take: 500
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     }) as Array<any>
 
     // RESUMEN - Estadísticas generales
@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { createdAt: 'desc' },
       take: 100
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     }) as Array<any>
 
     // Obtener todos los romaneos que corresponden a estas tropas para calcular pesos reales

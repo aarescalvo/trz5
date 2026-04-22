@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
           despachoId,
           operadorId,
           detalles: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             create: detalles as any
           }
         },

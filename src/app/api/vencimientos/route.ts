@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     fechaAlerta.setDate(fechaAlerta.getDate() + diasAlerta)
 
     // Construir filtro
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const where: any = {
       estado: 'EN_CAMARA' // Solo medias reses en cámara
     }

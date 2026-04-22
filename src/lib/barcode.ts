@@ -38,7 +38,7 @@ export function generateBarcodeSVG(code: string, options: BarcodeOptions = {}): 
       margin: opts.margin,
     });
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     return (canvas as any).toBuffer('image/svg+xml').toString('utf-8');
   } catch (error) {
     throw new Error(`Error generando código de barras: ${error}`);

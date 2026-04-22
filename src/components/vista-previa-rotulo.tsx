@@ -1,3 +1,4 @@
+// NOTA: Componente disponible para uso futuro - verificar antes de eliminar
 /**
  * Componente de vista previa visual del rótulo MEDIA RES
  * Simula cómo se verá el rótulo impreso

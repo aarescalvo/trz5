@@ -299,7 +299,7 @@ export async function POST(request: NextRequest) {
         operadorId,
         estado: 'PENDIENTE',
         items: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           
           create: mediasRes.map(m => ({
             mediaResId: m.id,
             tropaCodigo: (m.romaneo as Record<string, unknown> | undefined)?.tropaCodigo,

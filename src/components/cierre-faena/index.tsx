@@ -1,7 +1,8 @@
+// NOTA: Componente disponible para uso futuro - verificar antes de eliminar
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { 
+import {
   ClipboardCheck, RefreshCw, AlertTriangle, Link2, Barcode, 
   CheckCircle, Clock, Beef, User, Search
 } from 'lucide-react'

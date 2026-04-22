@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import {
-  DollarSign, TrendingUp, TrendingDown, Calendar, Plus, Edit,
+  DollarSign, TrendingUp, TrendingDown, Calendar, Plus, Edit, CheckCircle,
   History, Filter, Download, Search, ArrowUpRight, ArrowDownRight,
   RefreshCw, BarChart3, Bell, Minus, ShoppingCart
 } from 'lucide-react'
@@ -770,7 +770,7 @@ export function HistorialPreciosModule({ operador }: Props) {
                             parseFloat(nuevoPrecio.precio) > preciosActuales.find(p => p.id === nuevoPrecio.productoVendibleId)!.precioActual ? 'text-green-600' : 'text-red-600'
                           }`}>
                             ({parseFloat(nuevoPrecio.precio) > preciosActuales.find(p => p.id === nuevoPrecio.productoVendibleId)!.precioActual ? '+' : ''}{(
-                              ((parseFloat(nuevoPrecio.precio) - preciosActuales.find(p => p.id === nuevoPrecio.productoVendibleId)!.precioActual) /
+                              (parseFloat(nuevoPrecio.precio) - preciosActuales.find(p => p.id === nuevoPrecio.productoVendibleId)!.precioActual) /
                                 preciosActuales.find(p => p.id === nuevoPrecio.productoVendibleId)!.precioActual * 100
                             ).toFixed(1)}%)
                           </span>

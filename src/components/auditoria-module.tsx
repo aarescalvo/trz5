@@ -1,7 +1,8 @@
+// NOTA: Componente disponible para uso futuro - verificar antes de eliminar
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
+import {
   FileText, Search, Filter, Download, Eye, User, Clock, 
   Calendar, ArrowDownToLine, ArrowUpFromLine, Edit, Trash2, 
   LogIn, LogOut, Plus, Save

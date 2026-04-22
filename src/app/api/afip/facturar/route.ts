@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Solicitar CAE a AFIP
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const resultado = await FECAESolicitar(feRequest, config)
 
     if (!resultado.success) {

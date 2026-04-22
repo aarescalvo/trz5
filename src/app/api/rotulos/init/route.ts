@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     ]
 
     for (const rotulo of rotulosDefault) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       await db.rotulo.create({ data: { ...rotulo, elementos: undefined, contenido: '' } as any })
     }
 

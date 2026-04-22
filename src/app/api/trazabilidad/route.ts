@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
       }
     } else if (codigoBarras) {
       // Buscar por código de barras (media res)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const mediaRes = await db.mediaRes.findFirst({
         where: {
           codigo: { contains: codigoBarras }
@@ -231,10 +231,10 @@ export async function GET(request: NextRequest) {
           romaneo: {
             include: {
               tipificador: true,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+               
               listaFaena: {
                 include: {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                   
                   tropas: { include: { tropa: { select: { id: true } } } } as any
                 }
               } as any
@@ -244,7 +244,7 @@ export async function GET(request: NextRequest) {
       })
       
       // Obtener la tropa del romaneo
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const romaneoData = mediaRes?.romaneo as any
       const tropaId = romaneoData?.listaFaena?.tropas?.[0]?.tropa?.id
       if (tropaId) {

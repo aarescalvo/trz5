@@ -281,7 +281,7 @@ async function generarReporteDesposte(
     orderBy: { fecha: 'desc' }
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const detalleDesposte = despostadas.map((d: any) => ({
     id: d.id,
     fecha: d.fecha,

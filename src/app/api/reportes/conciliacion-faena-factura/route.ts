@@ -2,6 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
 
+// ---- Type definitions for query result shapes ----
+type ListaFaenaRow = {
+  id: string; fecha: Date;
+  tropas?: Array<{ tropa?: {
+    id: string; codigo: string; cantidadCabezas: number;
+    productor?: { nombre: string } | null;
+    usuarioFaena?: { nombre: string } | null;
+  } | null }>;
+  asignaciones?: Array<{ tropaCodigo?: string; romaneoRef?: string }>;
+};
+
+type MediaResRow = { estado: string; facturado: boolean; peso?: number };
+type RomaneoRow = { mediasRes?: MediaResRow[] };
+type FacturaRow = { id: string; numero?: string; estado: string; total: number; saldo: number; fecha: Date };
+
 export async function GET(request: NextRequest) {
   const authError = await checkPermission(request, 'puedeReportes')
   if (authError) return authError
@@ -42,35 +57,33 @@ export async function GET(request: NextRequest) {
         },
       } as Record<string, unknown>,
       orderBy: { fecha: 'desc' }
-    })
+    }) as ListaFaenaRow[]
 
     // If tropaCodigo filter is specified, filter the results
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filteredListas = tropaCodigo
-      ? (listasFaena as any[]).map((lf: any) => ({
+      ? listasFaena.map(lf => ({
           ...lf,
-          tropas: (lf.tropas || []).filter((t: any) => ((t.tropa as any)?.codigo || '').toLowerCase().includes(tropaCodigo.toLowerCase()))
-        })).filter((lf: any) => (lf.tropas || []).length > 0)
+          tropas: (lf.tropas || []).filter(t => (t.tropa?.codigo || '').toLowerCase().includes(tropaCodigo.toLowerCase()))
+        })).filter(lf => (lf.tropas || []).length > 0)
       : listasFaena
 
     // Build the result array - one row per tropa
     const result: Array<Record<string, unknown>> = []
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const lista of filteredListas as any[]) {
+    for (const lista of filteredListas) {
       for (const listaTropa of lista.tropas || []) {
         const tropa = listaTropa.tropa
+        if (!tropa) continue
 
         // Get romaneos for this tropa via asignaciones
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const romaneosDeTropa = ((lista.asignaciones || []) as any[])
-          .filter((a: any) => a.tropaCodigo === tropa.codigo)
-          .map((a: any) => a.romaneoRef)
+        const romaneosDeTropa: unknown[] = (lista.asignaciones || [])
+          .filter(a => a.tropaCodigo === tropa.codigo)
+          .map(a => a.romaneoRef)
           .filter(Boolean)
 
         // Also fetch romaneos directly by tropaCodigo
-        const romaneos = romaneosDeTropa.length > 0
-          ? romaneosDeTropa
+        const romaneos: RomaneoRow[] = romaneosDeTropa.length > 0
+          ? (romaneosDeTropa as RomaneoRow[])
           : await db.romaneo.findMany({
               where: { tropaCodigo: tropa.codigo },
               include: {
@@ -84,26 +97,23 @@ export async function GET(request: NextRequest) {
                   }
                 }
               }
-            })
+            }) as RomaneoRow[]
 
         // Get all medias for this tropa
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const allMedias = (romaneos as any[]).flatMap((r: any) => r.mediasRes || [])
+        const allMedias: MediaResRow[] = romaneos.flatMap(r => r.mediasRes || [])
 
         const totalMedias = allMedias.length
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mediasDespachadas = (allMedias as any[]).filter((m: any) => m.estado === 'DESPACHADO').length
-        const mediasEnCamara = (allMedias as any[]).filter((m: any) => m.estado === 'EN_CAMARA').length
-        const mediasFacturadas = (allMedias as any[]).filter((m: any) => m.facturado).length
+        const mediasDespachadas = allMedias.filter(m => m.estado === 'DESPACHADO').length
+        const mediasEnCamara = allMedias.filter(m => m.estado === 'EN_CAMARA').length
+        const mediasFacturadas = allMedias.filter(m => m.facturado).length
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const totalKgFaenados = (allMedias as any[]).reduce((sum: number, m: any) => sum + (m.peso || 0), 0)
-        const totalKgDespachados = (allMedias as any[])
-          .filter((m: any) => m.estado === 'DESPACHADO')
-          .reduce((sum: number, m: any) => sum + (m.peso || 0), 0)
-        const totalKgFacturados = (allMedias as any[])
-          .filter((m: any) => m.facturado)
-          .reduce((sum: number, m: any) => sum + (m.peso || 0), 0)
+        const totalKgFaenados = allMedias.reduce((sum, m) => sum + (m.peso || 0), 0)
+        const totalKgDespachados = allMedias
+          .filter(m => m.estado === 'DESPACHADO')
+          .reduce((sum, m) => sum + (m.peso || 0), 0)
+        const totalKgFacturados = allMedias
+          .filter(m => m.facturado)
+          .reduce((sum, m) => sum + (m.peso || 0), 0)
 
         // Find facturas related to this tropa
         const facturasFromDetalles = await db.factura.findMany({
@@ -134,15 +144,14 @@ export async function GET(request: NextRequest) {
 
         // Combine and deduplicate facturas
         const allFacturas = [...facturasFromDetalles, ...facturasFromDespacho]
-        const uniqueFacturas = Array.from(
-          new Map(allFacturas.map((f: any) => [f.id, f])).values()
+        const uniqueFacturas: FacturaRow[] = Array.from(
+          new Map(allFacturas.map((f: FacturaRow) => [f.id, f])).values()
         )
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const montoFacturado = (uniqueFacturas as any[]).reduce((sum: number, f: any) => sum + (f.total || 0), 0)
-        const montoCobrado = (uniqueFacturas as any[])
-          .filter((f: any) => f.estado === 'PAGADA')
-          .reduce((sum: number, f: any) => sum + (f.total || 0), 0)
+        const montoFacturado = uniqueFacturas.reduce((sum, f) => sum + (f.total || 0), 0)
+        const montoCobrado = uniqueFacturas
+          .filter(f => f.estado === 'PAGADA')
+          .reduce((sum, f) => sum + (f.total || 0), 0)
 
         const porcentajeCicloCerrado = totalMedias > 0
           ? Math.round((mediasFacturadas / totalMedias) * 10000) / 100
@@ -165,7 +174,7 @@ export async function GET(request: NextRequest) {
           montoFacturado: Math.round(montoFacturado * 100) / 100,
           montoCobrado: Math.round(montoCobrado * 100) / 100,
           porcentajeCicloCerrado,
-          facturas: (uniqueFacturas as any[]).map((f: any) => ({
+          facturas: uniqueFacturas.map(f => ({
             id: f.id,
             numero: f.numero,
             estado: f.estado,

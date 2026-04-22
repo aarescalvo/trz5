@@ -217,7 +217,7 @@ export async function getCertificateConfig(): Promise<{
   inicioActividades: string | null
 } | null> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const config = await db.aFIPConfig.findFirst() as any
     
     if (!config) {

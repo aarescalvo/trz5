@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     // Buscar la media res y su información relacionada
     // MediaRes has: romaneo, camara, usuarioFaena relations
     // No fechaFaena, no fechaVencimiento
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     let mediaRes: any = null
     if (mediaResId) {
       mediaRes = await db.mediaRes.findUnique({
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar movimientos de cámara relacionados
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const movimientos = await db.movimientoCamara.findMany({
       where: {
         OR: [
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
       doc.text('DESPACHOS', 15, yPos)
       yPos += 8
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
       const despachosData = despachoItems.map((d: any) => [
         d.despacho?.numero?.toString() || '-',
         d.despacho?.cliente?.nombre || '-',

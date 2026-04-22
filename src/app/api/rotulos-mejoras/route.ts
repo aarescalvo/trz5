@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Export format conversion
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     let exportData: any = null
     if (formato === 'ZPL' || formato === 'DPL') {
       exportData = rotulos

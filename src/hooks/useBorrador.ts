@@ -85,7 +85,7 @@ export function useBorrador({
     }
 
     checkBorrador()
-  }, [modulo, operadorId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [modulo, operadorId])  
 
   // ===== Auto-save periódico =====
   const saveDraft = useCallback(async () => {

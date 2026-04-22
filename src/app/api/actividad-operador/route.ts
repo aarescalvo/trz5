@@ -64,9 +64,14 @@ export async function GET(request: NextRequest) {
 // POST - Registrar nueva actividad (usa modelo Auditoria)
 export async function POST(request: NextRequest) {
   try {
+    // Verify permission - only admin or supervisor can create audit entries
+    const operadorId = request.headers.get('x-operador-id');
+    if (!operadorId) {
+      return NextResponse.json({ error: 'Se requiere operador autenticado' }, { status: 401 });
+    }
+
     const body = await request.json()
     const {
-      operadorId,
       tipo,
       modulo,
       descripcion,
@@ -86,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     const actividad = await db.auditoria.create({
       data: {
-        operadorId: operadorId || null,
+        operadorId,
         accion: tipo,
         modulo,
         entidad: entidad || modulo,

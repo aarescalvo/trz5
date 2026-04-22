@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     // 2. Insumos near minimum
     const insumosBajo = await db.stockInsumo.findMany({
       where: { stockActual: { gt: 0 }, stockMinimo: { not: null } },
-      include: { insumo: { select: { nombre: true, codigo: true } }
+      include: { insumo: { select: { nombre: true, codigo: true } } }
     })
 
     for (const stock of insumosBajo) {

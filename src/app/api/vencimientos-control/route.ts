@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
       whereCajas.createdAt = { lte: limiteVencimiento }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const cajas = await db.cajaEmpaque.findMany({
       where: { estado: 'ARMADA' },
       include: {
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
       } as any
     })
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     for (const caja of cajas as any[]) {
       const diasConservacion = caja.producto?.diasConservacion || 90
       const diasEnStock = Math.floor((hoy.getTime() - new Date(caja.createdAt).getTime()) / (1000 * 60 * 60 * 24))

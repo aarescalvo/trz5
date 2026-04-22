@@ -140,14 +140,14 @@ export async function POST(request: NextRequest) {
 
       // Actualizar saldo de factura
       const nuevoSaldo = factura.saldo - monto
-      const nuevoEstado = nuevoSaldo <= 0 ? 'PAGADA' : 
-                    (factura.estado === 'EMITIDA' || factura.estado === 'PENDIENTE') ? 'EMITIDA' : factura.estado
+      const nuevoEstado = nuevoSaldo <= 0 ? 'PAGADA' as const : 
+                    (factura.estado === 'EMITIDA' || factura.estado === 'PENDIENTE') ? 'EMITIDA' as const : factura.estado
 
       await tx.factura.update({
         where: { id: facturaId },
         data: {
           saldo: Math.max(0, nuevoSaldo),
-          estado: nuevoEstado as any,
+          estado: nuevoEstado,
         }
       })
 
@@ -202,7 +202,7 @@ export async function DELETE(request: NextRequest) {
         where: { id: factura.id },
         data: {
           saldo: nuevoSaldo,
-          estado: 'EMITIDA' as any,
+          estado: 'EMITIDA' as const,
         }
       })
 

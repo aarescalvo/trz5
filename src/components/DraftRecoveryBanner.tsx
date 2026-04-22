@@ -1,3 +1,4 @@
+// NOTA: Componente disponible para uso futuro - verificar antes de eliminar
 'use client'
 
 import { AlertTriangle, RotateCcw, X, Clock } from 'lucide-react'

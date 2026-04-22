@@ -1,9 +1,17 @@
 import { SignJWT, jwtVerify } from 'jose'
 
 // JWT configuration
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'produccion4z-secret-key-change-in-production'
-)
+const getJwtSecret = (): Uint8Array => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error(
+      'JWT_SECRET environment variable is not set. ' +
+      'Please set it in your .env file with a secure random string (min 32 characters). ' +
+      'Example: JWT_SECRET=your-secure-random-secret-key-here'
+    );
+  }
+  return new TextEncoder().encode(secret);
+}
 
 const JWT_EXPIRES_IN = '8h' // 8 hours session
 const COOKIE_NAME = 'session_token'
@@ -30,7 +38,7 @@ export async function createSessionToken(payload: SessionPayload): Promise<strin
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(JWT_EXPIRES_IN)
-    .sign(JWT_SECRET)
+    .sign(getJwtSecret())
 }
 
 /**
@@ -39,7 +47,7 @@ export async function createSessionToken(payload: SessionPayload): Promise<strin
  */
 export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const { payload } = await jwtVerify(token, getJwtSecret())
     return payload as unknown as SessionPayload
   } catch (error) {
     // Token expired, invalid, or malformed

@@ -1,3 +1,4 @@
+// NOTA: Componente disponible para uso futuro - verificar antes de eliminar
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'

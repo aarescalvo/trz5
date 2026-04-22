@@ -1,7 +1,8 @@
+// NOTA: Componente disponible para uso futuro - verificar antes de eliminar
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
+import {
   AlertTriangle, Clock, XCircle, AlertCircle, Package, 
   RefreshCw, Filter, Calendar, TrendingDown, Loader2
 } from 'lucide-react'

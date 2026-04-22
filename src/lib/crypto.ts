@@ -1,6 +1,7 @@
 // Utilidades de cifrado para datos sensibles (contraseñas, tokens, etc.)
 // Usa AES-256-GCM con la clave derivada de ENCRYPTION_KEY en variables de entorno
 
+import crypto from 'crypto'
 import { createLogger } from '@/lib/logger'
 const log = createLogger('lib.crypto')
 
@@ -12,7 +13,6 @@ const AUTH_TAG_LENGTH = 16
  * Deriva una clave de 32 bytes desde un string usando SHA-256
  */
 function deriveKey(secret: string): Buffer {
-  const crypto = require('crypto')
   return crypto.createHash('sha256').update(secret).digest()
 }
 
@@ -40,7 +40,6 @@ function getEncryptionKey(): string {
 export function encrypt(plaintext: string | null | undefined): string | null {
   if (!plaintext) return null
 
-  const crypto = require('crypto')
   const key = deriveKey(getEncryptionKey())
   const iv = crypto.randomBytes(IV_LENGTH)
 
@@ -66,7 +65,6 @@ export function decrypt(ciphertext: string | null | undefined): string | null {
     return ciphertext
   }
 
-  const crypto = require('crypto')
   const key = deriveKey(getEncryptionKey())
 
   const parts = ciphertext.split(':')
