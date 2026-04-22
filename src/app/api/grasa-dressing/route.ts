@@ -95,8 +95,8 @@ export async function PUT(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const data = await request.json()
-    const { id, ...updateData } = data
+    const body = await request.json()
+    const { id, ...bodyData } = body
 
     if (!id) {
       return NextResponse.json(
@@ -105,13 +105,22 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Whitelist only valid GrasaDressing fields
+    const data = {
+      tropaCodigo: bodyData.tropaCodigo,
+      garron: bodyData.garron !== undefined ? parseInt(bodyData.garron) : undefined,
+      tipo: bodyData.tipo,
+      pesoTotal: bodyData.pesoTotal ? parseFloat(bodyData.pesoTotal) : undefined,
+      enStock: bodyData.enStock,
+      fechaFaena: bodyData.fechaFaena ? new Date(bodyData.fechaFaena) : undefined,
+      destino: bodyData.destino,
+      operadorId: bodyData.operadorId,
+      observaciones: bodyData.observaciones,
+    }
+
     const grasa = await db.grasaDressing.update({
       where: { id },
-      data: {
-        ...updateData,
-        fechaFaena: updateData.fechaFaena ? new Date(updateData.fechaFaena) : undefined,
-        pesoTotal: updateData.pesoTotal ? parseFloat(updateData.pesoTotal) : undefined,
-      }
+      data
     })
 
     return NextResponse.json({

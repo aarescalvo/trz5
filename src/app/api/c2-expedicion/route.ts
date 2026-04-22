@@ -245,7 +245,10 @@ export async function PUT(request: NextRequest) {
       for (const item of items) {
         await db.cajaEmpaque.update({
           where: { id: item.cajaId },
-          data: { estado: 'ARMADA' }
+          data: { 
+            estado: 'ARMADA',
+            palletId: null  // Liberar caja del pallet
+          }
         })
       }
     }

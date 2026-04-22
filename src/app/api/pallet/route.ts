@@ -1,9 +1,11 @@
+// DEPRECATED: Use /api/c2-pallets instead. This route is kept for backward compatibility.
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkPermission } from '@/lib/auth-helpers'
 
 // GET - Listar pallets
 export async function GET(request: NextRequest) {
+  console.warn('[DEPRECATED] /api/pallet is deprecated. Use /api/c2-pallets instead')
   const authError = await checkPermission(request, 'puedeExpedicionC2')
   if (authError) return authError
   try {

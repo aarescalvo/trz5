@@ -227,21 +227,79 @@ export async function POST(request: NextRequest) {
         )
       }
       
-      // Hash PIN and compare (security improvement - PIN should be hashed)
-      // For now, maintain backward compatibility but log a warning
-      const operador = await db.operador.findFirst({
+      // Look up operator by PIN with bcrypt-aware comparison
+      // Find all active operators that have a PIN set
+      const operadoresConPin = await db.operador.findMany({
         where: {
-          pin: String(pin),
+          pin: { not: null },
           activo: true
+        },
+        select: {
+          id: true,
+          nombre: true,
+          usuario: true,
+          rol: true,
+          email: true,
+          pin: true,
+          puedePesajeCamiones: true,
+          puedePesajeIndividual: true,
+          puedeMovimientoHacienda: true,
+          puedeListaFaena: true,
+          puedeRomaneo: true,
+          puedeIngresoCajon: true,
+          puedeCuarteo: true,
+          puedeDesposte: true,
+          puedeEmpaque: true,
+          puedeExpedicionC2: true,
+          puedeMenudencias: true,
+          puedeStock: true,
+          puedeReportes: true,
+          puedeCCIR: true,
+          puedeFacturacion: true,
+          puedeConfiguracion: true,
+          puedeCalidad: true,
+          puedeAutorizarReportes: true
         }
       })
-      
+
+      let operador: typeof operadoresConPin[0] | null = null
+      let needsRehash = false
+
+      for (const op of operadoresConPin) {
+        const storedPin = op.pin!
+        if (storedPin.startsWith('$2')) {
+          // Stored PIN is a bcrypt hash - use bcrypt.compare
+          const match = await bcrypt.compare(String(pin), storedPin)
+          if (match) {
+            operador = op
+            break
+          }
+        } else {
+          // Legacy plaintext PIN - compare directly
+          if (storedPin === String(pin)) {
+            operador = op
+            needsRehash = true
+            break
+          }
+        }
+      }
+
       if (!operador) {
         logger.warn('PIN inválido', { ip })
         return NextResponse.json(
           { success: false, error: 'PIN inválido o operador inactivo' },
           { status: 401 }
         )
+      }
+
+      // If PIN was stored in plaintext, re-hash it with bcrypt
+      if (needsRehash) {
+        const hashedPin = await bcrypt.hash(String(pin), 10)
+        await db.operador.update({
+          where: { id: operador.id },
+          data: { pin: hashedPin }
+        })
+        logger.info('PIN re-hashed con bcrypt', { operadorId: operador.id })
       }
       
       // Login exitoso - resetear rate limit

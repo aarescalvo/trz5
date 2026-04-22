@@ -206,7 +206,7 @@ const ROUTE_PERMISSIONS: Record<string, string> = {
   '/api/alertas': 'puedeStock',
   '/api/barcode': 'puedeConfiguracion',
   '/api/dashboard': 'puedeReportes',
-  '/api/dashboard-financiero': 'puedeDashboardFinanciero',
+  '/api/dashboard-financiero': 'puedeReportes',
   '/api/depositos': 'puedeStock',
   '/api/valores-indicador': 'puedeReportes',
   '/api/filtros-reporte': 'puedeReportes',

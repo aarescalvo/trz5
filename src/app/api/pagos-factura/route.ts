@@ -282,7 +282,7 @@ export async function obtenerCuentaCorriente(clienteId: string) {
         tipo: 'PAGO',
         comprobante: `REC-${pago.id.slice(-6)}`,
         detalle: `Pago ${pago.metodoPago}`,
-        debe: 1,
+        debe: 0,
         haber: pago.monto,
         saldo: saldo -= pago.monto
       })

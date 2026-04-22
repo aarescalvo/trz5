@@ -130,13 +130,27 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { id, ...data } = body
+    const { id, ...bodyData } = body
 
     if (!id) {
       return NextResponse.json(
         { success: false, error: 'ID es requerido' },
         { status: 400 }
       )
+    }
+
+    // Whitelist only valid RegistroRendering fields
+    const data = {
+      tipo: bodyData.tipo,
+      fechaFaena: bodyData.fechaFaena ? new Date(bodyData.fechaFaena) : undefined,
+      tropaCodigo: bodyData.tropaCodigo,
+      pesoKg: bodyData.pesoKg ? parseFloat(bodyData.pesoKg) : undefined,
+      destino: bodyData.destino,
+      estado: bodyData.estado,
+      remito: bodyData.remito,
+      fechaDespacho: bodyData.fechaDespacho ? new Date(bodyData.fechaDespacho) : undefined,
+      observaciones: bodyData.observaciones,
+      operadorId: bodyData.operadorId,
     }
 
     const registro = await db.registroRendering.update({

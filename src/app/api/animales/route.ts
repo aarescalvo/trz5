@@ -189,9 +189,25 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
     }
 
-    await db.animal.delete({
-      where: { id }
-    })
+    // Cascade cleanup of related records in a transaction
+    await db.$transaction([
+      // Delete related PesajeIndividual record (1:1 with Animal)
+      db.pesajeIndividual.deleteMany({
+        where: { animalId: id }
+      }),
+      // Delete related AsignacionGarron record (1:1 with Animal)
+      db.asignacionGarron.deleteMany({
+        where: { animalId: id }
+      }),
+      // Delete related MovimientoCorral records (loose FK for data integrity)
+      db.movimientoCorral.deleteMany({
+        where: { animalId: id }
+      }),
+      // Finally delete the animal itself
+      db.animal.delete({
+        where: { id }
+      })
+    ])
 
     return NextResponse.json({ success: true })
   } catch (error) {

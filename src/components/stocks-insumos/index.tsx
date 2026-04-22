@@ -153,7 +153,7 @@ export function StocksInsumosModule({ operador }: Props) {
       codigoProveedor: insumo.codigoProveedor || '',
       precioUnitario: insumo.precioUnitario?.toString() || '',
       moneda: insumo.moneda || 'ARS',
-      ubicacion: insumo.ubicacion || ',
+      ubicacion: insumo.ubicacion || '',
       activo: insumo.activo,
       observaciones: insumo.observaciones || ''
     })

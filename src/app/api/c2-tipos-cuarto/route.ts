@@ -165,6 +165,17 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Verificar si hay cuartos asociados antes de eliminar
+    const relacionados = await db.cuarto.count({
+      where: { tipoCuartoId: id }
+    })
+    if (relacionados > 0) {
+      return NextResponse.json({
+        success: false,
+        error: `No se puede eliminar: hay ${relacionados} cuarto(s) asociados a este tipo`
+      }, { status: 409 })
+    }
+
     await db.c2TipoCuarto.delete({
       where: { id },
     });

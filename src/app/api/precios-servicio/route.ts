@@ -136,6 +136,29 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Registrar historial de cambio de precio
+    try {
+      await db.precioHistorial.create({
+        data: {
+          precioServicioId: nuevoPrecio.id,
+          tipoServicioId: nuevoPrecio.tipoServicioId,
+          tipoServicioNombre: nuevoPrecio.tipoServicio.nombre,
+          clienteId: nuevoPrecio.clienteId,
+          clienteNombre: nuevoPrecio.cliente.nombre || nuevoPrecio.cliente.razonSocial || '',
+          precioAnterior: precioAnterior ? precioAnterior.precio : null,
+          precioNuevo: nuevoPrecio.precio,
+          fechaDesde: nuevoPrecio.fechaDesde,
+          motivo: observaciones || (precioAnterior ? 'Actualización de precio' : 'Creación de precio'),
+          operadorId: createdBy || null,
+          operadorNombre: null,
+          tipoCambio: precioAnterior ? 'ACTUALIZACION' : 'CREACION'
+        }
+      })
+    } catch (historyError) {
+      // No bloquear la creación del precio si falla el historial
+      console.error('Error al crear historial de precio:', historyError)
+    }
+
     return NextResponse.json({
       success: true,
       data: nuevoPrecio

@@ -117,13 +117,28 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { id, ...data } = body
+    const { id, ...bodyData } = body
 
     if (!id) {
       return NextResponse.json(
         { success: false, error: 'ID es requerido' },
         { status: 400 }
       )
+    }
+
+    // Whitelist only valid Cuero fields
+    const data = {
+      tropaCodigo: bodyData.tropaCodigo,
+      cantidad: bodyData.cantidad !== undefined ? parseInt(bodyData.cantidad) : undefined,
+      pesoKg: bodyData.pesoKg ? parseFloat(bodyData.pesoKg) : undefined,
+      conservacion: bodyData.conservacion,
+      destino: bodyData.destino,
+      tipoDestino: bodyData.tipoDestino,
+      estado: bodyData.estado,
+      remito: bodyData.remito,
+      fechaDespacho: bodyData.fechaDespacho ? new Date(bodyData.fechaDespacho) : undefined,
+      observaciones: bodyData.observaciones,
+      operadorId: bodyData.operadorId,
     }
 
     const cuero = await db.cuero.update({

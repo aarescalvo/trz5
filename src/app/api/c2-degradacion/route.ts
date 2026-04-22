@@ -134,6 +134,16 @@ export async function POST(request: NextRequest) {
         ? (parseInt(ultimaCaja.numero.replace('CAJA-', '')) + 1).toString().padStart(6, '0')
         : '000001'
 
+      // Calcular fecha de vencimiento basada en diasVencimiento del nuevo producto
+      const nuevoProducto = await db.c2ProductoDesposte.findUnique({
+        where: { id: nuevoProductoId },
+        select: { diasVencimiento: true }
+      })
+
+      const diasConservacion = nuevoProducto?.diasVencimiento || 90 // Default: 90 días
+      const fechaDesposte = new Date()
+      const fechaVencimiento = new Date(fechaDesposte.getTime() + diasConservacion * 24 * 60 * 60 * 1000)
+
       await db.cajaEmpaque.create({
         data: {
           numero: `CAJA-${numeroCaja}`,
@@ -147,7 +157,8 @@ export async function POST(request: NextRequest) {
           piezas: 1,
           tropaCodigo: caja.tropaCodigo,
           fechaFaena: caja.fechaFaena,
-          fechaDesposte: new Date(),
+          fechaDesposte: fechaDesposte,
+          fechaVencimiento: fechaVencimiento,
           estado: 'ARMADA',
           codigoBarras: `CAJA-${numeroCaja}`
         }

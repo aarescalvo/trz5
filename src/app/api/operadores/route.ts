@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const operadorIdAuth = body.operadorIdAuth || getOperadorId(request)
+    const operadorIdAuth = getOperadorId(request)
     
     // Verificar permiso de configuración
     const puedeCrear = await validarPermiso(operadorIdAuth, 'puedeConfiguracion')
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const operadorIdAuth = body.operadorIdAuth || getOperadorId(request)
+    const operadorIdAuth = getOperadorId(request)
     const puedeEditar = await validarPermiso(operadorIdAuth, 'puedeConfiguracion')
     if (!puedeEditar) {
       return NextResponse.json({ success: false, error: 'Sin permisos de configuración' }, { status: 403 })

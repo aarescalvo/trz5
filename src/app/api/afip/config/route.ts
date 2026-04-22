@@ -13,7 +13,10 @@ import { verificarConfiguracionAFIP, probarConexionAFIP } from '@/lib/afip-wsaa'
 import { checkPermission } from '@/lib/auth-helpers'
 
 // GET - Obtener configuración AFIP
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const config = await db.configuracionFrigorifico.findFirst()
     const certConfig = await getCertificateConfig()
@@ -218,7 +221,10 @@ export async function PUT(request: NextRequest) {
 }
 
 // DELETE - Eliminar certificados
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  const authError = await checkPermission(request, 'puedeConfiguracion')
+  if (authError) return authError
+
   try {
     const result = await deleteCertificates()
     

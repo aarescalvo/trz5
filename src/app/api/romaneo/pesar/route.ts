@@ -307,7 +307,7 @@ export async function POST(request: NextRequest) {
               pesoMediaDer: mediaDer.peso,
               pesoTotal,
               rinde,
-              estado: 'CONFIRMADO'
+              estado: 'PESADO'
             }
           })
 
