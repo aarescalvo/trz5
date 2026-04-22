@@ -34,7 +34,9 @@ function buildPermisos(operador: any) {
     puedeReportes: operador.puedeReportes,
     puedeCCIR: operador.puedeCCIR,
     puedeFacturacion: operador.puedeFacturacion,
-    puedeConfiguracion: operador.puedeConfiguracion
+    puedeConfiguracion: operador.puedeConfiguracion,
+    puedeCalidad: operador.puedeCalidad,
+    puedeAutorizarReportes: operador.puedeAutorizarReportes
   }
 }
 

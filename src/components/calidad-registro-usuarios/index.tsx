@@ -100,6 +100,7 @@ export function CalidadRegistroUsuariosModule({ operador }: Props) {
   const [loading, setLoading] = useState(true)
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [reclamosPendientes, setReclamosPendientes] = useState<Reclamo[]>([])
+  const [reclamosHistorial, setReclamosHistorial] = useState<Reclamo[]>([])
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null)
   const [reclamosCliente, setReclamosCliente] = useState<Reclamo[]>([])
   
@@ -130,6 +131,7 @@ export function CalidadRegistroUsuariosModule({ operador }: Props) {
   useEffect(() => {
     fetchClientes()
     fetchReclamosPendientes()
+    fetchReclamosHistorial()
   }, [])
 
   const fetchClientes = async () => {
@@ -173,6 +175,18 @@ export function CalidadRegistroUsuariosModule({ operador }: Props) {
       const data = await res.json()
       if (data.success) {
         setReclamosPendientes(data.data)
+      }
+    } catch (error) {
+      console.error('Error:', error)
+    }
+  }
+
+  const fetchReclamosHistorial = async () => {
+    try {
+      const res = await fetch('/api/calidad-reclamos?historial=true')
+      const data = await res.json()
+      if (data.success) {
+        setReclamosHistorial(data.data)
       }
     } catch (error) {
       console.error('Error:', error)
@@ -447,19 +461,22 @@ export function CalidadRegistroUsuariosModule({ operador }: Props) {
         </EditableBlock>
 
         {/* Main Content */}
-        <Tabs defaultValue="pendientes" className="space-y-4">
+        <Tabs defaultValue="clientes" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="clientes">
+              <TextoEditable id="calidad-tab-clientes" original="Clientes" tag="span" />
+            </TabsTrigger>
             <TabsTrigger value="pendientes">
               <TextoEditable id="calidad-tab-pendientes" original="Pendientes" tag="span" />
               {reclamosPendientes.length > 0 && (
                 <Badge className="ml-2 bg-red-500 text-white">{reclamosPendientes.length}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="clientes">
-              <TextoEditable id="calidad-tab-clientes" original="Clientes" tag="span" />
-            </TabsTrigger>
             <TabsTrigger value="historial">
               <TextoEditable id="calidad-tab-historial" original="Historial" tag="span" />
+              {reclamosHistorial.length > 0 && (
+                <Badge className="ml-2 bg-stone-500 text-white">{reclamosHistorial.length}</Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -655,24 +672,79 @@ export function CalidadRegistroUsuariosModule({ operador }: Props) {
 
           {/* Tab: Historial */}
           <TabsContent value="historial">
-            <Card className="border-0 shadow-md">
-              <CardHeader className="bg-stone-50 rounded-t-lg">
-                <CardTitle className="text-lg">
-                  <TextoEditable id="calidad-historial-title" original="Historial de Reclamos" tag="span" />
-                </CardTitle>
-                <CardDescription>
-                  <TextoEditable id="calidad-historial-desc" original="Seleccione un cliente para ver su historial completo" tag="span" />
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="p-8 text-center text-stone-400">
-                  <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>
-                    <TextoEditable id="calidad-seleccione-cliente" original="Seleccione un cliente de la pestaña Clientes para ver su historial" tag="span" />
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <EditableBlock bloqueId="historial" label="Historial de Reclamos">
+              <Card className="border-0 shadow-md">
+                <CardHeader className="bg-stone-50 rounded-t-lg">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-stone-500" />
+                    <TextoEditable id="calidad-historial-title" original="Historial de Reclamos" tag="span" />
+                  </CardTitle>
+                  <CardDescription>
+                    <TextoEditable id="calidad-historial-desc" original="Reclamos cerrados, resueltos y anulados" tag="span" />
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {reclamosHistorial.length === 0 ? (
+                    <div className="p-8 text-center text-stone-400">
+                      <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>
+                        <TextoEditable id="calidad-no-historial" original="No hay reclamos en el historial" tag="span" />
+                      </p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-stone-50/50">
+                          <TableHead>
+                            <TextoEditable id="calidad-hist-th-fecha" original="Fecha" tag="span" />
+                          </TableHead>
+                          <TableHead>
+                            <TextoEditable id="calidad-hist-th-cliente" original="Cliente" tag="span" />
+                          </TableHead>
+                          <TableHead>
+                            <TextoEditable id="calidad-hist-th-tipo" original="Tipo" tag="span" />
+                          </TableHead>
+                          <TableHead>
+                            <TextoEditable id="calidad-hist-th-titulo" original="Título" tag="span" />
+                          </TableHead>
+                          <TableHead>
+                            <TextoEditable id="calidad-hist-th-prioridad" original="Prioridad" tag="span" />
+                          </TableHead>
+                          <TableHead>
+                            <TextoEditable id="calidad-hist-th-estado" original="Estado" tag="span" />
+                          </TableHead>
+                          <TableHead>
+                            <TextoEditable id="calidad-hist-th-resolucion" original="Resolución" tag="span" />
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {reclamosHistorial.map((reclamo) => (
+                          <TableRow key={reclamo.id}>
+                            <TableCell className="text-sm">{new Date(reclamo.fecha).toLocaleDateString('es-AR')}</TableCell>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{reclamo.cliente?.nombre || '-'}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>{getTipoBadge(reclamo.tipo)}</TableCell>
+                            <TableCell className="font-medium max-w-xs truncate">{reclamo.titulo}</TableCell>
+                            <TableCell>{getPrioridadBadge(reclamo.prioridad)}</TableCell>
+                            <TableCell>{getEstadoBadge(reclamo.estado)}</TableCell>
+                            <TableCell className="text-sm text-stone-500">
+                              {reclamo.fechaResolucion 
+                                ? new Date(reclamo.fechaResolucion).toLocaleDateString('es-AR')
+                                : '-'
+                              }
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </EditableBlock>
           </TabsContent>
         </Tabs>
 

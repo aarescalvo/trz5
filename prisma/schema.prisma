@@ -207,6 +207,7 @@ model Operador {
   puedeEmpaque            Boolean @default(false) // Empaque y cajas
   puedeExpedicionC2       Boolean @default(false) // Expedición C2 y pallets
   puedeAutorizarReportes  Boolean @default(false) // Autorizar envío de reportes
+  puedeCalidad            Boolean @default(false) // Módulo de Calidad (reclamos, pH, novedades)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

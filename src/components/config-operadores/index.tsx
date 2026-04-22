@@ -30,12 +30,14 @@ const MODULOS = [
   { id: 'puedeDesposte', label: 'Desposte', icon: '🥩', grupo: 'CICLO II' },
   { id: 'puedeEmpaque', label: 'Empaque', icon: '📦', grupo: 'CICLO II' },
   { id: 'puedeExpedicionC2', label: 'Expedición C2', icon: '🚚', grupo: 'CICLO II' },
+  { id: 'puedeCalidad', label: 'Calidad', icon: '🔬', grupo: 'Calidad' },
   { id: 'puedeMenudencias', label: 'Menudencias', icon: '🫀', grupo: 'Subproductos' },
   { id: 'puedeStock', label: 'Stock Cámaras', icon: '🏭', grupo: 'Stock' },
   { id: 'puedeReportes', label: 'Reportes', icon: '📈', grupo: 'Reportes' },
   { id: 'puedeCCIR', label: 'CCIR / Declaraciones', icon: '📄', grupo: 'Documentación' },
   { id: 'puedeFacturacion', label: 'Facturación', icon: '💰', grupo: 'Administración' },
   { id: 'puedeConfiguracion', label: 'Configuración', icon: '⚙️', grupo: 'Sistema' },
+  { id: 'puedeAutorizarReportes', label: 'Autorizar Reportes', icon: '✅', grupo: 'Sistema' },
 ]
 
 interface OperadorItem {
@@ -62,6 +64,8 @@ interface OperadorItem {
   puedeCCIR: boolean
   puedeFacturacion: boolean
   puedeConfiguracion: boolean
+  puedeCalidad: boolean
+  puedeAutorizarReportes: boolean
 }
 
 interface Operador {
@@ -102,7 +106,9 @@ export function ConfigOperadoresModule({ operador }: { operador: Operador }) {
     puedeReportes: false,
     puedeCCIR: false,
     puedeFacturacion: false,
-    puedeConfiguracion: false
+    puedeConfiguracion: false,
+    puedeCalidad: false,
+    puedeAutorizarReportes: false
   })
 
   useEffect(() => {
@@ -148,7 +154,9 @@ export function ConfigOperadoresModule({ operador }: { operador: Operador }) {
       puedeReportes: false,
       puedeCCIR: false,
       puedeFacturacion: false,
-      puedeConfiguracion: false
+      puedeConfiguracion: false,
+      puedeCalidad: false,
+      puedeAutorizarReportes: false
     })
     setDialogOpen(true)
   }
@@ -177,7 +185,9 @@ export function ConfigOperadoresModule({ operador }: { operador: Operador }) {
       puedeReportes: op.puedeReportes,
       puedeCCIR: op.puedeCCIR,
       puedeFacturacion: op.puedeFacturacion,
-      puedeConfiguracion: op.puedeConfiguracion
+      puedeConfiguracion: op.puedeConfiguracion,
+      puedeCalidad: op.puedeCalidad,
+      puedeAutorizarReportes: op.puedeAutorizarReportes
     })
     setDialogOpen(true)
   }
@@ -295,7 +305,9 @@ export function ConfigOperadoresModule({ operador }: { operador: Operador }) {
         puedeReportes: true,
         puedeCCIR: true,
         puedeFacturacion: true,
-        puedeConfiguracion: true
+        puedeConfiguracion: true,
+        puedeCalidad: true,
+        puedeAutorizarReportes: true
       }
     } else if (rol === 'SUPERVISOR') {
       // SUPERVISOR tiene la mayoría de permisos excepto configuración
@@ -316,7 +328,9 @@ export function ConfigOperadoresModule({ operador }: { operador: Operador }) {
         puedeReportes: true,
         puedeCCIR: true,
         puedeFacturacion: false,
-        puedeConfiguracion: false
+        puedeConfiguracion: false,
+        puedeCalidad: true,
+        puedeAutorizarReportes: true
       }
     }
     
@@ -672,7 +686,7 @@ export function ConfigOperadoresModule({ operador }: { operador: Operador }) {
                 )}
                 
                 {/* Grupos de permisos */}
-                {['CICLO I', 'CICLO II', 'Subproductos', 'Stock', 'Reportes', 'Documentación', 'Administración', 'Sistema'].map(grupo => {
+                {['CICLO I', 'CICLO II', 'Subproductos', 'Stock', 'Reportes', 'Documentación', 'Calidad', 'Administración', 'Sistema'].map(grupo => {
                   const modulosGrupo = MODULOS.filter(m => m.grupo === grupo)
                   if (modulosGrupo.length === 0) return null
                   

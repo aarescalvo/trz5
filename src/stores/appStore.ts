@@ -31,6 +31,8 @@ interface Operador {
     puedeCCIR: boolean
     puedeFacturacion: boolean
     puedeConfiguracion: boolean
+    puedeCalidad: boolean
+    puedeAutorizarReportes: boolean
   }
 }
 

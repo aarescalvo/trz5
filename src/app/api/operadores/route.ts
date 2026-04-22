@@ -40,6 +40,8 @@ export async function GET(request: NextRequest) {
         puedeFacturacion: true,
         puedeReportes: true,
         puedeConfiguracion: true,
+        puedeCalidad: true,
+        puedeAutorizarReportes: true,
         createdAt: true
       },
       orderBy: { nombre: 'asc' }
@@ -98,7 +100,9 @@ export async function POST(request: NextRequest) {
       puedeCCIR,
       puedeFacturacion,
       puedeReportes,
-      puedeConfiguracion
+      puedeConfiguracion,
+      puedeCalidad,
+      puedeAutorizarReportes
     } = body
     
     if (!nombre || !usuario || !password) {
@@ -160,7 +164,9 @@ export async function POST(request: NextRequest) {
         puedeCCIR: puedeCCIR ?? false,
         puedeFacturacion: puedeFacturacion ?? false,
         puedeReportes: puedeReportes ?? false,
-        puedeConfiguracion: puedeConfiguracion ?? false
+        puedeConfiguracion: puedeConfiguracion ?? false,
+        puedeCalidad: puedeCalidad ?? false,
+        puedeAutorizarReportes: puedeAutorizarReportes ?? false
       }
     })
     
@@ -222,7 +228,9 @@ export async function PUT(request: NextRequest) {
       puedeCCIR,
       puedeFacturacion,
       puedeReportes,
-      puedeConfiguracion
+      puedeConfiguracion,
+      puedeCalidad,
+      puedeAutorizarReportes
     } = body
     
     const updateData: Record<string, unknown> = {}
@@ -252,6 +260,8 @@ export async function PUT(request: NextRequest) {
     if (puedeFacturacion !== undefined) updateData.puedeFacturacion = puedeFacturacion
     if (puedeReportes !== undefined) updateData.puedeReportes = puedeReportes
     if (puedeConfiguracion !== undefined) updateData.puedeConfiguracion = puedeConfiguracion
+    if (puedeCalidad !== undefined) updateData.puedeCalidad = puedeCalidad
+    if (puedeAutorizarReportes !== undefined) updateData.puedeAutorizarReportes = puedeAutorizarReportes
     
     const operador = await db.operador.update({
       where: { id },

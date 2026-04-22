@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const estado = searchParams.get('estado')
     const prioridad = searchParams.get('prioridad')
     const pendientes = searchParams.get('pendientes')
+    const historial = searchParams.get('historial')
     const busqueda = searchParams.get('busqueda')
 
     const where: Record<string, unknown> = {}
@@ -32,6 +33,9 @@ export async function GET(request: NextRequest) {
     }
     if (pendientes === 'true') {
       where.estado = { in: ['PENDIENTE', 'EN_REVISION'] }
+    }
+    if (historial === 'true') {
+      where.estado = { in: ['CERRADO', 'RESUELTO', 'ANULADO'] }
     }
     if (busqueda) {
       where.OR = [
@@ -55,7 +59,6 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: [
-        { prioridad: 'desc' },
         { fecha: 'desc' }
       ]
     })

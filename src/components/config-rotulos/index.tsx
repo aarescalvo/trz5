@@ -960,7 +960,7 @@ OPCIÓN 3 - Exportar desde Zebra Designer:
         setModalImportar(open)
         if (!open) resetForm()
       }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="w-5 h-5 text-amber-500" />

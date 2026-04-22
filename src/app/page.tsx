@@ -283,9 +283,9 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Calidad',
     icon: FileText,
     items: [
-      { id: 'calidadRegistroUsuarios', label: 'Registro de Usuarios', icon: Users, permiso: 'puedeConfiguracion' },
-      { id: 'calidadPh', label: 'Control de pH', icon: Activity, permiso: 'puedeReportes' },
-      { id: 'auditoriaOperador', label: 'Auditoría Operadores', icon: Users, permiso: 'puedeConfiguracion' },
+      { id: 'calidadRegistroUsuarios', label: 'Registro de Usuarios', icon: Users, permiso: 'puedeCalidad' },
+      { id: 'calidadPh', label: 'Control de pH', icon: Activity, permiso: 'puedeCalidad' },
+      { id: 'auditoriaOperador', label: 'Auditoría Operadores', icon: Users, permiso: 'puedeCalidad' },
     ]
   },
   // 9. Diseño de Etiquetas

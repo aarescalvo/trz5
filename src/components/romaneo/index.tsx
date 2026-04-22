@@ -73,7 +73,7 @@ interface Operador {
 }
 
 export function RomaneoModule({ operador }: { operador: Operador }) {
-  // ConfiguraciÃ³n del turno
+  // Configuración del turno
   const [tipificadorId, setTipificadorId] = useState('')
   const [camaraId, setCamaraId] = useState('')
   const [configOpen, setConfigOpen] = useState(false)
@@ -88,21 +88,21 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
   // Historial
   const [mediasPesadas, setMediasPesadas] = useState<MediaPesada[]>([])
   
-  // Ãšltimo rÃ³tulo para reimprimir
+  // Ãšltimo rótulo para reimprimir
   const [ultimoRotulo, setUltimoRotulo] = useState<MediaPesada | null>(null)
   
-  // DiÃ¡logo de decomiso
+  // Diálogo de decomiso
   const [decomisoOpen, setDecomisoOpen] = useState(false)
   const [kgDecomiso, setKgDecomiso] = useState('')
   
-  // DiÃ¡logo de fin de faena
+  // Diálogo de fin de faena
   const [finFaenaOpen, setFinFaenaOpen] = useState(false)
   
-  // DiÃ¡logo de supervisor para editar
+  // Diálogo de supervisor para editar
   const [supervisorOpen, setSupervisorOpen] = useState(false)
   const [claveSupervisor, setClaveSupervisor] = useState('')
   
-  // DiÃ¡logo de reimpresiÃ³n
+  // Diálogo de reimpresión
   const [reimpresionOpen, setReimpresionOpen] = useState(false)
   const [fechaReimpresion, setFechaReimpresion] = useState(new Date().toISOString().split('T')[0])
   const [garronesReimpresion, setGarronesReimpresion] = useState<MediaPesada[]>([])
@@ -198,7 +198,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
           setAsignacionActual(primero)
           setLadoActual(primero.tieneMediaDer ? 'IZQUIERDA' : 'DERECHA')
         } else if (garronesData.data?.length > 0) {
-          // Todos los garrones estÃ¡n pesados
+          // Todos los garrones están pesados
           setFaenaTerminada(true)
           setAsignacionActual(null)
         }
@@ -223,19 +223,19 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
 
   const handleAceptarPeso = async (esDecomiso: boolean = false, kgDecomisoValor: number = 0) => {
     if (!pesoBalanza || parseFloat(pesoBalanza) <= 0) {
-      toast.error('Ingrese un peso vÃ¡lido')
+      toast.error('Ingrese un peso válido')
       return
     }
     
     if (!tipificadorId || !camaraId) {
       setConfigOpen(true)
-      toast.error('Configure tipificador y cÃ¡mara primero')
+      toast.error('Configure tipificador y cámara primero')
       return
     }
     
     // Verificar que no exceda el listado de faena
     if (!asignacionActual) {
-      toast.error('No hay mÃ¡s garrones para pesar en esta lista de faena')
+      toast.error('No hay más garrones para pesar en esta lista de faena')
       return
     }
     
@@ -256,7 +256,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
           esDecomiso,
           kgDecomiso: kgDecomisoValor,
           kgRestantes: parseFloat(pesoBalanza),
-          sobrescribir: modoEdicion // Permitir sobrescribir en modo ediciÃ³n
+          sobrescribir: modoEdicion // Permitir sobrescribir en modo edición
         })
       })
       
@@ -282,7 +282,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
         setUltimoRotulo(nuevaMedia)
         
         if (esDecomiso) {
-          toast.success(`Media decomisada - GarrÃ³n #${garronActual}`, {
+          toast.success(`Media decomisada - Garrón #${garronActual}`, {
             description: `Decomiso: ${kgDecomisoValor} kg`
           })
         } else {
@@ -328,7 +328,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
             setAsignacionActual(siguientePendiente)
             setLadoActual(siguientePendiente.tieneMediaDer ? 'IZQUIERDA' : 'DERECHA')
           } else {
-            // No hay mÃ¡s garrones - preguntar si termina faena
+            // No hay más garrones - preguntar si termina faena
             setGarronesAsignados(nuevosGarrones)
             setDenticion('')
             setFinFaenaOpen(true)
@@ -343,7 +343,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Error de conexiÃ³n')
+      toast.error('Error de conexión')
     } finally {
       setSaving(false)
     }
@@ -473,8 +473,9 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
 
     printWindow.document.write(`
       <!DOCTYPE html>
-      <html>
+      <html lang="es">
       <head>
+        <meta charset="UTF-8">
         <title>Rótulos Media Res - Garrón ${garron}</title>
         <style>
           @page { size: 100mm 150mm; margin: 2mm; }
@@ -568,9 +569,9 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
   const handleReimprimirUltimo = () => {
     if (ultimoRotulo) {
       handleImprimirRotulos(ultimoRotulo.garron, ultimoRotulo.lado as 'DERECHA' | 'IZQUIERDA', ultimoRotulo.peso, ultimoRotulo.decomisada)
-      toast.success('Reimprimiendo rÃ³tulos')
+      toast.success('Reimprimiendo rótulos')
     } else {
-      toast.error('No hay rÃ³tulos para reimprimir')
+      toast.error('No hay rótulos para reimprimir')
     }
   }
 
@@ -617,13 +618,13 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
         setUltimoRotulo(nuevasMedias.length > 0 ? nuevasMedias[nuevasMedias.length - 1] : null)
         setFaenaTerminada(false)
         
-        toast.success(`Media ${ultimo.lado === 'DERECHA' ? 'derecha' : 'izquierda'} del garrÃ³n #${ultimo.garron} eliminada`)
+        toast.success(`Media ${ultimo.lado === 'DERECHA' ? 'derecha' : 'izquierda'} del garrón #${ultimo.garron} eliminada`)
       } else {
         toast.error(data.error || 'Error al eliminar')
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Error de conexiÃ³n')
+      toast.error('Error de conexión')
     }
   }
 
@@ -643,7 +644,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
             setDenticion(data.denticion)
           }
         })
-        .catch(e => console.error('Error cargando denticiÃ³n:', e))
+        .catch(e => console.error('Error cargando dentición:', e))
     } else {
       setDenticion('')
     }
@@ -664,7 +665,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
     const decomiso = parseFloat(kgDecomiso)
     
     if (isNaN(decomiso) || decomiso <= 0) {
-      toast.error('Ingrese kg de decomiso vÃ¡lidos')
+      toast.error('Ingrese kg de decomiso válidos')
       return
     }
     
@@ -704,16 +705,16 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
       if (data.success && data.data.autorizado) {
         setSupervisorOpen(false)
         setFaenaTerminada(false)
-        setModoEdicion(true) // Activar modo ediciÃ³n
+        setModoEdicion(true) // Activar modo edición
         
-        // En modo ediciÃ³n, permitir seleccionar cualquier garrÃ³n
+        // En modo edición, permitir seleccionar cualquier garrón
         if (garronesAsignados.length > 0) {
           setGarronActual(garronesAsignados[0].garron)
           setAsignacionActual(garronesAsignados[0])
           setLadoActual('DERECHA')
         }
         
-        toast.success('Modo ediciÃ³n activado - Puede modificar cualquier garrÃ³n')
+        toast.success('Modo edición activado - Puede modificar cualquier garrón')
       } else {
         toast.error(data.error || 'Clave de supervisor incorrecta')
       }
@@ -723,7 +724,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
     }
   }
 
-  // Cargar garrones por fecha para reimpresiÃ³n
+  // Cargar garrones por fecha para reimpresión
   const handleCargarGarronesPorFecha = async () => {
     setLoadingReimpresion(true)
     try {
@@ -738,7 +739,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Error de conexiÃ³n')
+      toast.error('Error de conexión')
     } finally {
       setLoadingReimpresion(false)
     }
@@ -814,7 +815,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
     }
   }
 
-  // Agrupar medias por garrÃ³n
+  // Agrupar medias por garrón
   const garronesAgrupados = useCallback(() => {
     const grupos: Record<number, { der: MediaPesada | null, izq: MediaPesada | null }> = {}
     
@@ -901,7 +902,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
     return () => window.removeEventListener('keydown', handleKey)
   }, [modoProduccion, pesoProduccion, pesoBalanza, asignacionActual, saving, faenaTerminada, modoEdicion, configOpen, decomisoOpen, finFaenaOpen, supervisorOpen, reimpresionOpen, configImpresoraOpen, toggleModoProduccion, handleAceptarPeso])
 
-  // Auto-scroll cuando cambia el Ãºltimo garrÃ³n pesado
+  // Auto-scroll cuando cambia el último garrón pesado
   useEffect(() => {
     const garronesLista = garronesAgrupados()
     const ultimoPesado = garronesLista.filter(g => g.der || g.izq).pop()
@@ -950,7 +951,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
             {modoEdicion && (
               <Button variant="outline" size="sm" onClick={() => { setModoEdicion(false); setFaenaTerminada(true); }} className="border-green-300 text-green-700">
                 <CheckCircle className="w-4 h-4 mr-1" />
-                Terminar EdiciÃ³n
+                Terminar Edición
               </Button>
             )}
             <Button 
@@ -970,12 +971,12 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
             {!modoProduccion ? (
               <Button variant="outline" size="sm" onClick={() => toggleModoProduccion(true)} className="bg-stone-800 text-white border-stone-600 hover:bg-stone-700">
                 <Maximize2 className="w-4 h-4 mr-1" />
-                Modo ProducciÃ³n
+                Modo Producción
               </Button>
             ) : (
               <Button variant="outline" size="sm" onClick={() => toggleModoProduccion(false)} className="bg-green-600 text-white border-green-500 hover:bg-green-700">
                 <Minimize2 className="w-4 h-4 mr-1" />
-                Modo ProducciÃ³n
+                Modo Producción
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={fetchData}>
@@ -986,7 +987,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
         </div>
       </div>
 
-      {/* ConfiguraciÃ³n activa */}
+      {/* Configuración activa */}
       <div className="flex-shrink-0 px-2">
         <Card className="border-0 shadow-sm bg-amber-50">
           <CardContent className="p-1.5">
@@ -998,7 +999,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
                 </span>
                 <div className="flex items-center gap-0.5">
                   <Warehouse className="w-3 h-3 text-amber-600" />
-                  <strong className="text-xs">CÃ¡m.:</strong>
+                  <strong className="text-xs">Cám.:</strong>
                   <Select value={camaraId} onValueChange={setCamaraId}>
                     <SelectTrigger className="h-5 w-28 bg-white border-amber-200 text-[10px]">
                       <SelectValue placeholder="Sel." />
@@ -1092,14 +1093,14 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
                   ) : (
                     <div className="p-1.5 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 text-[10px]">
                       <AlertTriangle className="w-3 h-3 inline mr-1" />
-                      No hay animal asignado al garrÃ³n {garronActual}
+                      No hay animal asignado al garrón {garronActual}
                     </div>
                   )}
                 </div>
 
                 <Separator className="my-1.5 flex-shrink-0" />
 
-                {/* Indicador de modo ediciÃ³n */}
+                {/* Indicador de modo edición */}
                 {modoEdicion && (
                   <div className="bg-amber-100 border border-amber-300 rounded p-1 text-center text-xs text-amber-700 flex-shrink-0">
                     <Edit className="w-3 h-3 inline mr-1" />
@@ -1138,9 +1139,9 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
                   </div>
                 </div>
 
-                {/* DenticiÃ³n */}
+                {/* Dentición */}
                 <div className="flex-shrink-0">
-                  <Label className="text-[9px]">DenticiÃ³n {asignacionActual?.tieneMediaDer && <span className="text-amber-600">(Fijado)</span>}</Label>
+                  <Label className="text-[9px]">Dentición {asignacionActual?.tieneMediaDer && <span className="text-amber-600">(Fijado)</span>}</Label>
                   <div className="flex gap-0.5 mt-0.5">
                     {DIENTES.map((d) => (
                       <Button key={d} variant={denticion === d ? 'default' : 'outline'} size="sm" className={`flex-1 h-6 text-[10px] ${denticion === d ? 'bg-amber-500 hover:bg-amber-600' : ''}`} onClick={() => setDenticion(d)} disabled={asignacionActual?.tieneMediaDer && denticion !== '' && denticion !== d}>
@@ -1152,7 +1153,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
 
                 <Separator className="my-1 flex-shrink-0" />
 
-                {/* Botones de acciÃ³n */}
+                {/* Botones de acción */}
                 <div className="grid grid-cols-2 gap-1.5 flex-shrink-0 mt-auto">
                   <Button size="sm" onClick={() => handleAceptarPeso(false)} disabled={saving || !pesoBalanza || parseFloat(pesoBalanza) <= 0 || !asignacionActual} className="h-9 bg-green-600 hover:bg-green-700">
                     <Printer className="w-3.5 h-3.5 mr-0.5" />
@@ -1233,11 +1234,11 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
         </div>
       </div>
 
-      {/* DiÃ¡logo de ConfiguraciÃ³n */}
+      {/* Diálogo de Configuración */}
       <Dialog open={configOpen} onOpenChange={setConfigOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>ConfiguraciÃ³n de Romaneo</DialogTitle>
+            <DialogTitle>Configuración de Romaneo</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-3">
             <div className="space-y-1">
@@ -1250,7 +1251,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-sm">CÃ¡mara</Label>
+              <Label className="text-sm">Cámara</Label>
               <Select value={camaraId} onValueChange={setCamaraId}>
                 <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
@@ -1265,12 +1266,12 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
         </DialogContent>
       </Dialog>
 
-      {/* DiÃ¡logo de Decomiso - Simplificado */}
+      {/* Diálogo de Decomiso - Simplificado */}
       <Dialog open={decomisoOpen} onOpenChange={setDecomisoOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-red-600 flex items-center gap-2"><AlertOctagon className="w-5 h-5" />Decomiso</DialogTitle>
-            <DialogDescription>GarrÃ³n #{garronActual} - {ladoActual}</DialogDescription>
+            <DialogDescription>Garrón #{garronActual} - {ladoActual}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-3">
             <div className="p-2 bg-amber-50 rounded-lg text-center">
@@ -1281,7 +1282,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
               <Label className="text-red-600 text-sm">Kg Decomisados</Label>
               <Input type="number" value={kgDecomiso} onChange={(e) => setKgDecomiso(e.target.value)} placeholder="0" step="0.1" autoFocus />
             </div>
-            <p className="text-xs text-stone-500">Los kg restantes serÃ¡n: {(parseFloat(pesoBalanza) - parseFloat(kgDecomiso || '0')).toFixed(1)} kg</p>
+            <p className="text-xs text-stone-500">Los kg restantes serán: {(parseFloat(pesoBalanza) - parseFloat(kgDecomiso || '0')).toFixed(1)} kg</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDecomisoOpen(false)}>Cancelar</Button>
@@ -1290,7 +1291,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
         </DialogContent>
       </Dialog>
 
-      {/* DiÃ¡logo Fin de Faena */}
+      {/* Diálogo Fin de Faena */}
       <Dialog open={finFaenaOpen} onOpenChange={setFinFaenaOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1308,16 +1309,16 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => handleTerminarFaena(false)}>No, continuar</Button>
-            <Button onClick={() => handleTerminarFaena(true)} className="bg-green-600 hover:bg-green-700">SÃ­, terminar</Button>
+            <Button onClick={() => handleTerminarFaena(true)} className="bg-green-600 hover:bg-green-700">Sí, terminar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* DiÃ¡logo Supervisor */}
+      {/* Diálogo Supervisor */}
       <Dialog open={supervisorOpen} onOpenChange={setSupervisorOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Lock className="w-5 h-5" />AutorizaciÃ³n de Supervisor</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Lock className="w-5 h-5" />Autorización de Supervisor</DialogTitle>
             <DialogDescription>Ingrese la clave de supervisor para editar la faena</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-3">
@@ -1330,16 +1331,16 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
         </DialogContent>
       </Dialog>
 
-      {/* DiÃ¡logo de ReimpresiÃ³n por Fecha */}
+      {/* Diálogo de Reimpresión por Fecha */}
       <Dialog open={reimpresionOpen} onOpenChange={setReimpresionOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh]" maximizable>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Printer className="w-5 h-5" />
-              ReimpresiÃ³n de RÃ³tulos
+              Reimpresión de Rótulos
             </DialogTitle>
             <DialogDescription>
-              Seleccione una fecha de faena y el garrÃ³n a reimprimir
+              Seleccione una fecha de faena y el garrón a reimprimir
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-3">
@@ -1362,7 +1363,7 @@ export function RomaneoModule({ operador }: { operador: Operador }) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-16">GarrÃ³n</TableHead>
+                      <TableHead className="w-16">Garrón</TableHead>
                       <TableHead>Lado</TableHead>
                       <TableHead>Tropa</TableHead>
                       <TableHead className="text-right">Peso</TableHead>
