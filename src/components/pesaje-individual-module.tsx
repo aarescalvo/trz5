@@ -5,7 +5,7 @@ import {
   Scale, RefreshCw, Plus, CheckCircle, AlertCircle,
   Beef, Edit, Trash2, ArrowRight, Minus, AlertTriangle, ClipboardCheck, Printer, 
   Edit3, Save, X, Settings2, Move, Eye, Type, Palette, ChevronUp, ChevronDown,
-  Maximize, Minimize
+  Maximize, Minimize, FileText
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,6 +24,7 @@ import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Progress } from '@/components/ui/progress'
 import { BalanzaConfigButton } from '@/components/balanza-config-button'
+import { imprimirTicketPesajeA4 } from './pesaje-individual/rotuloPrint'
 
 const TIPOS_ANIMALES: Record<string, { codigo: string; label: string }[]> = {
   BOVINO: [
@@ -765,6 +766,41 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
       toast.error('Error de conexión')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleImprimirTicketA4 = async (tropa: Tropa) => {
+    try {
+      // Obtener los animales de esta tropa desde la API
+      const res = await fetch(`/api/tropas/${tropa.id}/animales`)
+      if (!res.ok) {
+        // Fallback: usar la lista de animales actual si coincide la tropa
+        if (tropaSeleccionada?.id === tropa.id && animales.length > 0) {
+          imprimirTicketPesajeA4({
+            tropa,
+            animales: animales.filter(a => a.estado === 'PESADO'),
+          })
+          return
+        }
+        toast.error('No se pudieron obtener los datos de la tropa')
+        return
+      }
+      const data = await res.json()
+      const animalesTropa = data.data || data || []
+      
+      if (animalesTropa.length === 0) {
+        toast.error('No hay animales pesados para esta tropa')
+        return
+      }
+
+      imprimirTicketPesajeA4({
+        tropa,
+        animales: animalesTropa,
+      })
+      toast.success('Imprimiendo ticket A4...')
+    } catch (error) {
+      console.error('Error al imprimir ticket A4:', error)
+      toast.error('Error al generar ticket A4')
     }
   }
 
@@ -1994,7 +2030,18 @@ export function PesajeIndividualModule({ tropas: propTropas, operador }: { tropa
                     <div key={tropa.id} className="p-3">
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-mono font-bold">{tropa.codigo}</span>
-                        <span className="font-bold text-green-600">{tropa.pesoTotalIndividual?.toLocaleString() || '-'} kg</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => handleImprimirTicketA4(tropa)}
+                          >
+                            <FileText className="w-3 h-3" />
+                            A4
+                          </Button>
+                          <span className="font-bold text-green-600">{tropa.pesoTotalIndividual?.toLocaleString() || '-'} kg</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-stone-500">
                         <span>{tropa.usuarioFaena?.nombre || '-'}</span>
