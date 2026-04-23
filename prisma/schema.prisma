@@ -364,6 +364,31 @@ model Transportista {
   updatedAt DateTime @updatedAt
 
   pesajes PesajeCamion[]
+  vehiculos Vehiculo[]
+}
+
+// ==================== VEHICULOS ====================
+
+model Vehiculo {
+  id              String         @id @default(cuid())
+  patente         String         @unique // "AB123CD" normalizada (sin espacios ni puntos)
+  patenteMostrar  String         // "AB 123 CD" formateada para mostrar
+  choferNombre    String?
+  choferDni       String?
+  choferTelefono  String?
+  habilitacion    String?
+  empresa         String?
+  transportistaId String?
+  transportista   Transportista? @relation(fields: [transportistaId], references: [id])
+  ultimaVisita    DateTime       @default(now())
+  vecesVisita     Int            @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pesajes PesajeCamion[]
+
+  @@index([patente])
 }
 
 // ==================== TABLAS DE CÓDIGOS ====================
@@ -657,6 +682,10 @@ model PesajeCamion {
   // Transportista
   transportistaId String?
   transportista   Transportista? @relation(fields: [transportistaId], references: [id])
+
+  // Vehículo
+  vehiculoId String?
+  vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id])
 
   // Para Ingreso de Hacienda
   tropa Tropa?

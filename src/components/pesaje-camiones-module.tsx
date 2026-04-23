@@ -93,7 +93,12 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
   const [patenteAcoplado, setPatenteAcoplado] = useState('')
   const [chofer, setChofer] = useState('')
   const [dniChofer, setDniChofer] = useState('')
+  const [choferTelefono, setChoferTelefono] = useState('')
+  const [habilitacion, setHabilitacion] = useState('')
+  const [empresa, setEmpresa] = useState('')
   const [transportistaId, setTransportistaId] = useState('')
+  const [vehiculoEncontrado, setVehiculoEncontrado] = useState(false)
+  const [buscandoVehiculo, setBuscandoVehiculo] = useState(false)
   const [dte, setDte] = useState('')
   const [guia, setGuia] = useState('')
   const [productorId, setProductorId] = useState('')
@@ -118,6 +123,39 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
   // Quick add dialogs
   const [quickAddOpen, setQuickAddOpen] = useState<'transportista' | 'productor' | 'usuarioFaena' | null>(null)
   
+  // Buscar vehículo al escribir patente (debounce)
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (patenteChasis.length >= 4) {
+        setBuscandoVehiculo(true)
+        try {
+          const res = await fetch(`/api/vehiculos?patente=${encodeURIComponent(patenteChasis)}`)
+          const data = await res.json()
+          if (data.success && data.data) {
+            const v = data.data
+            if (v.choferNombre) setChofer(v.choferNombre)
+            if (v.choferDni) setDniChofer(v.choferDni)
+            if (v.choferTelefono) setChoferTelefono(v.choferTelefono)
+            if (v.habilitacion) setHabilitacion(v.habilitacion)
+            if (v.empresa) setEmpresa(v.empresa)
+            if (v.transportistaId) setTransportistaId(v.transportistaId)
+            setVehiculoEncontrado(true)
+            toast.info(`Vehículo conocido - ${v.vecesVisita} visita${v.vecesVisita > 1 ? 's' : ''}`, { duration: 2000 })
+          } else {
+            setVehiculoEncontrado(false)
+          }
+        } catch {
+          setVehiculoEncontrado(false)
+        } finally {
+          setBuscandoVehiculo(false)
+        }
+      } else {
+        setVehiculoEncontrado(false)
+      }
+    }, 500) // 500ms debounce
+    return () => clearTimeout(timer)
+  }, [patenteChasis])
+
   // Pesajes
   const [pesajesAbiertos, setPesajesAbiertos] = useState<any[]>([])
   const [pesajesCerrados, setPesajesCerrados] = useState<any[]>([])
@@ -245,7 +283,11 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
     setPatenteAcoplado('')
     setChofer('')
     setDniChofer('')
+    setChoferTelefono('')
+    setHabilitacion('')
+    setEmpresa('')
     setTransportistaId('')
+    setVehiculoEncontrado(false)
     setDte('')
     setGuia('')
     setProductorId('')
@@ -394,12 +436,36 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
           toast.success(`Ticket #${String(data.data.numeroTicket).padStart(6, '0')} creado`)
         }
         
+        // Guardar/actualizar vehículo para futuros pesajes
+        try {
+          await fetch('/api/vehiculos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              patente: patenteChasis,
+              choferNombre: chofer || null,
+              choferDni: dniChofer || null,
+              choferTelefono: choferTelefono || null,
+              habilitacion: habilitacion || null,
+              empresa: empresa || null,
+              transportistaId: transportistaId || null
+            })
+          })
+        } catch (vError) {
+          console.error('Error al guardar vehículo:', vError)
+          // No bloquear el flujo si falla el guardado del vehículo
+        }
+
         // Reset form first
         setPatenteChasis('')
         setPatenteAcoplado('')
         setChofer('')
         setDniChofer('')
+        setChoferTelefono('')
+        setHabilitacion('')
+        setEmpresa('')
         setTransportistaId('')
+        setVehiculoEncontrado(false)
         setDte('')
         setGuia('')
         setProductorId('')
@@ -675,12 +741,20 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Patente Chasis *</Label>
-                        <Input
-                          value={patenteChasis}
-                          onChange={(e) => setPatenteChasis(e.target.value.toUpperCase())}
-                          placeholder="AB123CD"
-                          className="font-mono"
-                        />
+                        <div className="relative">
+                          <Input
+                            value={patenteChasis}
+                            onChange={(e) => setPatenteChasis(e.target.value.toUpperCase())}
+                            placeholder="AB123CD"
+                            className="font-mono"
+                          />
+                          {buscandoVehiculo && (
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground animate-pulse">buscando...</div>
+                          )}
+                          {vehiculoEncontrado && !buscandoVehiculo && (
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium">conocido</div>
+                          )}
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label>Patente Acoplado</Label>
@@ -709,6 +783,32 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
                           placeholder="12345678"
                         />
                       </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Teléfono Chofer</Label>
+                        <Input
+                          value={choferTelefono}
+                          onChange={(e) => setChoferTelefono(e.target.value)}
+                          placeholder="351-1234567"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Habilitación</Label>
+                        <Input
+                          value={habilitacion}
+                          onChange={(e) => setHabilitacion(e.target.value)}
+                          placeholder="HAB-4113"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Empresa</Label>
+                      <Input
+                        value={empresa}
+                        onChange={(e) => setEmpresa(e.target.value)}
+                        placeholder="Nombre de la empresa"
+                      />
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -1045,12 +1145,17 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Patente Chasis *</Label>
-                      <Input
-                        value={patenteChasis}
-                        onChange={(e) => setPatenteChasis(e.target.value.toUpperCase())}
-                        placeholder="AB123CD"
-                        className="font-mono"
-                      />
+                      <div className="relative">
+                        <Input
+                          value={patenteChasis}
+                          onChange={(e) => setPatenteChasis(e.target.value.toUpperCase())}
+                          placeholder="AB123CD"
+                          className="font-mono"
+                        />
+                        {vehiculoEncontrado && !buscandoVehiculo && (
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium">conocido</div>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label>Patente Acoplado</Label>
@@ -1083,6 +1188,24 @@ export function PesajeCamionesModule({ operador, onTropaCreada }: { operador: Op
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Teléfono Chofer</Label>
+                      <Input
+                        value={choferTelefono}
+                        onChange={(e) => setChoferTelefono(e.target.value)}
+                        placeholder="351-1234567"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Habilitación</Label>
+                      <Input
+                        value={habilitacion}
+                        onChange={(e) => setHabilitacion(e.target.value)}
+                        placeholder="HAB-4113"
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
