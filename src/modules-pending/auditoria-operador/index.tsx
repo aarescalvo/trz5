@@ -75,7 +75,9 @@ interface Props {
 
 // ==================== CONSTANTS ====================
 const MODULOS = [
-  { id: 'PESAJE_CAMIONES', nombre: 'Pesaje Camiones' },
+  { id: 'AUTH', nombre: 'Autenticación' },
+  { id: 'PESAJE_CAMION', nombre: 'Pesaje Camiones' },
+  { id: 'PESAJE_CAMIONES', nombre: 'Pesaje Camiones (legacy)' },
   { id: 'PESAJE_INDIVIDUAL', nombre: 'Pesaje Individual' },
   { id: 'MOVIMIENTO_HACIENDA', nombre: 'Movimiento Hacienda' },
   { id: 'LISTA_FAENA', nombre: 'Lista de Faena' },
@@ -83,9 +85,9 @@ const MODULOS = [
   { id: 'MENUDENCIAS', nombre: 'Menudencias' },
   { id: 'CUEROS', nombre: 'Cueros' },
   { id: 'DESPACHOS', nombre: 'Despachos' },
+  { id: 'EXPEDICION', nombre: 'Expedición' },
   { id: 'FACTURACION', nombre: 'Facturación' },
   { id: 'CONFIGURACION', nombre: 'Configuración' },
-  { id: 'AUTH', nombre: 'Autenticación' },
   { id: 'STOCK', nombre: 'Stock' },
   { id: 'REPORTES', nombre: 'Reportes' },
   { id: 'DESPOSTADA', nombre: 'Despostada' },
@@ -93,9 +95,15 @@ const MODULOS = [
   { id: 'EMPAQUE', nombre: 'Empaque' },
   { id: 'CCIR', nombre: 'CCIR' },
   { id: 'OPERADORES', nombre: 'Operadores' },
+  { id: 'SEGURIDAD', nombre: 'Seguridad' },
   { id: 'CLIENTES', nombre: 'Clientes' },
   { id: 'PRODUCTOS', nombre: 'Productos' },
   { id: 'INSUMOS', nombre: 'Insumos' },
+  { id: 'TROPAS', nombre: 'Tropas' },
+  { id: 'ANIMALES', nombre: 'Animales' },
+  { id: 'CAMARAS', nombre: 'Cámaras' },
+  { id: 'CORRALES', nombre: 'Corrales' },
+  { id: 'BALANZAS', nombre: 'Balanzas' },
 ]
 
 const ACCION_COLORS: Record<string, string> = {
@@ -103,9 +111,37 @@ const ACCION_COLORS: Record<string, string> = {
   UPDATE: 'bg-blue-100 text-blue-700 border-blue-300',
   DELETE: 'bg-red-100 text-red-700 border-red-300',
   LOGIN: 'bg-purple-100 text-purple-700 border-purple-300',
+  LOGIN_PIN: 'bg-purple-100 text-purple-700 border-purple-300',
   LOGOUT: 'bg-gray-100 text-gray-700 border-gray-300',
+  LOGIN_FAILED: 'bg-red-100 text-red-700 border-red-300',
+  EXPORT: 'bg-cyan-100 text-cyan-700 border-cyan-300',
+  PRINT: 'bg-indigo-100 text-indigo-700 border-indigo-300',
+  IMPORT: 'bg-teal-100 text-teal-700 border-teal-300',
+  PERMISSION_CHANGE: 'bg-amber-100 text-amber-700 border-amber-300',
+  PASSWORD_CHANGE: 'bg-orange-100 text-orange-700 border-orange-300',
+  LOCK: 'bg-stone-100 text-stone-700 border-stone-300',
+  UNLOCK: 'bg-stone-100 text-stone-700 border-stone-300',
   ERROR: 'bg-red-100 text-red-700 border-red-300',
   VIEW: 'bg-stone-100 text-stone-700 border-stone-300',
+}
+
+const ACCION_LABELS: Record<string, string> = {
+  CREATE: 'Creación',
+  UPDATE: 'Actualización',
+  DELETE: 'Eliminación',
+  LOGIN: 'Login',
+  LOGIN_PIN: 'Login PIN',
+  LOGOUT: 'Logout',
+  LOGIN_FAILED: 'Login Fallido',
+  EXPORT: 'Exportación',
+  PRINT: 'Impresión',
+  IMPORT: 'Importación',
+  PERMISSION_CHANGE: 'Cambio Permisos',
+  PASSWORD_CHANGE: 'Cambio Contraseña',
+  LOCK: 'Bloqueo',
+  UNLOCK: 'Desbloqueo',
+  ERROR: 'Error',
+  VIEW: 'Visualización',
 }
 
 const ACCION_ICONS: Record<string, typeof CheckCircle> = {
@@ -113,7 +149,15 @@ const ACCION_ICONS: Record<string, typeof CheckCircle> = {
   UPDATE: TrendingUp,
   DELETE: XCircle,
   LOGIN: User,
+  LOGIN_PIN: User,
   LOGOUT: User,
+  LOGIN_FAILED: AlertTriangle,
+  EXPORT: Download,
+  PRINT: FileText,
+  PERMISSION_CHANGE: AlertTriangle,
+  PASSWORD_CHANGE: AlertTriangle,
+  LOCK: XCircle,
+  UNLOCK: CheckCircle,
   ERROR: AlertTriangle,
   VIEW: Eye,
 }
@@ -516,11 +560,16 @@ export function AuditoriaOperadorModule({ operador }: Props) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="CREATE">Crear</SelectItem>
-              <SelectItem value="UPDATE">Actualizar</SelectItem>
-              <SelectItem value="DELETE">Eliminar</SelectItem>
+              <SelectItem value="CREATE">Creación</SelectItem>
+              <SelectItem value="UPDATE">Actualización</SelectItem>
+              <SelectItem value="DELETE">Eliminación</SelectItem>
               <SelectItem value="LOGIN">Login</SelectItem>
+              <SelectItem value="LOGIN_PIN">Login PIN</SelectItem>
               <SelectItem value="LOGOUT">Logout</SelectItem>
+              <SelectItem value="EXPORT">Exportación</SelectItem>
+              <SelectItem value="PRINT">Impresión</SelectItem>
+              <SelectItem value="PERMISSION_CHANGE">Cambio Permisos</SelectItem>
+              <SelectItem value="PASSWORD_CHANGE">Cambio Contraseña</SelectItem>
               <SelectItem value="ERROR">Error</SelectItem>
             </SelectContent>
           </Select>
@@ -605,7 +654,7 @@ export function AuditoriaOperadorModule({ operador }: Props) {
                       <TableCell>
                         <Badge className={ACCION_COLORS[item.accion] || 'bg-stone-100 text-stone-700'}>
                           <Icon className="w-3 h-3 mr-1" />
-                          {item.accion}
+                          {ACCION_LABELS[item.accion] || item.accion}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-stone-600 max-w-[300px] truncate">

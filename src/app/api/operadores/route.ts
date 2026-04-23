@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
-import { validarPermiso, validarRolAdmin } from '@/lib/auth-helpers'
-
-function getOperadorId(request: NextRequest): string | null {
-  return request.headers.get('x-operador-id')
-}
+import { validarPermiso, validarRolAdmin, getOperadorId } from '@/lib/auth-helpers'
+import { auditCreate, auditUpdate, auditDelete, auditPermissionChange, extractAuditInfo } from '@/lib/audit-middleware'
 
 // GET - Listar operadores
 export async function GET(request: NextRequest) {
@@ -170,6 +167,19 @@ export async function POST(request: NextRequest) {
       }
     })
     
+    // Auditoría
+    const { ip } = extractAuditInfo(request)
+    auditCreate({
+      operadorId: operadorIdAuth || undefined,
+      modulo: 'OPERADORES',
+      entidad: 'Operador',
+      entidadId: operador.id,
+      entidadNombre: `${operador.nombre} (${operador.usuario})`,
+      datos: { nombre: operador.nombre, usuario: operador.usuario, rol: operador.rol, permisos: body },
+      descripcion: `Creación de operador: ${operador.nombre} - Rol: ${operador.rol}`,
+      ip
+    }).catch(() => {})
+
     return NextResponse.json({
       success: true,
       data: {
@@ -263,11 +273,44 @@ export async function PUT(request: NextRequest) {
     if (puedeCalidad !== undefined) updateData.puedeCalidad = puedeCalidad
     if (puedeAutorizarReportes !== undefined) updateData.puedeAutorizarReportes = puedeAutorizarReportes
     
+    const operadorAntes = await db.operador.findUnique({
+      where: { id },
+      select: { nombre: true, usuario: true, rol: true, activo: true, puedePesajeCamiones: true, puedeFacturacion: true, puedeConfiguracion: true, puedeReportes: true, puedeCalidad: true }
+    })
+
     const operador = await db.operador.update({
       where: { id },
       data: updateData
     })
-    
+
+    // Auditoría: si cambiaron permisos, registrar cambio de permisos
+    const { ip } = extractAuditInfo(request)
+    const permFields = ['puedePesajeCamiones','puedePesajeIndividual','puedeMovimientoHacienda','puedeListaFaena','puedeRomaneo','puedeIngresoCajon','puedeCuarteo','puedeDesposte','puedeEmpaque','puedeExpedicionC2','puedeMenudencias','puedeStock','puedeCCIR','puedeFacturacion','puedeReportes','puedeConfiguracion','puedeCalidad','puedeAutorizarReportes']
+    const permChanged = permFields.some(f => body[f] !== undefined && body[f] !== operadorAntes?.[f as keyof typeof operadorAntes])
+    const rolChanged = body.rol !== undefined && body.rol !== operadorAntes?.rol
+
+    if (permChanged || rolChanged) {
+      auditPermissionChange({
+        operadorId: operadorIdAuth || undefined,
+        operadorAfectadoId: id,
+        permisosAntes: operadorAntes,
+        permisosDespues: updateData,
+        ip
+      }).catch(() => {})
+    }
+
+    auditUpdate({
+      operadorId: operadorIdAuth || undefined,
+      modulo: 'OPERADORES',
+      entidad: 'Operador',
+      entidadId: operador.id,
+      entidadNombre: `${operador.nombre} (${operador.usuario})`,
+      datosAntes: operadorAntes,
+      datosDespues: updateData,
+      descripcion: `Actualización de operador: ${operador.nombre} (${operador.usuario}) - Cambios: ${Object.keys(updateData).join(', ')}`,
+      ip
+    }).catch(() => {})
+
     return NextResponse.json({
       success: true,
       data: {
@@ -312,10 +355,25 @@ export async function DELETE(request: NextRequest) {
       )
     }
     
+    // Obtener datos antes de eliminar para auditoría
+    const operadorElim = await db.operador.findUnique({ where: { id }, select: { id: true, nombre: true, usuario: true, rol: true } })
     await db.operador.delete({
       where: { id }
     })
-    
+
+    // Auditoría
+    const { ip } = extractAuditInfo(request)
+    auditDelete({
+      operadorId: operadorIdAuth || undefined,
+      modulo: 'OPERADORES',
+      entidad: 'Operador',
+      entidadId: id,
+      entidadNombre: `${operadorElim?.nombre || ''} (${operadorElim?.usuario || ''})`,
+      datos: operadorElim,
+      descripcion: `Eliminación de operador: ${operadorElim?.nombre || id}`,
+      ip
+    }).catch(() => {})
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting operador:', error)

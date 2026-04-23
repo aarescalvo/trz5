@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { validarPermiso, validarPermisoAny } from '@/lib/auth-helpers'
-
-function getOperadorId(request: NextRequest): string | null {
-  return request.headers.get('x-operador-id')
-}
+import { validarPermiso, validarPermisoAny, getOperadorId } from '@/lib/auth-helpers'
+import { auditCreate, auditUpdate, auditDelete, extractAuditInfo } from '@/lib/audit-middleware'
 
 // GET - Fetch clientes (con filtro opcional por tipo)
 export async function GET(request: NextRequest) {
@@ -99,7 +96,20 @@ export async function POST(request: NextRequest) {
         observaciones: observaciones || null
       }
     })
-    
+
+    // Auditoría
+    const { ip } = extractAuditInfo(request)
+    auditCreate({
+      operadorId: operadorId || undefined,
+      modulo: 'CLIENTES',
+      entidad: 'Cliente',
+      entidadId: cliente.id,
+      entidadNombre: cliente.nombre,
+      datos: cliente,
+      descripcion: `Creación de cliente: ${cliente.nombre}${cliente.cuit ? ` (CUIT: ${cliente.cuit})` : ''}`,
+      ip
+    }).catch(() => {})
+
     return NextResponse.json({
       success: true,
       data: cliente
@@ -171,12 +181,29 @@ export async function PUT(request: NextRequest) {
     if (puntoVenta !== undefined) data.puntoVenta = puntoVenta || null
     if (observaciones !== undefined) data.observaciones = observaciones || null
     if (activo !== undefined) data.activo = activo
-    
+
+    // Obtener datos antes de actualizar para auditoría
+    const clienteAntes = await db.cliente.findUnique({ where: { id } })
+
     const cliente = await db.cliente.update({
       where: { id },
       data
     })
-    
+
+    // Auditoría
+    const { ip } = extractAuditInfo(request)
+    auditUpdate({
+      operadorId: operadorId || undefined,
+      modulo: 'CLIENTES',
+      entidad: 'Cliente',
+      entidadId: cliente.id,
+      entidadNombre: cliente.nombre,
+      datosAntes: clienteAntes,
+      datosDespues: cliente,
+      descripcion: `Actualización de cliente: ${cliente.nombre}`,
+      ip
+    }).catch(() => {})
+
     return NextResponse.json({
       success: true,
       data: cliente
@@ -208,10 +235,25 @@ export async function DELETE(request: NextRequest) {
       )
     }
     
+    // Obtener datos antes de eliminar para auditoría
+    const clienteElim = await db.cliente.findUnique({ where: { id } })
     await db.cliente.delete({
       where: { id }
     })
-    
+
+    // Auditoría
+    const { ip } = extractAuditInfo(request)
+    auditDelete({
+      operadorId: operadorId || undefined,
+      modulo: 'CLIENTES',
+      entidad: 'Cliente',
+      entidadId: id,
+      entidadNombre: clienteElim?.nombre,
+      datos: clienteElim,
+      descripcion: `Eliminación de cliente: ${clienteElim?.nombre || id}`,
+      ip
+    }).catch(() => {})
+
     return NextResponse.json({
       success: true
     })

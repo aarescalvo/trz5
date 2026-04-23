@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { checkPermission, checkAnyPermission } from '@/lib/auth-helpers'
+import { checkPermission, checkAnyPermission, getOperadorId } from '@/lib/auth-helpers'
+import { auditCreate, auditUpdate, auditDelete, extractAuditInfo } from '@/lib/audit-middleware'
 
 // Un operador de pesaje puede consultar y crear transportistas/productores/clientes
 // para dar de alta en el momento, sin necesitar permisos de facturacion o configuracion
@@ -68,6 +69,19 @@ export async function POST(request: NextRequest) {
       }
     })
     
+    // Auditoría
+    const { ip } = extractAuditInfo(request)
+    auditCreate({
+      operadorId: getOperadorId(request) || undefined,
+      modulo: 'CONFIGURACION',
+      entidad: 'Transportista',
+      entidadId: transportista.id,
+      entidadNombre: transportista.nombre,
+      datos: transportista,
+      descripcion: `Creación de transportista: ${transportista.nombre}${transportista.cuit ? ` (CUIT: ${transportista.cuit})` : ''}`,
+      ip
+    }).catch(() => {})
+
     return NextResponse.json({
       success: true,
       data: transportista
@@ -113,6 +127,9 @@ export async function PUT(request: NextRequest) {
       }
     }
     
+    // Obtener datos antes de actualizar para auditoría
+    const transportistaAntes = await db.transportista.findUnique({ where: { id } })
+
     const transportista = await db.transportista.update({
       where: { id },
       data: {
@@ -123,6 +140,20 @@ export async function PUT(request: NextRequest) {
       }
     })
     
+    // Auditoría
+    const { ip } = extractAuditInfo(request)
+    auditUpdate({
+      operadorId: getOperadorId(request) || undefined,
+      modulo: 'CONFIGURACION',
+      entidad: 'Transportista',
+      entidadId: transportista.id,
+      entidadNombre: transportista.nombre,
+      datosAntes: transportistaAntes,
+      datosDespues: transportista,
+      descripcion: `Actualización de transportista: ${transportista.nombre}`,
+      ip
+    }).catch(() => {})
+
     return NextResponse.json({
       success: true,
       data: transportista
@@ -151,10 +182,25 @@ export async function DELETE(request: NextRequest) {
       )
     }
     
+    // Obtener datos antes de eliminar para auditoría
+    const transportistaElim = await db.transportista.findUnique({ where: { id } })
     await db.transportista.delete({
       where: { id }
     })
-    
+
+    // Auditoría
+    const { ip } = extractAuditInfo(request)
+    auditDelete({
+      operadorId: getOperadorId(request) || undefined,
+      modulo: 'CONFIGURACION',
+      entidad: 'Transportista',
+      entidadId: id,
+      entidadNombre: transportistaElim?.nombre,
+      datos: transportistaElim,
+      descripcion: `Eliminación de transportista: ${transportistaElim?.nombre || id}`,
+      ip
+    }).catch(() => {})
+
     return NextResponse.json({
       success: true,
       message: 'Transportista eliminado'

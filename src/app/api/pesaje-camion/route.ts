@@ -5,8 +5,9 @@ import { Especie, TipoAnimal, EstadoPesaje, TipoPesajeCamion } from '@prisma/cli
 // V4 - Updated: Transactions, corral stock, capacity warning, DTE validation
 
 // Función para generar código de tropa
-import { checkPermission } from '@/lib/auth-helpers'
+import { checkPermission, getOperadorId } from '@/lib/auth-helpers'
 import { createLogger } from '@/lib/logger'
+import { auditCreate, auditUpdate, extractAuditInfo } from '@/lib/audit-middleware'
 const log = createLogger('app.api.pesaje-camion.route')
 async function generarCodigoTropa(especie: Especie): Promise<{ codigo: string; numero: number }> {
   const year = new Date().getFullYear()
@@ -516,7 +517,20 @@ export async function POST(request: NextRequest) {
       if (advertenciaCapacidad) {
         response.advertencia = advertenciaCapacidad
       }
-      
+
+      // Auditoría: registro de pesaje con tropa
+      const { ip: auditIp } = extractAuditInfo(request)
+      auditCreate({
+        operadorId: getOperadorId(request) || undefined,
+        modulo: 'PESAJE_CAMION',
+        entidad: 'PesajeCamion',
+        entidadId: result.pesaje.id,
+        entidadNombre: `Ticket #${result.pesaje.numeroTicket}`,
+        datos: { tipo, patenteChasis, pesoBruto, pesoTara, pesoNeto, tropaCodigo: result.tropaCompleta?.codigo, cantidadCabezas },
+        descripcion: `Pesaje de camión - Ticket #${result.pesaje.numeroTicket} - ${tipo} - Patente: ${patenteChasis || 'N/A'}${result.tropaCompleta ? ` - Tropa: ${result.tropaCompleta.codigo} (${result.animalesCreados} animales)` : ''}`,
+        ip: auditIp
+      }).catch(() => {})
+
       return NextResponse.json(response)
     }
     
@@ -525,6 +539,19 @@ export async function POST(request: NextRequest) {
       data: pesajeData,
       include: { transportista: true, operador: true }
     })
+
+    // Auditoría: registro de pesaje simple
+    const { ip: auditIpSimple } = extractAuditInfo(request)
+    auditCreate({
+      operadorId: getOperadorId(request) || undefined,
+      modulo: 'PESAJE_CAMION',
+      entidad: 'PesajeCamion',
+      entidadId: pesaje.id,
+      entidadNombre: `Ticket #${pesaje.numeroTicket}`,
+      datos: { tipo, patenteChasis, pesoBruto, pesoTara, pesoNeto, estado: pesaje.estado },
+      descripcion: `Pesaje de camión - Ticket #${pesaje.numeroTicket} - ${tipo || 'PESAJE_SIMPLE'} - Patente: ${patenteChasis || 'N/A'}`,
+      ip: auditIpSimple
+    }).catch(() => {})
     
     return NextResponse.json({
       success: true,
@@ -590,6 +617,20 @@ export async function PUT(request: NextRequest) {
       
       return pesaje
     })
+
+    // Auditoría: registro de tara
+    const { ip: auditIpUpdate } = extractAuditInfo(request)
+    auditUpdate({
+      operadorId: getOperadorId(request) || undefined,
+      modulo: 'PESAJE_CAMION',
+      entidad: 'PesajeCamion',
+      entidadId: result.id,
+      entidadNombre: `Ticket #${result.numeroTicket}`,
+      datosAntes: { pesoTara: result.fechaTara ? null : 'pending', estado: 'ABIERTO' },
+      datosDespues: { pesoTara: parseFloat(pesoTara), pesoNeto: parseFloat(pesoNeto), estado: 'CERRADO' },
+      descripcion: `Tara registrada - Ticket #${result.numeroTicket} - Tara: ${pesoTara} kg - Neto: ${pesoNeto} kg - Patente: ${result.patenteChasis || 'N/A'}`,
+      ip: auditIpUpdate
+    }).catch(() => {})
     
     return NextResponse.json({
       success: true,

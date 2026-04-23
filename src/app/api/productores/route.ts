@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 // GET - Listar productores/consignatarios
-import { checkPermission, checkAnyPermission } from '@/lib/auth-helpers'
+import { checkPermission, checkAnyPermission, getOperadorId } from '@/lib/auth-helpers'
+import { auditCreate, auditUpdate, auditDelete, extractAuditInfo } from '@/lib/audit-middleware'
 
 const PESAJE_ALT = ['puedeFacturacion', 'puedePesajeCamiones']
 export async function GET(request: NextRequest) {
@@ -59,6 +60,19 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Auditoría
+    const { ip } = extractAuditInfo(request)
+    auditCreate({
+      operadorId: getOperadorId(request) || undefined,
+      modulo: 'FACTURACION',
+      entidad: 'ProductorConsignatario',
+      entidadId: productor.id,
+      entidadNombre: productor.nombre,
+      datos: productor,
+      descripcion: `Creación de productor: ${productor.nombre}${productor.cuit ? ` (CUIT: ${productor.cuit})` : ''}`,
+      ip
+    }).catch(() => {})
+
     return NextResponse.json({ success: true, data: productor });
   } catch (error) {
     console.error('Error al crear productor:', error);
@@ -78,6 +92,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
     }
 
+    // Obtener datos antes de actualizar para auditoría
+    const productorAntes = await db.productorConsignatario.findUnique({ where: { id: data.id } })
+
     const productor = await db.productorConsignatario.update({
       where: { id: data.id },
       data: {
@@ -95,6 +112,20 @@ export async function PUT(request: NextRequest) {
         activo: data.activo,
       }
     });
+
+    // Auditoría
+    const { ip } = extractAuditInfo(request)
+    auditUpdate({
+      operadorId: getOperadorId(request) || undefined,
+      modulo: 'FACTURACION',
+      entidad: 'ProductorConsignatario',
+      entidadId: productor.id,
+      entidadNombre: productor.nombre,
+      datosAntes: productorAntes,
+      datosDespues: productor,
+      descripcion: `Actualización de productor: ${productor.nombre}`,
+      ip
+    }).catch(() => {})
 
     return NextResponse.json({ success: true, data: productor });
   } catch (error) {
@@ -116,9 +147,24 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
     }
 
+    // Obtener datos antes de eliminar para auditoría
+    const productorElim = await db.productorConsignatario.findUnique({ where: { id } })
     await db.productorConsignatario.delete({
       where: { id }
     });
+
+    // Auditoría
+    const { ip } = extractAuditInfo(request)
+    auditDelete({
+      operadorId: getOperadorId(request) || undefined,
+      modulo: 'FACTURACION',
+      entidad: 'ProductorConsignatario',
+      entidadId: id,
+      entidadNombre: productorElim?.nombre,
+      datos: productorElim,
+      descripcion: `Eliminación de productor: ${productorElim?.nombre || id}`,
+      ip
+    }).catch(() => {})
 
     return NextResponse.json({ success: true });
   } catch (error) {
