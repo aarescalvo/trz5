@@ -15,6 +15,7 @@ const getAllowedOrigins = (): string[] => {
 
 // Version: 3.18.0 - Security hardening + quality improvements
 const nextConfig: NextConfig = {
+  output: 'standalone',
   typescript: {
     ignoreBuildErrors: false,
   },
