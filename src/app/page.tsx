@@ -1,5 +1,5 @@
 'use client'
-// Sistema Frigorífico - Solemar Alimentaria v2.3.0
+// Sistema Frigorífico - Solemar Alimentaria v3.18.0
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'

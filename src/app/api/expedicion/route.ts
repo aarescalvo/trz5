@@ -333,18 +333,16 @@ async function crearDespacho(data: {
   operadorId?: string
   mediasIds?: string[]
 }) {
-  // Obtener siguiente número de despacho
-  const numerador = await db.numerador.upsert({
-    where: { nombre: 'DESPACHO' },
-    create: { nombre: 'DESPACHO', ultimoNumero: 0 },
-    update: {}
+  // Obtener siguiente número de despacho (atomic increment to prevent race conditions)
+  const numerador = await db.$transaction(async (tx) => {
+    const num = await tx.numerador.upsert({
+      where: { nombre: 'DESPACHO' },
+      update: { ultimoNumero: { increment: 1 } },
+      create: { nombre: 'DESPACHO', ultimoNumero: 1 },
+    })
+    return num
   })
-  
-  const nuevoNumero = numerador.ultimoNumero + 1
-  await db.numerador.update({
-    where: { nombre: 'DESPACHO' },
-    data: { ultimoNumero: nuevoNumero }
-  })
+  const nuevoNumero = numerador.ultimoNumero
 
   // Crear despacho
   const despacho = await db.despacho.create({
@@ -414,7 +412,7 @@ async function agregarMediasADespacho(despachoId: string, mediasIds: string[]) {
     throw new Error('No hay medias res disponibles')
   }
 
-  // Crear items del despacho
+  // Crear items del despacho (incluyendo camaraId para poder restaurar al anular)
   await db.despachoItem.createMany({
     data: medias.map(m => ({
       despachoId,
@@ -422,6 +420,7 @@ async function agregarMediasADespacho(despachoId: string, mediasIds: string[]) {
       tropaCodigo: m.romaneo?.tropaCodigo,
       garron: m.romaneo?.garron,
       peso: m.peso,
+      camaraId: m.camaraId,
       usuarioId: m.usuarioFaenaId,
       usuarioNombre: m.usuarioFaena?.nombre
     }))
@@ -467,10 +466,13 @@ async function quitarMediaDespacho(data: { itemId: string }) {
     return NextResponse.json({ success: false, error: 'No se puede modificar un despacho finalizado' }, { status: 400 })
   }
 
-  // Restaurar estado de la media
+  // Restaurar estado de la media y su cámara de origen
   await db.mediaRes.update({
     where: { id: item.mediaResId },
-    data: { estado: 'EN_CAMARA' }
+    data: {
+      estado: 'EN_CAMARA',
+      camaraId: item.camaraId
+    }
   })
 
   // Eliminar item
@@ -536,11 +538,18 @@ async function anularDespacho(data: { despachoId: string }) {
     return NextResponse.json({ success: false, error: 'Despacho no encontrado' }, { status: 404 })
   }
 
-  // Restaurar estado de todas las medias
-  await db.mediaRes.updateMany({
-    where: { id: { in: despacho.items.map(i => i.mediaResId) } },
-    data: { estado: 'EN_CAMARA' }
-  })
+  // Restaurar estado de todas las medias con su cámara de origen
+  await db.$transaction(
+    despacho.items.map(item =>
+      db.mediaRes.update({
+        where: { id: item.mediaResId },
+        data: {
+          estado: 'EN_CAMARA',
+          camaraId: item.camaraId
+        }
+      })
+    )
+  )
 
   // Eliminar items
   await db.despachoItem.deleteMany({

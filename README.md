@@ -2,7 +2,7 @@
 
 Sistema integral para la gestion de faena, romaneo, desposte y procesamiento de carne bovina y equina. Desarrollado para frigorificos con operacion completa de Ciclo I (recepcion y faena) y Ciclo II (desposte, empaque y expedicion).
 
-**Version:** 3.17.0 | **Ultima actualizacion:** Abril 2026
+**Version:** 3.18.0 | **Ultima actualizacion:** Abril 2026
 
 ---
 

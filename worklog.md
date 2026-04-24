@@ -5001,3 +5001,28 @@ Stage Summary:
 - **HTML hardcodeado solo como fallback** cuando no hay plantilla en DB ✅
 - **Ambos modulos (romaneo + pesaje individual) actualizados** ✅
 - **Push a GitHub completado** ✅
+
+---
+Task ID: 1
+Agent: Main Agent + Sub-agents
+Task: Corrección de 11 bugs identificados en la revisión del repositorio TRZ5
+
+Work Log:
+- Fix #1: Agregué autenticación al endpoint de facturación en /install/ (checkPermission)
+- Fix #2: operadorId ahora se extrae del header x-operador-id en vez del body (POST y PUT de facturación)
+- Fix #4: Reemplacé exec() por spawn() sin shell en backup.ts para prevenir command injection
+- Fix #6: Numericador de despacho ahora usa $transaction con upsert atómico (increment: 1)
+- Fix #8: Validación de pesos positivos (>0) en POST y PUT de pesaje-individual
+- Fix #10: Corregida concatenación de fechas en facturación (setHours en vez de concatenación de strings)
+- Fix #16: Paginación agregada a endpoints GET: stock, romaneo, facturación (limit/offset/total)
+- Fix #17: Agregado campo camaraId a DespachoItem para restaurar cámara al anular despacho
+- Fix #19: Campos monetarios Float→Decimal(12,2) en Prisma (precioBase, precioKg, montoTotal en OrdenCompra)
+- Fix #21: Eliminado LoginAttemptManager, getOperadorId duplicado, ternario muerto, db-write.ts
+- Fix #24: Versión unificada a 3.18.0 en package.json, page.tsx, README.md
+
+Stage Summary:
+- 11 correcciones aplicadas exitosamente
+- Archivos modificados: backup.ts, expedicion/route.ts, facturacion/route.ts, pesaje-individual/route.ts, stock/route.ts, romaneo/route.ts, security.ts, usuarios/route.ts, liquidacion.service.ts, schema.prisma (x5), page.tsx, package.json, README.md
+- Archivo creado: install/src/lib/auth-helpers.ts
+- Archivo eliminado: src/lib/db-write.ts
+- Esquema Prisma actualizado: nuevo campo camaraId en DespachoItem

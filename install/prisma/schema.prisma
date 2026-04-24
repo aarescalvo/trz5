@@ -1894,6 +1894,7 @@ model DespachoItem {
   tropaCodigo String? // Código de tropa
   garron      Int? // Número de garrón
   peso        Float // Peso de la media res
+  camaraId    String? // Cámara de origen (para restaurar al anular)
 
   // Usuario (cliente) al que pertenece
   usuarioId     String? // ID del usuario de faena
@@ -1905,6 +1906,7 @@ model DespachoItem {
   @@index([despachoId])
   @@index([tropaCodigo])
   @@index([usuarioId])
+  @@index([camaraId])
 }
 
 enum EstadoDespacho {

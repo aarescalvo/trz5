@@ -28,6 +28,10 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
     const tipoComprobante = searchParams.get('tipoComprobante')
     
+    // Parse pagination params with defaults
+    const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 1000)
+    const offset = parseInt(searchParams.get('offset') || '0')
+    
     // Build filters with AND to avoid OR overriding other conditions
     const conditions: any[] = []
     
@@ -46,7 +50,18 @@ export async function GET(request: NextRequest) {
     if (desde || hasta) {
       const fechaFilter: any = {}
       if (desde) fechaFilter.gte = new Date(desde)
-      if (hasta) fechaFilter.lte = new Date(hasta + 'T23:59:59')
+      if (hasta) {
+        // Parse the date and set end of day
+        const hastaDate = new Date(hasta)
+        if (isNaN(hastaDate.getTime())) {
+          // If it fails, try date-only format
+          fechaFilter.lte = new Date(hasta + 'T23:59:59.999')
+        } else {
+          // If it already parsed correctly, set to end of that day
+          hastaDate.setHours(23, 59, 59, 999)
+          fechaFilter.lte = hastaDate
+        }
+      }
       conditions.push({ fecha: fechaFilter })
     }
     
@@ -63,55 +78,61 @@ export async function GET(request: NextRequest) {
     
     const where = conditions.length > 0 ? { AND: conditions } : {}
     
-    const facturas = await db.factura.findMany({
-      where,
-      include: {
-        cliente: {
-          select: {
-            id: true,
-            nombre: true,
-            cuit: true,
-            razonSocial: true,
-            condicionIva: true,
-            direccion: true
-          }
-        },
-        detalles: {
-          include: {
-            tipoServicio: true
+    const [facturas, total] = await Promise.all([
+      db.factura.findMany({
+        where,
+        include: {
+          cliente: {
+            select: {
+              id: true,
+              nombre: true,
+              cuit: true,
+              razonSocial: true,
+              condicionIva: true,
+              direccion: true
+            }
           },
-          orderBy: { createdAt: 'asc' }
-        },
-        pagos: {
-          orderBy: { fecha: 'desc' }
-        },
-        operador: {
-          select: {
-            id: true,
-            nombre: true
-          }
-        },
-        notas: {
-          where: { estado: 'EMITIDA' },
-          select: {
-            id: true,
-            tipo: true,
-            numero: true,
-            puntoVenta: true,
-            total: true,
-            estado: true,
-            motivo: true,
+          detalles: {
+            include: {
+              tipoServicio: true
+            },
+            orderBy: { createdAt: 'asc' }
           },
-          orderBy: { createdAt: 'desc' }
+          pagos: {
+            orderBy: { fecha: 'desc' }
+          },
+          operador: {
+            select: {
+              id: true,
+              nombre: true
+            }
+          },
+          notas: {
+            where: { estado: 'EMITIDA' },
+            select: {
+              id: true,
+              tipo: true,
+              numero: true,
+              puntoVenta: true,
+              total: true,
+              estado: true,
+              motivo: true,
+            },
+            orderBy: { createdAt: 'desc' }
+          },
+          tributos: true
         },
-        tributos: true
-      },
-      orderBy: { createdAt: 'desc' }
-    })
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset
+      }),
+      db.factura.count({ where })
+    ])
     
     return NextResponse.json({
       success: true,
-      data: facturas
+      data: facturas,
+      pagination: { total, limit, offset, pages: Math.ceil(total / limit) }
     })
   } catch (error) {
     console.error('Error fetching facturas:', error)
@@ -158,18 +179,11 @@ async function obtenerPrecioVigente(tipoServicioId: string, clienteId: string, f
 // POST - Create new factura
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { 
-      clienteId, 
-      fecha,
-      detalles,
-      observaciones,
-      condicionVenta,
-      remito,
-      despachoId,
-      operadorId 
-    } = body
-    
+    const operadorId = request.headers.get('x-operador-id')
+    if (!operadorId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
     // Validate permissions
     const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
     if (!puedeFacturar) {
@@ -178,6 +192,17 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       )
     }
+
+    const body = await request.json()
+    const { 
+      clienteId, 
+      fecha,
+      detalles,
+      observaciones,
+      condicionVenta,
+      remito,
+      despachoId
+    } = body
     
     if (!clienteId) {
       return NextResponse.json(
@@ -334,9 +359,11 @@ export async function POST(request: NextRequest) {
 // PUT - Update factura
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { id, estado, observaciones, remito, fechaVencimiento, operadorId } = body
-    
+    const operadorId = request.headers.get('x-operador-id')
+    if (!operadorId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
     // Validate permissions
     const puedeFacturar = await validarPermiso(operadorId, 'puedeFacturacion')
     if (!puedeFacturar) {
@@ -345,6 +372,9 @@ export async function PUT(request: NextRequest) {
         { status: 403 }
       )
     }
+
+    const body = await request.json()
+    const { id, estado, observaciones, remito, fechaVencimiento } = body
     
     if (!id) {
       return NextResponse.json(

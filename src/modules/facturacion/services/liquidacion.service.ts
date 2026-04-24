@@ -134,7 +134,7 @@ export class LiquidacionService {
           condicionVenta: 'CUENTA_CORRIENTE',
           detalles: {
             create: liq.items?.map(item => ({
-              tipoProducto: item.esDescuento ? 'OTRO' : 'OTRO',
+              tipoProducto: item.esDescuento ? 'DESCUENTO' : 'OTRO',
               descripcion: item.descripcion,
               cantidad: item.cantidad,
               unidad: item.unidad,

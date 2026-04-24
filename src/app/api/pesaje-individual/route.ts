@@ -104,6 +104,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const pesoParsed = parseFloat(peso)
+    if (isNaN(pesoParsed) || pesoParsed <= 0) {
+      return NextResponse.json({ error: 'El peso debe ser un valor positivo mayor a 0' }, { status: 400 })
+    }
+
     // Crear pesaje, actualizar animal y tropa todo en transacción
     const result = await db.$transaction(async (tx) => {
       const pesaje = await tx.pesajeIndividual.create({
@@ -179,6 +184,13 @@ export async function PUT(request: NextRequest) {
         { success: false, error: 'ID es requerido' },
         { status: 400 }
       )
+    }
+
+    if (peso !== undefined) {
+      const pesoParsed = parseFloat(peso)
+      if (isNaN(pesoParsed) || pesoParsed <= 0) {
+        return NextResponse.json({ error: 'El peso debe ser un valor positivo mayor a 0' }, { status: 400 })
+      }
     }
 
     const pesaje = await db.pesajeIndividual.update({

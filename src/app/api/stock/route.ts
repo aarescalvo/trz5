@@ -10,21 +10,30 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const camaraId = searchParams.get('camaraId')
     
+    // Parse pagination params with defaults
+    const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 1000)
+    const offset = parseInt(searchParams.get('offset') || '0')
+    
     const where: Record<string, unknown> = {}
     
     if (camaraId) {
       where.camaraId = camaraId
     }
     
-    const stock = await db.stockMediaRes.findMany({
-      where,
-      include: {
-        camara: { select: { id: true, nombre: true } }
-      },
-      orderBy: {
-        fechaIngreso: 'desc'
-      }
-    })
+    const [stock, total] = await Promise.all([
+      db.stockMediaRes.findMany({
+        where,
+        include: {
+          camara: { select: { id: true, nombre: true } }
+        },
+        orderBy: {
+          fechaIngreso: 'desc'
+        },
+        take: limit,
+        skip: offset
+      }),
+      db.stockMediaRes.count({ where })
+    ])
     
     return NextResponse.json({
       success: true,
@@ -37,7 +46,8 @@ export async function GET(request: NextRequest) {
         cantidad: s.cantidad,
         pesoTotal: s.pesoTotal,
         fechaIngreso: s.fechaIngreso.toLocaleDateString('es-AR')
-      }))
+      })),
+      pagination: { total, limit, offset, pages: Math.ceil(total / limit) }
     })
   } catch (error) {
     console.error('Error fetching stock:', error)

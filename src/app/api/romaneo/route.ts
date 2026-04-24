@@ -13,7 +13,8 @@ export async function GET(request: NextRequest) {
     const fechaDesde = searchParams.get('fechaDesde')
     const fechaHasta = searchParams.get('fechaHasta')
     const estado = searchParams.get('estado')
-    const limit = parseInt(searchParams.get('limit') || '100')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 1000)
+    const offset = parseInt(searchParams.get('offset') || '0')
 
     const where: any = {}
 
@@ -30,20 +31,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const romaneos = await db.romaneo.findMany({
-      where,
-      include: {
-        tipificador: true,
-        operador: {
-          select: { nombre: true, rol: true }
+    const [romaneos, total] = await Promise.all([
+      db.romaneo.findMany({
+        where,
+        include: {
+          tipificador: true,
+          operador: {
+            select: { nombre: true, rol: true }
+          },
+          mediasRes: {
+            include: { camara: true }
+          }
         },
-        mediasRes: {
-          include: { camara: true }
-        }
-      },
-      orderBy: { fecha: 'desc' },
-      take: limit
-    })
+        orderBy: { fecha: 'desc' },
+        take: limit,
+        skip: offset
+      }),
+      db.romaneo.count({ where })
+    ])
 
     return NextResponse.json({
       success: true,
@@ -73,7 +78,8 @@ export async function GET(request: NextRequest) {
           estado: m.estado,
           camara: m.camara?.nombre
         }))
-      }))
+      })),
+      pagination: { total, limit, offset, pages: Math.ceil(total / limit) }
     })
   } catch (error) {
     console.error('Error fetching romaneos:', error)

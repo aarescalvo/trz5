@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { checkPermission } from '@/lib/auth-helpers'
 
 // GET - Fetch facturas
 export async function GET(request: NextRequest) {
   try {
+    const authError = await checkPermission(request, 'puedeFacturacion')
+    if (authError) return authError
+
     const { searchParams } = new URL(request.url)
     const estado = searchParams.get('estado')
     const clienteId = searchParams.get('clienteId')
@@ -79,6 +83,9 @@ export async function GET(request: NextRequest) {
 // POST - Create new factura
 export async function POST(request: NextRequest) {
   try {
+    const authError = await checkPermission(request, 'puedeFacturacion')
+    if (authError) return authError
+
     const body = await request.json()
     const { 
       clienteId, 

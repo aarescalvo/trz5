@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { validarPermiso } from '@/lib/auth-helpers';
+import { validarPermiso, getOperadorId } from '@/lib/auth-helpers';
 
-function getOperadorId(request: NextRequest): string | null {
-  return request.headers.get('x-operador-id')
-}
 
 // GET - Listar usuarios (usando Operador como usuarios internos del sistema)
 export async function GET(request: NextRequest) {

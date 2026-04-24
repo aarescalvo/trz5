@@ -3,14 +3,14 @@
  * Soporta SQLite (archivo) y PostgreSQL (pg_dump/psql)
  */
 
-import { exec } from 'child_process'
-import { promisify } from 'util'
+import { spawn } from 'child_process'
+import { createReadStream, createWriteStream } from 'fs'
 import fs from 'fs/promises'
 import path from 'path'
 import { createLogger } from '@/lib/logger'
 const log = createLogger('lib.backup')
 
-const execAsync = promisify(exec)
+// exec removed to prevent command injection — using spawn instead
 
 // Configuración
 const BACKUP_DIR = path.join(process.cwd(), 'backups')
@@ -36,15 +36,6 @@ export function getDatabaseType(): DatabaseType {
     return 'postgresql'
   }
   return 'sqlite'
-}
-
-/**
- * Parse the DATABASE_URL to extract connection parameters for pg_dump/psql
- */
-function getPgConnectionArgs(): string {
-  const dbUrl = process.env.DATABASE_URL || ''
-  // Build pg_dump/psql compatible connection string
-  return `"${dbUrl}"`
 }
 
 /**
@@ -101,23 +92,30 @@ async function createBackupSQLite(type: 'auto' | 'manual'): Promise<BackupInfo> 
 }
 
 /**
- * Crear backup PostgreSQL usando pg_dump
+ * Crear backup PostgreSQL usando pg_dump (spawn to prevent command injection)
  */
 async function createBackupPostgreSQL(type: 'auto' | 'manual'): Promise<BackupInfo> {
   const filename = generateBackupFilename(type, 'postgresql')
   const backupPath = path.join(BACKUP_DIR, filename)
 
-  const connectionString = getPgConnectionArgs()
-
-  // Use pg_dump with custom format for reliable backup
-  // --no-owner and --no-acl for portability
-  const command = `pg_dump --no-owner --no-acl --format=plain ${connectionString} > "${backupPath}"`
+  const dbUrl = process.env.DATABASE_URL || ''
 
   try {
-    await execAsync(command, { timeout: 300000 }) // 5 minute timeout
+    await new Promise<void>((resolve, reject) => {
+      const args = ['--no-owner', '--no-acl', '--format=plain', dbUrl]
+      const proc = spawn('pg_dump', args, { shell: false })
+      const writeStream = createWriteStream(backupPath)
+      proc.stdout.pipe(writeStream)
+      proc.stderr.on('data', (data) => console.error('[pg_dump]', data.toString()))
+      proc.on('close', (code) => {
+        if (code === 0) resolve()
+        else reject(new Error(`pg_dump exited with code ${code}`))
+      })
+      proc.on('error', reject)
+    })
   } catch (err: unknown) {
-    const stderr = err && typeof err === 'object' && 'stderr' in err ? String((err as { stderr: unknown }).stderr) : String(err)
-    throw new Error(`Error ejecutando pg_dump: ${stderr}`)
+    const msg = err instanceof Error ? err.message : String(err)
+    throw new Error(`Error ejecutando pg_dump: ${msg}`)
   }
 
   // Obtener tamaño
@@ -158,7 +156,9 @@ export async function createBackup(type: 'auto' | 'manual' = 'auto'): Promise<Ba
  * Restaurar backup SQLite
  */
 async function restoreBackupSQLite(backupFilename: string): Promise<void> {
-  const backupPath = path.join(BACKUP_DIR, backupFilename)
+  // Sanitize filename - only allow alphanumeric, dashes, underscores, dots
+  const sanitizedFilename = backupFilename.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const backupPath = path.join(BACKUP_DIR, sanitizedFilename)
 
   // Verificar que el backup existe
   try {
@@ -175,10 +175,12 @@ async function restoreBackupSQLite(backupFilename: string): Promise<void> {
 }
 
 /**
- * Restaurar backup PostgreSQL usando psql
+ * Restaurar backup PostgreSQL usando psql (spawn to prevent command injection)
  */
 async function restoreBackupPostgreSQL(backupFilename: string): Promise<void> {
-  const backupPath = path.join(BACKUP_DIR, backupFilename)
+  // Sanitize filename - only allow alphanumeric, dashes, underscores, dots
+  const sanitizedFilename = backupFilename.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const backupPath = path.join(BACKUP_DIR, sanitizedFilename)
 
   // Verificar que el backup existe
   try {
@@ -190,17 +192,24 @@ async function restoreBackupPostgreSQL(backupFilename: string): Promise<void> {
   // Crear backup del estado actual antes de restaurar
   await createBackup('manual')
 
-  const connectionString = getPgConnectionArgs()
-
-  // Restore using psql - the SQL dump contains DROP/CREATE statements from pg_dump
-  // We use --single-transaction for atomicity and --on-error-stop to abort on errors
-  const command = `psql --single-transaction --on-error-stop ${connectionString} < "${backupPath}"`
+  const dbUrl = process.env.DATABASE_URL || ''
 
   try {
-    await execAsync(command, { timeout: 600000 }) // 10 minute timeout
+    await new Promise<void>((resolve, reject) => {
+      const args = ['--single-transaction', '--on-error-stop', dbUrl]
+      const proc = spawn('psql', args, { shell: false })
+      const readStream = createReadStream(backupPath)
+      readStream.pipe(proc.stdin)
+      proc.stderr.on('data', (data) => console.error('[psql]', data.toString()))
+      proc.on('close', (code) => {
+        if (code === 0) resolve()
+        else reject(new Error(`psql exited with code ${code}`))
+      })
+      proc.on('error', reject)
+    })
   } catch (err: unknown) {
-    const stderr = err && typeof err === 'object' && 'stderr' in err ? String((err as { stderr: unknown }).stderr) : String(err)
-    throw new Error(`Error ejecutando psql restore: ${stderr}`)
+    const msg = err instanceof Error ? err.message : String(err)
+    throw new Error(`Error ejecutando psql restore: ${msg}`)
   }
 }
 
@@ -285,7 +294,9 @@ async function cleanOldBackups(): Promise<number> {
  * Eliminar un backup específico
  */
 export async function deleteBackup(filename: string): Promise<boolean> {
-  const backupPath = path.join(BACKUP_DIR, filename)
+  // Sanitize filename - only allow alphanumeric, dashes, underscores, dots
+  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const backupPath = path.join(BACKUP_DIR, sanitizedFilename)
 
   try {
     await fs.unlink(backupPath)
